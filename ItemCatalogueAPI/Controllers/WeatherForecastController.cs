@@ -1,11 +1,11 @@
-using Application.ServicePorts;
+using Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ItemCatalogueAPI.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class WeatherForecastController(IItemService itemService) : ControllerBase
+    public class WeatherForecastController(ItemService itemService) : ControllerBase
     {
         private static readonly string[] Summaries =
         [
