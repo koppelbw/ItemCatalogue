@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/Core/">
+    <Project Path="Application/Application.csproj" />
+    <Project Path="Domain/Domain.csproj" />
+  </Folder>
+  <Folder Name="/External/" />
+  <Folder Name="/External/ApplicationService/">
+    <Project Path="Service/Service.csproj" Id="1172b3a2-f374-4880-94a6-8293f0912bf3" />
+  </Folder>
+  <Folder Name="/External/Data/">
+    <Project Path="Database/Database.sqlproj" Id="1f83091e-bc0a-4725-8755-c867b8ea854c">
+      <Build />
+      <Deploy />
+    </Project>
+    <Project Path="Persistence/Persistence.csproj" Id="a99e094b-1f63-43b1-81cd-be3937f14b4e" />
+  </Folder>
+  <Folder Name="/External/Presentation/">
+    <Project Path="ItemCatalogueAPI/ItemCatalogueAPI.csproj" />
+  </Folder>
+</Solution>

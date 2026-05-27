@@ -1,0 +1,144 @@
+using Domain.Entities;
+using Domain.Enums;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+
+namespace Persistence.Database;
+
+public class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbContext> options) : DbContext(options)
+{
+    public DbSet<Item> Items { get; set; }
+    public DbSet<Room> Rooms { get; set; }
+    public DbSet<Location> Locations { get; set; }
+    public DbSet<Person> People { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Item>(builder =>
+        {
+            // We are using Singular naming convention for tables, so we specify "Item" instead of "Items".
+            // EF Core will use the DbSet property name as the table name, so since you declared: Items, it will default to "Items".
+            // If you want to specify a different table name, you can do so here:
+            builder.ToTable("Item");
+
+
+            //  EF Core will infer IDENTITY(1,1) automatically for an int primary key named Id by convention,
+            //  so it won't cause a bug without it. But it's good practice to be explicit
+            builder.HasKey(e => e.Id);
+            builder.Property(e => e.Id)
+                  .IsRequired()
+                  .UseIdentityColumn(seed: 1, increment: 1);
+
+
+            builder.Property(e => e.Name)
+              .HasColumnType("nvarchar(255)")   // Optional: explicitly set the column type to nvarchar(255). EF Core will infer this from the string property and max length, but being explicit can help avoid issues.
+              .IsRequired()
+              .HasMaxLength(255);
+
+            builder.Property(e => e.Description)
+                  .HasMaxLength(4000);
+
+            builder.Property(e => e.Price)
+                  .HasColumnType("decimal(18,2)");
+
+            builder.Property(i => i.IsStored)
+                .HasDefaultValue(false);
+
+            builder.Property(i => i.IsDeleted)
+                .HasDefaultValue(false);
+
+            builder.Property(e => e.ReasonForDeletion)
+              .HasConversion<int>();
+
+            builder.Property(i => i.CreatedDate)
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            builder.Property(i => i.LastModifiedDate);
+
+            // Foreign key to Location
+            builder.HasOne(i => i.Location)
+                .WithMany()
+                .HasForeignKey("LocationId")
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Foreign key to Person (Owner)
+            builder.HasOne(i => i.Owner)
+                .WithMany(p => p.Items)
+                .HasForeignKey("OwnerId")
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Navigation property for ItemTypes (many-to-many or one-to-many relationship)
+            builder.Property(i => i.ItemTypes)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v ?? new List<ItemType>(), (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<List<ItemType>>(v, (JsonSerializerOptions?)null) ?? new List<ItemType>()
+                )
+                .HasColumnType("nvarchar(max)");
+        });
+
+        // Configure Room entity
+        modelBuilder.Entity<Room>(builder =>
+        {
+            builder.ToTable("Room");
+
+            builder.HasKey(r => r.Id);
+
+            builder.Property(r => r.Id)
+                .ValueGeneratedOnAdd();
+
+            builder.Property(r => r.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(r => r.Description)
+                .HasMaxLength(500);
+        });
+
+        // Configure Location entity
+        modelBuilder.Entity<Location>(builder =>
+        {
+            builder.ToTable("Location");
+
+            builder.HasKey(l => l.Id);
+
+            builder.Property(l => l.Id)
+                .ValueGeneratedOnAdd();
+
+            builder.Property(l => l.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(l => l.Description)
+                .HasMaxLength(500);
+
+            // Foreign key to Room (Required)
+            builder.HasOne(l => l.Room)
+                .WithMany()
+                .HasForeignKey("RoomId")
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+        });
+
+        // Configure Person entity
+        modelBuilder.Entity<Person>(builder =>
+        {
+            builder.ToTable("Person");
+
+            builder.HasKey(p => p.Id);
+
+            builder.Property(p => p.Id)
+                .ValueGeneratedOnAdd();
+
+            builder.Property(p => p.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            // Navigation property for Items
+            builder.HasMany(p => p.Items)
+                .WithOne(i => i.Owner)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+}
