@@ -1,11 +1,10 @@
-﻿using Application.ServicePorts;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.RepositoryPorts;
 
-namespace Service.ServiceAdapters;
+namespace Application.Services;
 
-public sealed class ItemService(IItemRepository itemRepository) : IItemService
+public sealed class ItemService(IItemRepository itemRepository)
 {
     public async Task<Item> GetItemByIdAsync(int id)
     {
