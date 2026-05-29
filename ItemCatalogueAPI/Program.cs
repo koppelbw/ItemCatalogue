@@ -1,6 +1,6 @@
 using ItemCatalogueAPI.Extensions;
 using Microsoft.EntityFrameworkCore;
-using Persistence.Database;
+using Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -5,11 +5,11 @@ SET IDENTITY_INSERT dbo.Location ON;
 MERGE INTO dbo.[Location] AS target
 USING (
     VALUES 
-        (1, 'Bedroom', 'Upstairs', NULL),
-        (2, 'Living Room', 'With TV', NULL),
-        (3, 'Kitchen', 'only kitchen', NULL),
-        (4, 'Office', 'Upstairs', NULL),
-        (5, 'Garage', 'the garage', NULL)
+        (1, 'Apartment',    'My Apartment', 1),
+        (2, 'Grandmas',     'Grandmas house', 2),
+        (3, 'House',        'My house', 3),
+        (4, 'Storage Unit', '#223', 6),
+        (5, 'Car',          'Subaru Forester', 11)
 ) AS source (Id, Name, Description, RoomId)
 ON target.Id = source.Id
 WHEN MATCHED THEN

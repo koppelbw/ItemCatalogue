@@ -2,8 +2,9 @@ using Domain.Entities;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
-namespace Persistence.Database;
+namespace Persistence;
 
 public class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbContext> options) : DbContext(options)
 {
@@ -11,6 +12,11 @@ public class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbContext> opt
     public DbSet<Room> Rooms { get; set; }
     public DbSet<Location> Locations { get; set; }
     public DbSet<Person> People { get; set; }
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,13 +50,15 @@ public class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbContext> opt
                   .HasColumnType("decimal(18,2)");
 
             builder.Property(i => i.IsStored)
+                .IsRequired()
                 .HasDefaultValue(false);
 
             builder.Property(i => i.IsDeleted)
+                .IsRequired()
                 .HasDefaultValue(false);
 
             builder.Property(e => e.ReasonForDeletion)
-              .HasConversion<int>();
+              .HasConversion<string>();
 
             builder.Property(i => i.CreatedDate)
                 .HasDefaultValueSql("GETUTCDATE()");
@@ -70,10 +78,11 @@ public class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbContext> opt
                 .OnDelete(DeleteBehavior.SetNull);
 
             // Navigation property for ItemTypes (many-to-many or one-to-many relationship)
+            //Switching to JsonStringEnumConverter stores names instead (["Electronics","Books"]), making the data resilient to enum reordering and human-readable in the database.
             builder.Property(i => i.ItemTypes)
                 .HasConversion(
-                    v => JsonSerializer.Serialize(v ?? new List<ItemType>(), (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<List<ItemType>>(v, (JsonSerializerOptions?)null) ?? new List<ItemType>()
+                    v => JsonSerializer.Serialize(v ?? new List<ItemType>(), _jsonOptions),
+                    v => JsonSerializer.Deserialize<List<ItemType>>(v, _jsonOptions) ?? new List<ItemType>()
                 )
                 .HasColumnType("nvarchar(max)");
         });

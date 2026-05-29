@@ -13,8 +13,6 @@ public sealed class ItemService(IItemRepository itemRepository)
 
     public async Task DeleteItemAsync(int id, DeletedReason reason)
     {
-        _ = await GetItemByIdAsync(id);
-
         await itemRepository.SoftDeleteItemByIdAsync(id, reason);
     }
 }

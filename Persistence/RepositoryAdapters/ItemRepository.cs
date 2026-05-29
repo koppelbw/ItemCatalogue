@@ -1,28 +1,32 @@
 ﻿using Domain.Entities;
 using Domain.Enums;
 using Domain.RepositoryPorts;
-using Persistence.Database;
 
 namespace Persistence.RepositoryAdapters;
 
 public sealed class ItemRepository(ItemCatalogueDbContext dbContext) : IItemRepository
 {
-    public Task<Item?> GetItemByIdAsync(int id)
+    public async Task<Item?> GetItemByIdAsync(int id)
     {
-        return dbContext.Items.FindAsync(id).AsTask();
+        return await dbContext.Items.FindAsync(id);
     }
 
-    public Task<int> InsertItemAsync(Item item)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<int> SoftDeleteItemByIdAsync(int id, DeletedReason reason)
+    public async Task<int> InsertItemAsync(Item item)
     {
         throw new NotImplementedException();
     }
 
-    public Task UpdateItemAsync(Item item)
+    public async Task<int> SoftDeleteItemByIdAsync(int id, DeletedReason reason)
+    {
+        var item = await dbContext.Items.FindAsync(id)
+                    ?? throw new InvalidOperationException($"Item with id {id} not found.");
+
+        item.IsDeleted = true;
+        item.ReasonForDeletion = reason;
+        return await dbContext.SaveChangesAsync();
+    }
+
+    public async Task UpdateItemAsync(Item item)
     {
         throw new NotImplementedException();
     }

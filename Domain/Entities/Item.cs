@@ -14,8 +14,8 @@ public class Item
 
     public decimal? Price { get; set; }
 
-    public bool? IsStored { get; set; }
-    public bool? IsDeleted { get; set; }
+    public bool IsStored { get; set; }
+    public bool IsDeleted { get; set; }
     public DeletedReason? ReasonForDeletion { get; set; }
 
 

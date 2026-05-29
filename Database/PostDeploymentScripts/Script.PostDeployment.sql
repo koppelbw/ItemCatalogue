@@ -6,5 +6,7 @@
 --  Set the Build Action for these sub-scripts to None in the Properties pane to prevent them from being compiled as schema objects.
 
 
-:r .\Seed_Item.sql
+:r .\Seed_Room.sql
 :r .\Seed_Location.sql
+:r .\Seed_Person.sql
+:r .\Seed_Item.sql

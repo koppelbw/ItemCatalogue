@@ -66,7 +66,8 @@
     <Build Include="dbo\tables\Person.sql" />
     <Build Include="dbo\tables\Room.sql" />
     <None Include="PostDeploymentScripts\Seed_Location.sql" />
-    <Build Include="dbo\tables\ItemType.sql" />
+    <None Include="PostDeploymentScripts\Seed_Room.sql" />
+    <None Include="PostDeploymentScripts\Seed_Person.sql" />
   </ItemGroup>
   <ItemGroup>
     <None Include="PostDeploymentScripts\Seed_Item.sql" />
