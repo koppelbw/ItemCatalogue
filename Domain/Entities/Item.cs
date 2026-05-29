@@ -21,8 +21,12 @@ public class Item
 
 
 
+    public int? LocationId { get; set; }
+
     public Location? Location { get; set; }
-    
+
+    public int? OwnerId { get; set; }
+
     public Person? Owner { get; set; }
 
     

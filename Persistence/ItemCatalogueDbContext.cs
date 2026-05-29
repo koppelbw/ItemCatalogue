@@ -68,13 +68,13 @@ public class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbContext> opt
             // Foreign key to Location
             builder.HasOne(i => i.Location)
                 .WithMany()
-                .HasForeignKey("LocationId")
+                .HasForeignKey(i => i.LocationId)
                 .OnDelete(DeleteBehavior.SetNull);
 
             // Foreign key to Person (Owner)
             builder.HasOne(i => i.Owner)
                 .WithMany(p => p.Items)
-                .HasForeignKey("OwnerId")
+                .HasForeignKey(i => i.OwnerId)
                 .OnDelete(DeleteBehavior.SetNull);
 
             // Navigation property for ItemTypes (many-to-many or one-to-many relationship)
