@@ -143,11 +143,6 @@ public class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbContext> opt
             builder.Property(p => p.Name)
                 .IsRequired()
                 .HasMaxLength(100);
-
-            // Navigation property for Items
-            builder.HasMany(p => p.Items)
-                .WithOne(i => i.Owner)
-                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }
