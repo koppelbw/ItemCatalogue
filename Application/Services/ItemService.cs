@@ -11,8 +11,9 @@ public sealed class ItemService(IItemRepository itemRepository)
         return await itemRepository.GetItemByIdAsync(id) ?? throw new InvalidOperationException($"Item with id {id} not found.");
     }
 
-    public async Task DeleteItemAsync(int id, DeletedReason reason)
+    public async Task<int> DeleteItemAsync(int id, DeletedReason reason)
     {
-        await itemRepository.SoftDeleteItemByIdAsync(id, reason);
+        var numberOfEffectedRows = await itemRepository.SoftDeleteItemByIdAsync(id, reason);
+        return numberOfEffectedRows;
     }
 }

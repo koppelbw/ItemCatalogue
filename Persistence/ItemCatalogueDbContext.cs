@@ -6,7 +6,9 @@ using System.Text.Json.Serialization;
 
 namespace Persistence;
 
-public class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbContext> options) : DbContext(options)
+// EF Core has a feature called lazy-loading proxies (UseLazyLoadingProxies) that works by generating a subclass of your DbContext/entities at runtime.
+// If you ever enabled that, a sealed context would break it.
+public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbContext> options) : DbContext(options)
 {
     public DbSet<Item> Items { get; set; }
     public DbSet<Room> Rooms { get; set; }
@@ -78,13 +80,15 @@ public class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbContext> opt
                 .OnDelete(DeleteBehavior.SetNull);
 
             // Navigation property for ItemTypes (many-to-many or one-to-many relationship)
-            //Switching to JsonStringEnumConverter stores names instead (["Electronics","Books"]), making the data resilient to enum reordering and human-readable in the database.
+            // Switching to JsonStringEnumConverter stores names instead (["Electronics","Books"]), making the data resilient to enum reordering and human-readable in the database.
             builder.Property(i => i.ItemTypes)
                 .HasConversion(
-                    v => JsonSerializer.Serialize(v ?? new List<ItemType>(), _jsonOptions),
-                    v => JsonSerializer.Deserialize<List<ItemType>>(v, _jsonOptions) ?? new List<ItemType>()
-                )
-                .HasColumnType("nvarchar(max)");
+                    v => JsonSerializer.Serialize(v, _jsonOptions),
+                    v => string.IsNullOrEmpty(v)
+                        ? new List<ItemType>()
+                        : JsonSerializer.Deserialize<List<ItemType>>(v, _jsonOptions) ?? new List<ItemType>())
+                .HasColumnType("nvarchar(max)")
+                .IsRequired();
         });
 
         // Configure Room entity

@@ -6,7 +6,7 @@ CREATE TABLE Item (
     IsStored          BIT             NOT NULL DEFAULT 0,
     IsDeleted         BIT             NOT NULL DEFAULT 0,
     ReasonForDeletion NVARCHAR(255)   NULL,
-    ItemTypes         NVARCHAR(MAX)   NULL,
+    ItemTypes         NVARCHAR(MAX)   NOT NULL DEFAULT '[]',
     LocationId        INT             NULL,
     OwnerId           INT             NULL,
     CreatedDate       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),

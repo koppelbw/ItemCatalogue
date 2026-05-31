@@ -1,6 +1,7 @@
 ﻿using Domain.Entities;
 using Domain.Enums;
 using Domain.RepositoryPorts;
+using Microsoft.EntityFrameworkCore;
 
 namespace Persistence.RepositoryAdapters;
 
@@ -18,12 +19,19 @@ public sealed class ItemRepository(ItemCatalogueDbContext dbContext) : IItemRepo
 
     public async Task<int> SoftDeleteItemByIdAsync(int id, DeletedReason reason)
     {
-        var item = await dbContext.Items.FindAsync(id)
-                    ?? throw new InvalidOperationException($"Item with id {id} not found.");
+        var rowsAffected = await dbContext.Items
+        .Where(i => i.Id == id)
+        .ExecuteUpdateAsync(s => s
+            .SetProperty(i => i.IsDeleted, true)
+            .SetProperty(i => i.ReasonForDeletion, reason)
+            .SetProperty(i => i.LastModifiedDate, DateTime.UtcNow));
 
-        item.IsDeleted = true;
-        item.ReasonForDeletion = reason;
-        return await dbContext.SaveChangesAsync();
+        if (rowsAffected == 0)
+        {
+            throw new InvalidOperationException($"Item with id {id} not found.");
+        }
+
+        return rowsAffected;
     }
 
     public async Task UpdateItemAsync(Item item)

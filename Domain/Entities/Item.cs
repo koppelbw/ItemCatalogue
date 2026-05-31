@@ -10,7 +10,7 @@ public class Item
 
     public string? Description { get; set; }
 
-    public List<ItemType>? ItemTypes { get; set; }
+    public List<ItemType> ItemTypes { get; set; } = [];
 
     public decimal? Price { get; set; }
 
