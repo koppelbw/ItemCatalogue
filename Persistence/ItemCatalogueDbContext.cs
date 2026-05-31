@@ -129,7 +129,7 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
             // Foreign key to Room (Required)
             builder.HasOne(l => l.Room)
                 .WithMany()
-                .HasForeignKey("RoomId")
+                .HasForeignKey(l => l.RoomId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
         });

@@ -1,11 +1,11 @@
-using Application.Services;
+using Application.ServicePorts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ItemCatalogueAPI.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class WeatherForecastController(ItemService itemService) : ControllerBase
+    public class WeatherForecastController(IItemService itemService) : ControllerBase
     {
         private static readonly string[] Summaries =
         [
@@ -15,7 +15,7 @@ namespace ItemCatalogueAPI.Controllers
         [HttpGet(Name = "GetWeatherForecast")]
         public async Task<IEnumerable<WeatherForecast>> Get()
         {
-            var result = await itemService.GetItemByIdAsync(1);
+            var result = await itemService.GetByIdAsync(1);
 
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {

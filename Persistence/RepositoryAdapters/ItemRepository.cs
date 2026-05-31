@@ -1,4 +1,4 @@
-﻿using Domain.Entities;
+using Domain.Entities;
 using Domain.Enums;
 using Domain.RepositoryPorts;
 using Microsoft.EntityFrameworkCore;
@@ -9,12 +9,27 @@ public sealed class ItemRepository(ItemCatalogueDbContext dbContext) : IItemRepo
 {
     public async Task<Item?> GetItemByIdAsync(int id)
     {
-        return await dbContext.Items.FindAsync(id);
+        return await dbContext.Items
+            .Include(i => i.Location)
+            .Include(i => i.Owner)
+            .FirstOrDefaultAsync(i => i.Id == id);
+    }
+
+    public async Task<IReadOnlyList<Item>> GetAllItemsAsync()
+    {
+        return await dbContext.Items
+            .Where(i => !i.IsDeleted)
+            .Include(i => i.Location)
+            .Include(i => i.Owner)
+            .AsNoTracking()
+            .ToListAsync();
     }
 
     public async Task<int> InsertItemAsync(Item item)
     {
-        throw new NotImplementedException();
+        dbContext.Items.Add(item);
+        await dbContext.SaveChangesAsync();
+        return item.Id;
     }
 
     public async Task<int> SoftDeleteItemByIdAsync(int id, DeletedReason reason)
@@ -36,6 +51,8 @@ public sealed class ItemRepository(ItemCatalogueDbContext dbContext) : IItemRepo
 
     public async Task UpdateItemAsync(Item item)
     {
-        throw new NotImplementedException();
+        item.LastModifiedDate = DateTime.UtcNow;
+        dbContext.Items.Update(item);
+        await dbContext.SaveChangesAsync();
     }
 }
