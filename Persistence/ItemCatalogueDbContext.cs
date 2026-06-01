@@ -1,6 +1,7 @@
 using Domain.Entities;
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -19,6 +20,15 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
     {
         Converters = { new JsonStringEnumConverter() }
     };
+
+    // A value converter alone is not enough for a mutable collection: EF Core needs a ValueComparer
+    // to snapshot and compare the value. Without it, the snapshot is the live list reference compared
+    // by reference equality, so in-place mutations (e.g. item.ItemTypes.Add(...)) go undetected and
+    // are never persisted. This comparer snapshots a copy and compares by element sequence.
+    private static readonly ValueComparer<List<ItemType>> _itemTypesComparer = new(
+        (a, b) => (a == null && b == null) || (a != null && b != null && a.SequenceEqual(b)),
+        v => v == null ? 0 : v.Aggregate(0, (acc, x) => HashCode.Combine(acc, x.GetHashCode())),
+        v => v == null ? new List<ItemType>() : v.ToList());
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -86,7 +96,7 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
                     v => JsonSerializer.Serialize(v, _jsonOptions),
                     v => string.IsNullOrEmpty(v)
                         ? new List<ItemType>()
-                        : JsonSerializer.Deserialize<List<ItemType>>(v, _jsonOptions) ?? new List<ItemType>())
+                        : JsonSerializer.Deserialize<List<ItemType>>(v, _jsonOptions) ?? new List<ItemType>(), _itemTypesComparer)
                 .HasColumnType("nvarchar(max)")
                 .IsRequired();
         });
