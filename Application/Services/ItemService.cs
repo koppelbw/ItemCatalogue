@@ -8,40 +8,40 @@ namespace Application.Services;
 
 public sealed class ItemService(IItemRepository itemRepository) : IItemService
 {
-    public async Task<ItemResponse> GetByIdAsync(int id)
+    public async Task<ItemResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        var item = await itemRepository.GetItemByIdAsync(id)
+        var item = await itemRepository.GetItemByIdAsync(id, cancellationToken)
             ?? throw new InvalidOperationException($"Item with id {id} not found.");
 
         return item.ToResponse();
     }
 
-    public async Task<IReadOnlyList<ItemResponse>> GetAllAsync()
+    public async Task<IReadOnlyList<ItemResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        var items = await itemRepository.GetAllItemsAsync();
+        var items = await itemRepository.GetAllItemsAsync(cancellationToken);
         return items.Select(i => i.ToResponse()).ToList();
     }
 
-    public async Task<ItemResponse> CreateAsync(CreateItemRequest request)
+    public async Task<ItemResponse> CreateAsync(CreateItemRequest request, CancellationToken cancellationToken = default)
     {
         var item = request.ToEntity();
-        await itemRepository.InsertItemAsync(item);
+        await itemRepository.InsertItemAsync(item, cancellationToken);
         return item.ToResponse();
     }
 
-    public async Task<ItemResponse> UpdateAsync(UpdateItemRequest request)
+    public async Task<ItemResponse> UpdateAsync(UpdateItemRequest request, CancellationToken cancellationToken = default)
     {
-        var item = await itemRepository.GetItemForUpdateAsync(request.Id)
+        var item = await itemRepository.GetItemForUpdateAsync(request.Id, cancellationToken)
             ?? throw new InvalidOperationException($"Item with id {request.Id} not found.");
 
         request.ApplyTo(item);
-        await itemRepository.UpdateItemAsync(item);
+        await itemRepository.UpdateItemAsync(item, cancellationToken);
         return item.ToResponse();
     }
 
-    public async Task<int> DeleteAsync(int id, DeletedReason reason)
+    public async Task<int> DeleteAsync(int id, DeletedReason reason, CancellationToken cancellationToken = default)
     {
-        var numberOfEffectedRows = await itemRepository.SoftDeleteItemByIdAsync(id, reason);
+        var numberOfEffectedRows = await itemRepository.SoftDeleteItemByIdAsync(id, reason, cancellationToken);
         return numberOfEffectedRows;
     }
 }

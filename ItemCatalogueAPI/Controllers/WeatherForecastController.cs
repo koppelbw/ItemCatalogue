@@ -13,9 +13,9 @@ namespace ItemCatalogueAPI.Controllers
         ];
 
         [HttpGet(Name = "GetWeatherForecast")]
-        public async Task<IEnumerable<WeatherForecast>> Get()
+        public async Task<IEnumerable<WeatherForecast>> Get(CancellationToken cancellationToken)
         {
-            var result = await itemService.GetByIdAsync(1);
+            var result = await itemService.GetByIdAsync(1, cancellationToken);
 
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {
