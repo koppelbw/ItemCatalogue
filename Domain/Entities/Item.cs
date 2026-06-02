@@ -33,4 +33,10 @@ public class Item
     public DateTime CreatedDate { get; set; }
 
     public DateTime? LastModifiedDate { get; set; }
+
+    // Optimistic concurrency token. SQL Server maintains this rowversion automatically,
+    // incrementing it on every UPDATE. EF Core uses it in the WHERE clause so a stale
+    // write (one based on an out-of-date copy) affects 0 rows and raises a conflict
+    // instead of silently overwriting a concurrent edit.
+    public byte[] RowVersion { get; set; } = [];
 }

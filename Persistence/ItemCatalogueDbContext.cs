@@ -77,6 +77,11 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
 
             builder.Property(i => i.LastModifiedDate);
 
+            // Maps RowVersion to a SQL Server rowversion column and registers it as a
+            // concurrency token, so every UPDATE/DELETE carries "AND RowVersion = @original".
+            builder.Property(i => i.RowVersion)
+                .IsRowVersion();
+
             // Foreign key to Location
             builder.HasOne(i => i.Location)
                 .WithMany()
@@ -117,6 +122,9 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
 
             builder.Property(r => r.Description)
                 .HasMaxLength(500);
+
+            builder.Property(r => r.RowVersion)
+                .IsRowVersion();
         });
 
         // Configure Location entity
@@ -142,6 +150,9 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
                 .HasForeignKey(l => l.RoomId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
+
+            builder.Property(l => l.RowVersion)
+                .IsRowVersion();
         });
 
         // Configure Person entity
@@ -157,6 +168,9 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
             builder.Property(p => p.Name)
                 .IsRequired()
                 .HasMaxLength(100);
+
+            builder.Property(p => p.RowVersion)
+                .IsRowVersion();
         });
     }
 }

@@ -7,9 +7,11 @@ public sealed record CreateRoomRequest(
 public sealed record UpdateRoomRequest(
     int Id,
     string Name,
-    string? Description);
+    string? Description,
+    byte[] RowVersion);
 
 public sealed record RoomResponse(
     int Id,
     string Name,
-    string? Description);
+    string? Description,
+    byte[] RowVersion);

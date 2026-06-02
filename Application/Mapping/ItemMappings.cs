@@ -25,6 +25,9 @@ public static class ItemMappings
         item.IsStored = request.IsStored;
         item.LocationId = request.LocationId;
         item.OwnerId = request.OwnerId;
+        // Carry the client's concurrency token onto the entity; the repository uses it as
+        // the original value so a stale token is detected at save time.
+        item.RowVersion = request.RowVersion;
     }
 
     public static ItemResponse ToResponse(this Item item) => new(
@@ -39,5 +42,6 @@ public static class ItemMappings
         item.LocationId,
         item.OwnerId,
         item.CreatedDate,
-        item.LastModifiedDate);
+        item.LastModifiedDate,
+        item.RowVersion);
 }

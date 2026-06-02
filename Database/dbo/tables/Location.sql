@@ -3,7 +3,8 @@ CREATE TABLE [Location] (
     [Name] NVARCHAR(100) NOT NULL,
     [Description] NVARCHAR(500) NULL,
     [RoomId] INT NOT NULL,
-    
+    [RowVersion] ROWVERSION NOT NULL,
+
     -- Foreign Key to Room
     CONSTRAINT [FK_Location_Room] 
         FOREIGN KEY ([RoomId]) 

@@ -19,7 +19,8 @@ public sealed record UpdateItemRequest(
     decimal? Price,
     bool IsStored,
     int? LocationId,
-    int? OwnerId);
+    int? OwnerId,
+    byte[] RowVersion);
 
 public sealed record ItemResponse(
     int Id,
@@ -33,4 +34,5 @@ public sealed record ItemResponse(
     int? LocationId,
     int? OwnerId,
     DateTime CreatedDate,
-    DateTime? LastModifiedDate);
+    DateTime? LastModifiedDate,
+    byte[] RowVersion);

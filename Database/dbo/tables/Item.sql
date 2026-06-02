@@ -11,6 +11,7 @@ CREATE TABLE Item (
     OwnerId           INT             NULL,
     CreatedDate       DATETIME2       NOT NULL DEFAULT GETUTCDATE(),
     LastModifiedDate  DATETIME2       NULL,
+    RowVersion        ROWVERSION      NOT NULL,
 
     CONSTRAINT FK_Items_Location FOREIGN KEY (LocationId) REFERENCES Location(Id),
     CONSTRAINT FK_Items_Owner    FOREIGN KEY (OwnerId)    REFERENCES Person(Id)

@@ -8,4 +8,7 @@ public class Person
 
 
     public List<Item>? Items { get; set; }
+
+    // Optimistic concurrency token maintained by SQL Server. See Item.RowVersion.
+    public byte[] RowVersion { get; set; } = [];
 }

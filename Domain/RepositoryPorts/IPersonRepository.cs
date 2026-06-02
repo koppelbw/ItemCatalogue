@@ -6,6 +6,8 @@ public interface IPersonRepository
 {
     Task<Person?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
+    Task<Person?> GetForUpdateAsync(int id, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Person>> GetAllAsync(CancellationToken cancellationToken = default);
 
     Task<int> InsertAsync(Person person, CancellationToken cancellationToken = default);

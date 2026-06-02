@@ -5,8 +5,10 @@ public sealed record CreatePersonRequest(
 
 public sealed record UpdatePersonRequest(
     int Id,
-    string Name);
+    string Name,
+    byte[] RowVersion);
 
 public sealed record PersonResponse(
     int Id,
-    string Name);
+    string Name,
+    byte[] RowVersion);

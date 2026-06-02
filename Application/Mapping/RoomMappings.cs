@@ -15,10 +15,12 @@ public static class RoomMappings
     {
         room.Name = request.Name;
         room.Description = request.Description;
+        room.RowVersion = request.RowVersion;
     }
 
     public static RoomResponse ToResponse(this Room room) => new(
         room.Id,
         room.Name,
-        room.Description);
+        room.Description,
+        room.RowVersion);
 }

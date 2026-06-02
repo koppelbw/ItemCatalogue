@@ -7,4 +7,7 @@ public class Room
     public string Name { get; set; } = string.Empty;
 
     public string? Description { get; set; }
+
+    // Optimistic concurrency token maintained by SQL Server. See Item.RowVersion.
+    public byte[] RowVersion { get; set; } = [];
 }

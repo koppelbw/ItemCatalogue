@@ -30,7 +30,7 @@ public sealed class LocationService(ILocationRepository locationRepository) : IL
 
     public async Task<LocationResponse> UpdateAsync(UpdateLocationRequest request, CancellationToken cancellationToken = default)
     {
-        var location = await locationRepository.GetByIdAsync(request.Id, cancellationToken)
+        var location = await locationRepository.GetForUpdateAsync(request.Id, cancellationToken)
             ?? throw new InvalidOperationException($"Location with id {request.Id} not found.");
 
         request.ApplyTo(location);

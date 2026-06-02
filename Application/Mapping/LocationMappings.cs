@@ -17,11 +17,13 @@ public static class LocationMappings
         location.Name = request.Name;
         location.Description = request.Description;
         location.RoomId = request.RoomId;
+        location.RowVersion = request.RowVersion;
     }
 
     public static LocationResponse ToResponse(this Location location) => new(
         location.Id,
         location.Name,
         location.Description,
-        location.RoomId);
+        location.RoomId,
+        location.RowVersion);
 }

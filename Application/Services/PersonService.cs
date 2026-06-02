@@ -30,7 +30,7 @@ public sealed class PersonService(IPersonRepository personRepository) : IPersonS
 
     public async Task<PersonResponse> UpdateAsync(UpdatePersonRequest request, CancellationToken cancellationToken = default)
     {
-        var person = await personRepository.GetByIdAsync(request.Id, cancellationToken)
+        var person = await personRepository.GetForUpdateAsync(request.Id, cancellationToken)
             ?? throw new InvalidOperationException($"Person with id {request.Id} not found.");
 
         request.ApplyTo(person);

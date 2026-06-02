@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.RepositoryPorts;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,8 +9,18 @@ public sealed class LocationRepository(ItemCatalogueDbContext dbContext) : ILoca
 {
     public async Task<Location?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
+        // Read-only path: not tracked, includes the Room for display.
         return await dbContext.Locations
             .Include(l => l.Room)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
+    }
+
+    public async Task<Location?> GetForUpdateAsync(int id, CancellationToken cancellationToken = default)
+    {
+        // Tracked (no AsNoTracking) so SaveChangesAsync emits a minimal, diff-based UPDATE.
+        // No Includes: updates only touch the Location's own columns.
+        return await dbContext.Locations
             .FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
     }
 
@@ -30,8 +41,19 @@ public sealed class LocationRepository(ItemCatalogueDbContext dbContext) : ILoca
 
     public async Task UpdateAsync(Location location, CancellationToken cancellationToken = default)
     {
-        dbContext.Locations.Update(location);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        // location is already tracked (loaded via GetForUpdateAsync), so no Update() call is needed.
+        // Drive the concurrency check off the client's token carried on the entity.
+        dbContext.Entry(location).Property(l => l.RowVersion).OriginalValue = location.RowVersion;
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConcurrencyConflictException(
+                $"Location with id {location.Id} was modified by another process. Reload and try again.", ex);
+        }
     }
 
     public async Task<int> DeleteAsync(int id, CancellationToken cancellationToken = default)

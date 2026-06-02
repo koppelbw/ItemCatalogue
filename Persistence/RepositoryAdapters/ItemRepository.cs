@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Exceptions;
 using Domain.RepositoryPorts;
 using Microsoft.EntityFrameworkCore;
 
@@ -63,6 +64,20 @@ public sealed class ItemRepository(ItemCatalogueDbContext dbContext) : IItemRepo
     {
         item.LastModifiedDate = DateTime.UtcNow;
         //dbContext.Items.Update(item); // Not needed because the item is already being tracked by the dbContext, so we just need to call SaveChangesAsync to persist the changes to the database.
-        await dbContext.SaveChangesAsync(cancellationToken);
+
+        // Drive the optimistic-concurrency check off the client's token (carried on the entity)
+        // rather than the value freshly read from the database. EF emits the check as
+        // "AND RowVersion = @original" in the UPDATE's WHERE clause.
+        dbContext.Entry(item).Property(i => i.RowVersion).OriginalValue = item.RowVersion;
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConcurrencyConflictException(
+                $"Item with id {item.Id} was modified by another process. Reload and try again.", ex);
+        }
     }
 }

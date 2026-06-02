@@ -12,4 +12,7 @@ public class Location
     public int RoomId { get; set; }
 
     public Room? Room { get; set; }
+
+    // Optimistic concurrency token maintained by SQL Server. See Item.RowVersion.
+    public byte[] RowVersion { get; set; } = [];
 }

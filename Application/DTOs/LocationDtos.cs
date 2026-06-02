@@ -9,10 +9,12 @@ public sealed record UpdateLocationRequest(
     int Id,
     string Name,
     string? Description,
-    int RoomId);
+    int RoomId,
+    byte[] RowVersion);
 
 public sealed record LocationResponse(
     int Id,
     string Name,
     string? Description,
-    int RoomId);
+    int RoomId,
+    byte[] RowVersion);

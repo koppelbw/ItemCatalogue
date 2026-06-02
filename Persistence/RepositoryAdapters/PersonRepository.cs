@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Domain.Exceptions;
 using Domain.RepositoryPorts;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,7 +9,17 @@ public sealed class PersonRepository(ItemCatalogueDbContext dbContext) : IPerson
 {
     public async Task<Person?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await dbContext.People.FindAsync([id], cancellationToken);
+        // Read-only path: not tracked, since the result is only mapped to a response.
+        return await dbContext.People
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+    }
+
+    public async Task<Person?> GetForUpdateAsync(int id, CancellationToken cancellationToken = default)
+    {
+        // Tracked (no AsNoTracking) so SaveChangesAsync emits a minimal, diff-based UPDATE.
+        return await dbContext.People
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 
     public async Task<IReadOnlyList<Person>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -27,8 +38,19 @@ public sealed class PersonRepository(ItemCatalogueDbContext dbContext) : IPerson
 
     public async Task UpdateAsync(Person person, CancellationToken cancellationToken = default)
     {
-        dbContext.People.Update(person);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        // person is already tracked (loaded via GetForUpdateAsync), so no Update() call is needed.
+        // Drive the concurrency check off the client's token carried on the entity.
+        dbContext.Entry(person).Property(p => p.RowVersion).OriginalValue = person.RowVersion;
+
+        try
+        {
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            throw new ConcurrencyConflictException(
+                $"Person with id {person.Id} was modified by another process. Reload and try again.", ex);
+        }
     }
 
     public async Task<int> DeleteAsync(int id, CancellationToken cancellationToken = default)

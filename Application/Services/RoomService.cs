@@ -30,7 +30,7 @@ public sealed class RoomService(IRoomRepository roomRepository) : IRoomService
 
     public async Task<RoomResponse> UpdateAsync(UpdateRoomRequest request, CancellationToken cancellationToken = default)
     {
-        var room = await roomRepository.GetByIdAsync(request.Id, cancellationToken)
+        var room = await roomRepository.GetForUpdateAsync(request.Id, cancellationToken)
             ?? throw new InvalidOperationException($"Room with id {request.Id} not found.");
 
         request.ApplyTo(room);

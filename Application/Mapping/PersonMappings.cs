@@ -13,9 +13,11 @@ public static class PersonMappings
     public static void ApplyTo(this UpdatePersonRequest request, Person person)
     {
         person.Name = request.Name;
+        person.RowVersion = request.RowVersion;
     }
 
     public static PersonResponse ToResponse(this Person person) => new(
         person.Id,
-        person.Name);
+        person.Name,
+        person.RowVersion);
 }
