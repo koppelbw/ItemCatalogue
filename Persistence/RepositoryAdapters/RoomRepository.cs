@@ -6,36 +6,36 @@ namespace Persistence.RepositoryAdapters;
 
 public sealed class RoomRepository(ItemCatalogueDbContext dbContext) : IRoomRepository
 {
-    public async Task<Room?> GetByIdAsync(int id)
+    public async Task<Room?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await dbContext.Rooms.FindAsync(id);
+        return await dbContext.Rooms.FindAsync([id], cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Room>> GetAllAsync()
+    public async Task<IReadOnlyList<Room>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await dbContext.Rooms
             .AsNoTracking()
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<int> InsertAsync(Room room)
+    public async Task<int> InsertAsync(Room room, CancellationToken cancellationToken = default)
     {
         dbContext.Rooms.Add(room);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(cancellationToken);
         return room.Id;
     }
 
-    public async Task UpdateAsync(Room room)
+    public async Task UpdateAsync(Room room, CancellationToken cancellationToken = default)
     {
         dbContext.Rooms.Update(room);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<int> DeleteAsync(int id)
+    public async Task<int> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         var rowsAffected = await dbContext.Rooms
             .Where(r => r.Id == id)
-            .ExecuteDeleteAsync();
+            .ExecuteDeleteAsync(cancellationToken);
 
         if (rowsAffected == 0)
         {

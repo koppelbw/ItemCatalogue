@@ -4,13 +4,13 @@ namespace Domain.RepositoryPorts;
 
 public interface IRoomRepository
 {
-    Task<Room?> GetByIdAsync(int id);
+    Task<Room?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<Room>> GetAllAsync();
+    Task<IReadOnlyList<Room>> GetAllAsync(CancellationToken cancellationToken = default);
 
-    Task<int> InsertAsync(Room room);
+    Task<int> InsertAsync(Room room, CancellationToken cancellationToken = default);
 
-    Task UpdateAsync(Room room);
+    Task UpdateAsync(Room room, CancellationToken cancellationToken = default);
 
-    Task<int> DeleteAsync(int id);
+    Task<int> DeleteAsync(int id, CancellationToken cancellationToken = default);
 }

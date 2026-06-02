@@ -4,13 +4,13 @@ namespace Domain.RepositoryPorts;
 
 public interface ILocationRepository
 {
-    Task<Location?> GetByIdAsync(int id);
+    Task<Location?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<Location>> GetAllAsync();
+    Task<IReadOnlyList<Location>> GetAllAsync(CancellationToken cancellationToken = default);
 
-    Task<int> InsertAsync(Location location);
+    Task<int> InsertAsync(Location location, CancellationToken cancellationToken = default);
 
-    Task UpdateAsync(Location location);
+    Task UpdateAsync(Location location, CancellationToken cancellationToken = default);
 
-    Task<int> DeleteAsync(int id);
+    Task<int> DeleteAsync(int id, CancellationToken cancellationToken = default);
 }
