@@ -7,6 +7,8 @@ public interface IItemRepository
 {
     Task<Item?> GetItemByIdAsync(int id);
 
+    Task<Item?> GetItemForUpdateAsync(int id);
+
     Task<IReadOnlyList<Item>> GetAllItemsAsync();
 
     Task<int> InsertItemAsync(Item item);

@@ -31,7 +31,7 @@ public sealed class ItemService(IItemRepository itemRepository) : IItemService
 
     public async Task<ItemResponse> UpdateAsync(UpdateItemRequest request)
     {
-        var item = await itemRepository.GetItemByIdAsync(request.Id)
+        var item = await itemRepository.GetItemForUpdateAsync(request.Id)
             ?? throw new InvalidOperationException($"Item with id {request.Id} not found.");
 
         request.ApplyTo(item);
