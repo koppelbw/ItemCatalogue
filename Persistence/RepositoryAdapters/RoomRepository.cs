@@ -1,6 +1,7 @@
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.RepositoryPorts;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace Persistence.RepositoryAdapters;
@@ -55,15 +56,26 @@ public sealed class RoomRepository(ItemCatalogueDbContext dbContext) : IRoomRepo
 
     public async Task<int> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var rowsAffected = await dbContext.Rooms
-            .Where(r => r.Id == id)
-            .ExecuteDeleteAsync(cancellationToken);
-
-        if (rowsAffected == 0)
+        try
         {
-            throw new InvalidOperationException($"Room with id {id} not found.");
-        }
+            var rowsAffected = await dbContext.Rooms
+                .Where(r => r.Id == id)
+                .ExecuteDeleteAsync(cancellationToken);
 
-        return rowsAffected;
+            if (rowsAffected == 0)
+            {
+                throw new InvalidOperationException($"Room with id {id} not found.");
+            }
+
+            return rowsAffected;
+        }
+        catch (SqlException ex) when (ex.Number == 547)
+        {
+            // 547 = FK reference constraint violation. The Room is still referenced by one or
+            // more Locations (DeleteBehavior.Restrict). Translate the provider error into a
+            // domain exception so upper layers can map it to HTTP 409 without referencing EF.
+            throw new EntityInUseException(
+                $"Room with id {id} cannot be deleted because it is still referenced by one or more locations.", ex);
+        }
     }
 }

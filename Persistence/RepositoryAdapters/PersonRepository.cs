@@ -1,6 +1,7 @@
 using Domain.Entities;
 using Domain.Exceptions;
 using Domain.RepositoryPorts;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace Persistence.RepositoryAdapters;
@@ -55,15 +56,26 @@ public sealed class PersonRepository(ItemCatalogueDbContext dbContext) : IPerson
 
     public async Task<int> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var rowsAffected = await dbContext.People
-            .Where(p => p.Id == id)
-            .ExecuteDeleteAsync(cancellationToken);
-
-        if (rowsAffected == 0)
+        try
         {
-            throw new InvalidOperationException($"Person with id {id} not found.");
-        }
+            var rowsAffected = await dbContext.People
+                .Where(p => p.Id == id)
+                .ExecuteDeleteAsync(cancellationToken);
 
-        return rowsAffected;
+            if (rowsAffected == 0)
+            {
+                throw new InvalidOperationException($"Person with id {id} not found.");
+            }
+
+            return rowsAffected;
+        }
+        catch (SqlException ex) when (ex.Number == 547)
+        {
+            // 547 = FK reference constraint violation. Defensive: today nothing restricts a
+            // Person delete (Item.OwnerId is SetNull), but translate it consistently so a
+            // future restricted FK surfaces as a domain exception rather than a raw SQL error.
+            throw new EntityInUseException(
+                $"Person with id {id} cannot be deleted because it is still referenced by another record.", ex);
+        }
     }
 }
