@@ -1,6 +1,6 @@
 ﻿namespace Domain.Entities;
 
-public class Room
+public class Room : IEntity
 {
     public int Id { get; set; }
 

@@ -1,56 +1,33 @@
 using Domain.Entities;
 using Domain.Enums;
-using Domain.Exceptions;
 using Domain.RepositoryPorts;
 using Microsoft.EntityFrameworkCore;
 
 namespace Persistence.RepositoryAdapters;
 
-public sealed class ItemRepository(ItemCatalogueDbContext dbContext) : IItemRepository
+// Reuses GenericRepository<Item> for the standard read/insert/update plumbing, but exposes a
+// soft delete instead of the generic hard delete (hence IItemRepository, not IGenericRepository<Item>).
+public sealed class ItemRepository(ItemCatalogueDbContext dbContext)
+    : GenericRepository<Item>(dbContext), IItemRepository
 {
-    public async Task<Item?> GetItemByIdAsync(int id, CancellationToken cancellationToken = default)
-    {
-        return await dbContext.Items
-            .Include(i => i.Location)
-            .Include(i => i.Owner)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
-    }
+    // Read paths eager-load the Location and Owner graph for display.
+    protected override IQueryable<Item> ReadQuery()
+        => EntitySet.Include(i => i.Location).Include(i => i.Owner).AsNoTracking();
 
-    public async Task<Item?> GetItemForUpdateAsync(int id, CancellationToken cancellationToken = default)
+    public override Task UpdateAsync(Item item, CancellationToken cancellationToken = default)
     {
-        // Tracked (no AsNoTracking) so SaveChangesAsync emits a minimal, diff-based UPDATE.
-        // No Includes: updates only touch the Item's own columns, so the Location/Owner
-        // graph is intentionally left out to avoid loading or over-posting related rows.
-        return await dbContext.Items
-            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
-    }
-
-    public async Task<IReadOnlyList<Item>> GetAllItemsAsync(CancellationToken cancellationToken = default)
-    {
-        return await dbContext.Items
-            //.Where(i => !i.IsDeleted) // TODO: Deleted here means more like, no longer tracked but I don't want to lose the data, so maybe we should rename it to IsArchived or something like that. For now, we will just return all items and let the caller decide what to do with deleted items.
-            .Include(i => i.Location)
-            .Include(i => i.Owner)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
-    }
-
-    public async Task<int> InsertItemAsync(Item item, CancellationToken cancellationToken = default)
-    {
-        dbContext.Items.Add(item);
-        await dbContext.SaveChangesAsync(cancellationToken);
-        return item.Id;
+        item.LastModifiedDate = DateTime.UtcNow;
+        return base.UpdateAsync(item, cancellationToken);
     }
 
     public async Task<int> SoftDeleteItemByIdAsync(int id, DeletedReason reason, CancellationToken cancellationToken = default)
     {
-        var rowsAffected = await dbContext.Items
-        .Where(i => i.Id == id)
-        .ExecuteUpdateAsync(s => s
-            .SetProperty(i => i.IsDeleted, true)
-            .SetProperty(i => i.ReasonForDeletion, reason)
-            .SetProperty(i => i.LastModifiedDate, DateTime.UtcNow), cancellationToken);
+        var rowsAffected = await EntitySet
+            .Where(i => i.Id == id)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(i => i.IsDeleted, true)
+                .SetProperty(i => i.ReasonForDeletion, reason)
+                .SetProperty(i => i.LastModifiedDate, DateTime.UtcNow), cancellationToken);
 
         if (rowsAffected == 0)
         {
@@ -58,26 +35,5 @@ public sealed class ItemRepository(ItemCatalogueDbContext dbContext) : IItemRepo
         }
 
         return rowsAffected;
-    }
-
-    public async Task UpdateItemAsync(Item item, CancellationToken cancellationToken = default)
-    {
-        item.LastModifiedDate = DateTime.UtcNow;
-        //dbContext.Items.Update(item); // Not needed because the item is already being tracked by the dbContext, so we just need to call SaveChangesAsync to persist the changes to the database.
-
-        // Drive the optimistic-concurrency check off the client's token (carried on the entity)
-        // rather than the value freshly read from the database. EF emits the check as
-        // "AND RowVersion = @original" in the UPDATE's WHERE clause.
-        dbContext.Entry(item).Property(i => i.RowVersion).OriginalValue = item.RowVersion;
-
-        try
-        {
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException ex)
-        {
-            throw new ConcurrencyConflictException(
-                $"Item with id {item.Id} was modified by another process. Reload and try again.", ex);
-        }
     }
 }
