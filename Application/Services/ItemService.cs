@@ -2,6 +2,7 @@ using Application.DTOs;
 using Application.Mapping;
 using Application.ServicePorts;
 using Domain.Enums;
+using Domain.Pagination;
 using Domain.RepositoryPorts;
 
 namespace Application.Services;
@@ -16,10 +17,10 @@ public sealed class ItemService(IItemRepository itemRepository) : IItemService
         return item.ToResponse();
     }
 
-    public async Task<IReadOnlyList<ItemResponse>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<ItemResponse>> GetAllAsync(PaginationQuery pagination, CancellationToken cancellationToken = default)
     {
-        var items = await itemRepository.GetAllAsync(cancellationToken);
-        return items.Select(i => i.ToResponse()).ToList();
+        var page = await itemRepository.GetAllAsync(PageRequest.Create(pagination.Page, pagination.PageSize), cancellationToken);
+        return page.ToResponse(i => i.ToResponse());
     }
 
     public async Task<ItemResponse> CreateAsync(CreateItemRequest request, CancellationToken cancellationToken = default)

@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Domain.Exceptions;
+using Domain.Pagination;
 using Domain.RepositoryPorts;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,7 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
         return EntitySet.AsNoTracking();
     }
 
+    // async was intentionally left off because the method is a thin pass-through, and adding it would only cost a state-machine allocation for no benefit.
     public virtual Task<TEntity?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return ReadQuery().FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
@@ -39,9 +41,21 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
         return EntitySet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 
-    public virtual async Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
+    public virtual async Task<PagedResult<TEntity>> GetAllAsync(PageRequest page, CancellationToken cancellationToken = default)
     {
-        return await ReadQuery().ToListAsync(cancellationToken);
+        // OFFSET/FETCH requires a deterministic order; Id (the clustered PK) is stable.
+        var query = ReadQuery().OrderBy(e => e.Id);
+
+        // Count over the full filtered set, then fetch only the requested window. The COUNT
+        // is a separate round trip but keeps the page payload bounded regardless of table size.
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await query
+            .Skip(page.Skip)
+            .Take(page.PageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<TEntity>(items, totalCount, page.Page, page.PageSize);
     }
 
     public virtual async Task<int> InsertAsync(TEntity entity, CancellationToken cancellationToken = default)

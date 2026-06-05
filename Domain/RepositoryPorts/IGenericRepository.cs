@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Domain.Pagination;
 
 namespace Domain.RepositoryPorts;
 
@@ -10,7 +11,7 @@ public interface IGenericRepository<TEntity> where TEntity : class, IEntity
 
     Task<TEntity?> GetForUpdateAsync(int id, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<TEntity>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<PagedResult<TEntity>> GetAllAsync(PageRequest page, CancellationToken cancellationToken = default);
 
     Task<int> InsertAsync(TEntity entity, CancellationToken cancellationToken = default);
 

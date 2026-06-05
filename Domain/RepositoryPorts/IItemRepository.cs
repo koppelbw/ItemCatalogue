@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Pagination;
 
 namespace Domain.RepositoryPorts;
 
@@ -12,7 +13,7 @@ public interface IItemRepository
 
     Task<Item?> GetForUpdateAsync(int id, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<Item>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<PagedResult<Item>> GetAllAsync(PageRequest page, CancellationToken cancellationToken = default);
 
     Task<int> InsertAsync(Item item, CancellationToken cancellationToken = default);
 

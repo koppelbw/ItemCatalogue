@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.Mapping;
 using Application.ServicePorts;
+using Domain.Pagination;
 using Domain.RepositoryPorts;
 
 namespace Application.Services;
@@ -15,10 +16,10 @@ public sealed class PersonService(IPersonRepository personRepository) : IPersonS
         return person.ToResponse();
     }
 
-    public async Task<IReadOnlyList<PersonResponse>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<PersonResponse>> GetAllAsync(PaginationQuery pagination, CancellationToken cancellationToken = default)
     {
-        var people = await personRepository.GetAllAsync(cancellationToken);
-        return people.Select(p => p.ToResponse()).ToList();
+        var page = await personRepository.GetAllAsync(PageRequest.Create(pagination.Page, pagination.PageSize), cancellationToken);
+        return page.ToResponse(p => p.ToResponse());
     }
 
     public async Task<PersonResponse> CreateAsync(CreatePersonRequest request, CancellationToken cancellationToken = default)

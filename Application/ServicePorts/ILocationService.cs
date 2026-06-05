@@ -6,7 +6,7 @@ public interface ILocationService
 {
     Task<LocationResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<LocationResponse>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<PagedResponse<LocationResponse>> GetAllAsync(PaginationQuery pagination, CancellationToken cancellationToken = default);
 
     Task<LocationResponse> CreateAsync(CreateLocationRequest request, CancellationToken cancellationToken = default);
 

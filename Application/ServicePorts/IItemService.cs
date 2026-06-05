@@ -7,7 +7,7 @@ public interface IItemService
 {
     Task<ItemResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<ItemResponse>> GetAllAsync(CancellationToken cancellationToken = default);
+    Task<PagedResponse<ItemResponse>> GetAllAsync(PaginationQuery pagination, CancellationToken cancellationToken = default);
 
     Task<ItemResponse> CreateAsync(CreateItemRequest request, CancellationToken cancellationToken = default);
 

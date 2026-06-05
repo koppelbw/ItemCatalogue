@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.Mapping;
 using Application.ServicePorts;
+using Domain.Pagination;
 using Domain.RepositoryPorts;
 
 namespace Application.Services;
@@ -15,10 +16,10 @@ public sealed class LocationService(ILocationRepository locationRepository) : IL
         return location.ToResponse();
     }
 
-    public async Task<IReadOnlyList<LocationResponse>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<LocationResponse>> GetAllAsync(PaginationQuery pagination, CancellationToken cancellationToken = default)
     {
-        var locations = await locationRepository.GetAllAsync(cancellationToken);
-        return locations.Select(l => l.ToResponse()).ToList();
+        var page = await locationRepository.GetAllAsync(PageRequest.Create(pagination.Page, pagination.PageSize), cancellationToken);
+        return page.ToResponse(l => l.ToResponse());
     }
 
     public async Task<LocationResponse> CreateAsync(CreateLocationRequest request, CancellationToken cancellationToken = default)

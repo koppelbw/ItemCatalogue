@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.Mapping;
 using Application.ServicePorts;
+using Domain.Pagination;
 using Domain.RepositoryPorts;
 
 namespace Application.Services;
@@ -15,10 +16,10 @@ public sealed class RoomService(IRoomRepository roomRepository) : IRoomService
         return room.ToResponse();
     }
 
-    public async Task<IReadOnlyList<RoomResponse>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<RoomResponse>> GetAllAsync(PaginationQuery pagination, CancellationToken cancellationToken = default)
     {
-        var rooms = await roomRepository.GetAllAsync(cancellationToken);
-        return rooms.Select(r => r.ToResponse()).ToList();
+        var page = await roomRepository.GetAllAsync(PageRequest.Create(pagination.Page, pagination.PageSize), cancellationToken);
+        return page.ToResponse(r => r.ToResponse());
     }
 
     public async Task<RoomResponse> CreateAsync(CreateRoomRequest request, CancellationToken cancellationToken = default)
