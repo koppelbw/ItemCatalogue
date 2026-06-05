@@ -72,10 +72,6 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
             builder.Property(e => e.ReasonForDeletion)
               .HasConversion<string>();
 
-            builder.Property(i => i.CreatedDate)
-                .HasDefaultValueSql("GETUTCDATE()");
-
-            builder.Property(i => i.LastModifiedDate);
 
             // Maps RowVersion to a SQL Server rowversion column and registers it as a
             // concurrency token, so every UPDATE/DELETE carries "AND RowVersion = @original".
@@ -172,5 +168,17 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
             builder.Property(p => p.RowVersion)
                 .IsRowVersion();
         });
+
+        // Audit columns are uniform across every IAuditable entity, so configure them once here
+        // rather than repeating the mapping in each entity block. CreatedDate keeps a GETUTCDATE()
+        // default as a fallback for out-of-app inserts (e.g. post-deployment seed scripts); for
+        // app writes the AuditingSaveChangesInterceptor supplies an explicit value that wins.
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes()
+                     .Where(t => typeof(IAuditable).IsAssignableFrom(t.ClrType)))
+        {
+            modelBuilder.Entity(entityType.ClrType)
+                .Property(nameof(IAuditable.CreatedDate))
+                .HasDefaultValueSql("GETUTCDATE()");
+        }
     }
 }

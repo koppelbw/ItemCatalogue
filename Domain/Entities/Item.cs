@@ -2,7 +2,7 @@
 
 namespace Domain.Entities;
 
-public class Item : IEntity
+public class Item : IEntity, IAuditable
 {
     public int Id { get; set; }
 

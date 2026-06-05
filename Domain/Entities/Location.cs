@@ -1,6 +1,6 @@
 ﻿namespace Domain.Entities;
 
-public class Location : IEntity
+public class Location : IEntity, IAuditable
 {
     public int Id { get; set; }
 
@@ -12,6 +12,10 @@ public class Location : IEntity
     public int RoomId { get; set; }
 
     public Room? Room { get; set; }
+
+    public DateTime CreatedDate { get; set; }
+
+    public DateTime? LastModifiedDate { get; set; }
 
     // Optimistic concurrency token maintained by SQL Server. See Item.RowVersion.
     public byte[] RowVersion { get; set; } = [];

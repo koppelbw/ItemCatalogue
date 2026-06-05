@@ -1,6 +1,6 @@
 ﻿namespace Domain.Entities;
 
-public class Person : IEntity
+public class Person : IEntity, IAuditable
 {
     public int Id { get; set; }
 
@@ -8,6 +8,10 @@ public class Person : IEntity
 
 
     public List<Item>? Items { get; set; }
+
+    public DateTime CreatedDate { get; set; }
+
+    public DateTime? LastModifiedDate { get; set; }
 
     // Optimistic concurrency token maintained by SQL Server. See Item.RowVersion.
     public byte[] RowVersion { get; set; } = [];

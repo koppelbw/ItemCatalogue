@@ -3,6 +3,8 @@ CREATE TABLE [Location] (
     [Name] NVARCHAR(100) NOT NULL,
     [Description] NVARCHAR(500) NULL,
     [RoomId] INT NOT NULL,
+    [CreatedDate] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    [LastModifiedDate] DATETIME2 NULL,
     [RowVersion] ROWVERSION NOT NULL,
 
     -- Foreign Key to Room

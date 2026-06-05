@@ -2,5 +2,7 @@ CREATE TABLE [Room] (
     [Id] INT NOT NULL PRIMARY KEY IDENTITY(1, 1),
     [Name] NVARCHAR(100) NOT NULL,
     [Description] NVARCHAR(500) NULL,
+    [CreatedDate] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+    [LastModifiedDate] DATETIME2 NULL,
     [RowVersion] ROWVERSION NOT NULL
 );
