@@ -1,6 +1,5 @@
 using Application.DTOs;
 using Application.ServicePorts;
-using Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ItemCatalogueAPI.Controllers;
@@ -27,15 +26,8 @@ public sealed class RoomController(IRoomService roomService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RoomResponse>> GetById(int id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var room = await roomService.GetByIdAsync(id, cancellationToken);
-            return Ok(room);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new ProblemDetails { Title = "Room not found", Detail = ex.Message });
-        }
+        var room = await roomService.GetByIdAsync(id, cancellationToken);
+        return Ok(room);
     }
 
     // POST api/rooms
@@ -65,20 +57,8 @@ public sealed class RoomController(IRoomService roomService) : ControllerBase
             });
         }
 
-        try
-        {
-            var updated = await roomService.UpdateAsync(request, cancellationToken);
-            return Ok(updated);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new ProblemDetails { Title = "Room not found", Detail = ex.Message });
-        }
-        catch (ConcurrencyConflictException ex)
-        {
-            // The room was modified by another process since the client read it.
-            return Conflict(new ProblemDetails { Title = "Concurrency conflict", Detail = ex.Message });
-        }
+        var updated = await roomService.UpdateAsync(request, cancellationToken);
+        return Ok(updated);
     }
 
     // DELETE api/rooms/5
@@ -90,18 +70,7 @@ public sealed class RoomController(IRoomService roomService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        try
-        {
-            await roomService.DeleteAsync(id, cancellationToken);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new ProblemDetails { Title = "Room not found", Detail = ex.Message });
-        }
-        catch (EntityInUseException ex)
-        {
-            return Conflict(new ProblemDetails { Title = "Room in use", Detail = ex.Message });
-        }
+        await roomService.DeleteAsync(id, cancellationToken);
+        return NoContent();
     }
 }

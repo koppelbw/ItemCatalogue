@@ -1,6 +1,5 @@
 using Application.DTOs;
 using Application.ServicePorts;
-using Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ItemCatalogueAPI.Controllers;
@@ -27,15 +26,8 @@ public sealed class PersonController(IPersonService personService) : ControllerB
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PersonResponse>> GetById(int id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var person = await personService.GetByIdAsync(id, cancellationToken);
-            return Ok(person);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new ProblemDetails { Title = "Person not found", Detail = ex.Message });
-        }
+        var person = await personService.GetByIdAsync(id, cancellationToken);
+        return Ok(person);
     }
 
     // POST api/persons
@@ -65,20 +57,8 @@ public sealed class PersonController(IPersonService personService) : ControllerB
             });
         }
 
-        try
-        {
-            var updated = await personService.UpdateAsync(request, cancellationToken);
-            return Ok(updated);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new ProblemDetails { Title = "Person not found", Detail = ex.Message });
-        }
-        catch (ConcurrencyConflictException ex)
-        {
-            // The person was modified by another process since the client read it.
-            return Conflict(new ProblemDetails { Title = "Concurrency conflict", Detail = ex.Message });
-        }
+        var updated = await personService.UpdateAsync(request, cancellationToken);
+        return Ok(updated);
     }
 
     // DELETE api/persons/5
@@ -90,18 +70,7 @@ public sealed class PersonController(IPersonService personService) : ControllerB
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        try
-        {
-            await personService.DeleteAsync(id, cancellationToken);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new ProblemDetails { Title = "Person not found", Detail = ex.Message });
-        }
-        catch (EntityInUseException ex)
-        {
-            return Conflict(new ProblemDetails { Title = "Person in use", Detail = ex.Message });
-        }
+        await personService.DeleteAsync(id, cancellationToken);
+        return NoContent();
     }
 }

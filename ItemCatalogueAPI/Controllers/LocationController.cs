@@ -1,6 +1,5 @@
 using Application.DTOs;
 using Application.ServicePorts;
-using Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ItemCatalogueAPI.Controllers;
@@ -27,15 +26,8 @@ public sealed class LocationController(ILocationService locationService) : Contr
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<LocationResponse>> GetById(int id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var location = await locationService.GetByIdAsync(id, cancellationToken);
-            return Ok(location);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new ProblemDetails { Title = "Location not found", Detail = ex.Message });
-        }
+        var location = await locationService.GetByIdAsync(id, cancellationToken);
+        return Ok(location);
     }
 
     // POST api/locations
@@ -65,20 +57,8 @@ public sealed class LocationController(ILocationService locationService) : Contr
             });
         }
 
-        try
-        {
-            var updated = await locationService.UpdateAsync(request, cancellationToken);
-            return Ok(updated);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new ProblemDetails { Title = "Location not found", Detail = ex.Message });
-        }
-        catch (ConcurrencyConflictException ex)
-        {
-            // The location was modified by another process since the client read it.
-            return Conflict(new ProblemDetails { Title = "Concurrency conflict", Detail = ex.Message });
-        }
+        var updated = await locationService.UpdateAsync(request, cancellationToken);
+        return Ok(updated);
     }
 
     // DELETE api/locations/5
@@ -90,18 +70,7 @@ public sealed class LocationController(ILocationService locationService) : Contr
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        try
-        {
-            await locationService.DeleteAsync(id, cancellationToken);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new ProblemDetails { Title = "Location not found", Detail = ex.Message });
-        }
-        catch (EntityInUseException ex)
-        {
-            return Conflict(new ProblemDetails { Title = "Location in use", Detail = ex.Message });
-        }
+        await locationService.DeleteAsync(id, cancellationToken);
+        return NoContent();
     }
 }

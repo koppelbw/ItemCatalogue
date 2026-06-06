@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.Mapping;
 using Application.ServicePorts;
+using Domain.Exceptions;
 using Domain.Pagination;
 using Domain.RepositoryPorts;
 
@@ -11,7 +12,7 @@ public sealed class PersonService(IPersonRepository personRepository) : IPersonS
     public async Task<PersonResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var person = await personRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new InvalidOperationException($"Person with id {id} not found.");
+            ?? throw NotFoundException.For("Person", id);
 
         return person.ToResponse();
     }
@@ -32,7 +33,7 @@ public sealed class PersonService(IPersonRepository personRepository) : IPersonS
     public async Task<PersonResponse> UpdateAsync(UpdatePersonRequest request, CancellationToken cancellationToken = default)
     {
         var person = await personRepository.GetForUpdateAsync(request.Id, cancellationToken)
-            ?? throw new InvalidOperationException($"Person with id {request.Id} not found.");
+            ?? throw NotFoundException.For("Person", request.Id);
 
         request.ApplyTo(person);
         await personRepository.UpdateAsync(person, cancellationToken);

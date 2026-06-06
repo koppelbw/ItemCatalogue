@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.Mapping;
 using Application.ServicePorts;
+using Domain.Exceptions;
 using Domain.Pagination;
 using Domain.RepositoryPorts;
 
@@ -11,7 +12,7 @@ public sealed class RoomService(IRoomRepository roomRepository) : IRoomService
     public async Task<RoomResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var room = await roomRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new InvalidOperationException($"Room with id {id} not found.");
+            ?? throw NotFoundException.For("Room", id);
 
         return room.ToResponse();
     }
@@ -32,7 +33,7 @@ public sealed class RoomService(IRoomRepository roomRepository) : IRoomService
     public async Task<RoomResponse> UpdateAsync(UpdateRoomRequest request, CancellationToken cancellationToken = default)
     {
         var room = await roomRepository.GetForUpdateAsync(request.Id, cancellationToken)
-            ?? throw new InvalidOperationException($"Room with id {request.Id} not found.");
+            ?? throw NotFoundException.For("Room", request.Id);
 
         request.ApplyTo(room);
         await roomRepository.UpdateAsync(room, cancellationToken);

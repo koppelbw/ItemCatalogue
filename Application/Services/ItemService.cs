@@ -2,6 +2,7 @@ using Application.DTOs;
 using Application.Mapping;
 using Application.ServicePorts;
 using Domain.Enums;
+using Domain.Exceptions;
 using Domain.Pagination;
 using Domain.RepositoryPorts;
 
@@ -12,7 +13,7 @@ public sealed class ItemService(IItemRepository itemRepository) : IItemService
     public async Task<ItemResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var item = await itemRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new InvalidOperationException($"Item with id {id} not found.");
+            ?? throw NotFoundException.For("Item", id);
 
         return item.ToResponse();
     }
@@ -33,7 +34,7 @@ public sealed class ItemService(IItemRepository itemRepository) : IItemService
     public async Task<ItemResponse> UpdateAsync(UpdateItemRequest request, CancellationToken cancellationToken = default)
     {
         var item = await itemRepository.GetForUpdateAsync(request.Id, cancellationToken)
-            ?? throw new InvalidOperationException($"Item with id {request.Id} not found.");
+            ?? throw NotFoundException.For("Item", request.Id);
 
         request.ApplyTo(item);
         await itemRepository.UpdateAsync(item, cancellationToken);

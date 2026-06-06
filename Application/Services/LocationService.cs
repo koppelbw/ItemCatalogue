@@ -1,6 +1,7 @@
 using Application.DTOs;
 using Application.Mapping;
 using Application.ServicePorts;
+using Domain.Exceptions;
 using Domain.Pagination;
 using Domain.RepositoryPorts;
 
@@ -11,7 +12,7 @@ public sealed class LocationService(ILocationRepository locationRepository) : IL
     public async Task<LocationResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var location = await locationRepository.GetByIdAsync(id, cancellationToken)
-            ?? throw new InvalidOperationException($"Location with id {id} not found.");
+            ?? throw NotFoundException.For("Location", id);
 
         return location.ToResponse();
     }
@@ -32,7 +33,7 @@ public sealed class LocationService(ILocationRepository locationRepository) : IL
     public async Task<LocationResponse> UpdateAsync(UpdateLocationRequest request, CancellationToken cancellationToken = default)
     {
         var location = await locationRepository.GetForUpdateAsync(request.Id, cancellationToken)
-            ?? throw new InvalidOperationException($"Location with id {request.Id} not found.");
+            ?? throw NotFoundException.For("Location", request.Id);
 
         request.ApplyTo(location);
         await locationRepository.UpdateAsync(location, cancellationToken);

@@ -1,7 +1,6 @@
 using Application.DTOs;
 using Application.ServicePorts;
 using Domain.Enums;
-using Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ItemCatalogueAPI.Controllers;
@@ -28,15 +27,8 @@ public sealed class ItemController(IItemService itemService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ItemResponse>> GetById(int id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var item = await itemService.GetByIdAsync(id, cancellationToken);
-            return Ok(item);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new ProblemDetails { Title = "Item not found", Detail = ex.Message });
-        }
+        var item = await itemService.GetByIdAsync(id, cancellationToken);
+        return Ok(item);
     }
 
     // POST api/items
@@ -66,20 +58,8 @@ public sealed class ItemController(IItemService itemService) : ControllerBase
             });
         }
 
-        try
-        {
-            var updated = await itemService.UpdateAsync(request, cancellationToken);
-            return Ok(updated);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new ProblemDetails { Title = "Item not found", Detail = ex.Message });
-        }
-        catch (ConcurrencyConflictException ex)
-        {
-            // The item was modified by another process since the client read it.
-            return Conflict(new ProblemDetails { Title = "Concurrency conflict", Detail = ex.Message });
-        }
+        var updated = await itemService.UpdateAsync(request, cancellationToken);
+        return Ok(updated);
     }
 
     // DELETE api/items/5?reason=Broken
@@ -89,14 +69,7 @@ public sealed class ItemController(IItemService itemService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, [FromQuery] DeletedReason reason, CancellationToken cancellationToken)
     {
-        try
-        {
-            await itemService.DeleteAsync(id, reason, cancellationToken);
-            return NoContent();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return NotFound(new ProblemDetails { Title = "Item not found", Detail = ex.Message });
-        }
+        await itemService.DeleteAsync(id, reason, cancellationToken);
+        return NoContent();
     }
 }
