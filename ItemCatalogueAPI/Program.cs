@@ -1,27 +1,16 @@
-using ItemCatalogueAPI.ExceptionHandling;
-using ItemCatalogueAPI.Extensions;
-using Microsoft.EntityFrameworkCore;
-using Persistence;
-using Persistence.Interceptors;
-
-
-#region Set up the WebApplication builder, register services, and configure the DbContext with the auditing interceptor.
+#region Set up the WebApplication builder and register services via per-layer DI modules.
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
-builder.Services.AddApplicationServices();
 
-// Register the centralized exception handling
-builder.Services.AddGlobalExceptionHandling();
+// Each layer owns its own DI wiring. See the layer's DependencyInjection.cs for details. This keeps the composition root clean and decoupled from the layers' internal structure.
+builder.Services
+    .AddApplication()
+    .AddPersistence(builder.Configuration);
 
-// Single clock source for all audit stamping (CreatedDate/LastModifiedDate). Injected into both the auditing interceptor and ItemRepository's ExecuteUpdate soft-delete
-builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton<AuditingSaveChangesInterceptor>();
-
-builder.Services.AddDbContext<ItemCatalogueDbContext>((sp, options) =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("local"))
-           .AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>()));
+// AddGlobalExceptionHandling registers the IExceptionHandler chain + RFC 9457 problem-details responses.
+ builder.Services.AddGlobalExceptionHandling();
 
 #endregion
 
