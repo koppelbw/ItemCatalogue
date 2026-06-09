@@ -1,6 +1,8 @@
 using Application.DTOs;
 using Application.ServicePorts;
 using Domain.Enums;
+using FluentValidation;
+using FluentValidation.Results;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ItemCatalogueAPI.Controllers;
@@ -51,11 +53,12 @@ public sealed class ItemController(IItemService itemService) : ControllerBase
     {
         if (id != request.Id)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Route/body id mismatch",
-                Detail = $"Route id {id} does not match body id {request.Id}.",
-            });
+            // Surface the route/body id mismatch through the same validation-error channel as
+            // FluentValidation failures, so the client gets one consistent 400 problem-details shape.
+            throw new ValidationException(
+            [
+                new ValidationFailure(nameof(request.Id), $"Route id {id} does not match body id {request.Id}."),
+            ]);
         }
 
         var updated = await itemService.UpdateAsync(request, cancellationToken);

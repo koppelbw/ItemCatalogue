@@ -11,6 +11,7 @@ public static class ExceptionHandlingServiceCollectionExtensions
     public static IServiceCollection AddGlobalExceptionHandling(this IServiceCollection services)
     {
         //Handlers are tried in registration order, so the specific handlers come first and GlobalExceptionHandler stays last as the catch-all fallback.
+        services.AddExceptionHandler<ValidationExceptionHandler>();
         services.AddExceptionHandler<NotFoundExceptionHandler>();
         services.AddExceptionHandler<ConflictExceptionHandler>();
         services.AddExceptionHandler<GlobalExceptionHandler>();

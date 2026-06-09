@@ -5,10 +5,14 @@ using Domain.Enums;
 using Domain.Exceptions;
 using Domain.Pagination;
 using Domain.RepositoryPorts;
+using FluentValidation;
 
 namespace Application.Services;
 
-public sealed class ItemService(IItemRepository itemRepository) : IItemService
+public sealed class ItemService(
+    IItemRepository itemRepository, 
+    IValidator<CreateItemRequest> createValidator, 
+    IValidator<UpdateItemRequest> updateValidator) : IItemService
 {
     public async Task<ItemResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
@@ -26,6 +30,8 @@ public sealed class ItemService(IItemRepository itemRepository) : IItemService
 
     public async Task<ItemResponse> CreateAsync(CreateItemRequest request, CancellationToken cancellationToken = default)
     {
+        await createValidator.ValidateAndThrowAsync(request, cancellationToken);
+
         var item = request.ToEntity();
         await itemRepository.InsertAsync(item, cancellationToken);
         return item.ToResponse();
@@ -33,6 +39,8 @@ public sealed class ItemService(IItemRepository itemRepository) : IItemService
 
     public async Task<ItemResponse> UpdateAsync(UpdateItemRequest request, CancellationToken cancellationToken = default)
     {
+        await updateValidator.ValidateAndThrowAsync(request, cancellationToken);
+
         var item = await itemRepository.GetForUpdateAsync(request.Id, cancellationToken)
             ?? throw NotFoundException.For("Item", request.Id);
 

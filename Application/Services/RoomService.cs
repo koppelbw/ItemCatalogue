@@ -4,10 +4,14 @@ using Application.ServicePorts;
 using Domain.Exceptions;
 using Domain.Pagination;
 using Domain.RepositoryPorts;
+using FluentValidation;
 
 namespace Application.Services;
 
-public sealed class RoomService(IRoomRepository roomRepository) : IRoomService
+public sealed class RoomService(
+    IRoomRepository roomRepository,
+    IValidator<CreateRoomRequest> createValidator,
+    IValidator<UpdateRoomRequest> updateValidator) : IRoomService
 {
     public async Task<RoomResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
@@ -25,6 +29,8 @@ public sealed class RoomService(IRoomRepository roomRepository) : IRoomService
 
     public async Task<RoomResponse> CreateAsync(CreateRoomRequest request, CancellationToken cancellationToken = default)
     {
+        await createValidator.ValidateAndThrowAsync(request, cancellationToken);
+
         var room = request.ToEntity();
         await roomRepository.InsertAsync(room, cancellationToken);
         return room.ToResponse();
@@ -32,6 +38,8 @@ public sealed class RoomService(IRoomRepository roomRepository) : IRoomService
 
     public async Task<RoomResponse> UpdateAsync(UpdateRoomRequest request, CancellationToken cancellationToken = default)
     {
+        await updateValidator.ValidateAndThrowAsync(request, cancellationToken);
+
         var room = await roomRepository.GetForUpdateAsync(request.Id, cancellationToken)
             ?? throw NotFoundException.For("Room", request.Id);
 

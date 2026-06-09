@@ -4,10 +4,14 @@ using Application.ServicePorts;
 using Domain.Exceptions;
 using Domain.Pagination;
 using Domain.RepositoryPorts;
+using FluentValidation;
 
 namespace Application.Services;
 
-public sealed class LocationService(ILocationRepository locationRepository) : ILocationService
+public sealed class LocationService(
+    ILocationRepository locationRepository,
+    IValidator<CreateLocationRequest> createValidator,
+    IValidator<UpdateLocationRequest> updateValidator) : ILocationService
 {
     public async Task<LocationResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
@@ -25,6 +29,8 @@ public sealed class LocationService(ILocationRepository locationRepository) : IL
 
     public async Task<LocationResponse> CreateAsync(CreateLocationRequest request, CancellationToken cancellationToken = default)
     {
+        await createValidator.ValidateAndThrowAsync(request, cancellationToken);
+
         var location = request.ToEntity();
         await locationRepository.InsertAsync(location, cancellationToken);
         return location.ToResponse();
@@ -32,6 +38,8 @@ public sealed class LocationService(ILocationRepository locationRepository) : IL
 
     public async Task<LocationResponse> UpdateAsync(UpdateLocationRequest request, CancellationToken cancellationToken = default)
     {
+        await updateValidator.ValidateAndThrowAsync(request, cancellationToken);
+
         var location = await locationRepository.GetForUpdateAsync(request.Id, cancellationToken)
             ?? throw NotFoundException.For("Location", request.Id);
 

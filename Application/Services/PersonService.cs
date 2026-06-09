@@ -4,10 +4,14 @@ using Application.ServicePorts;
 using Domain.Exceptions;
 using Domain.Pagination;
 using Domain.RepositoryPorts;
+using FluentValidation;
 
 namespace Application.Services;
 
-public sealed class PersonService(IPersonRepository personRepository) : IPersonService
+public sealed class PersonService(
+    IPersonRepository personRepository,
+    IValidator<CreatePersonRequest> createValidator,
+    IValidator<UpdatePersonRequest> updateValidator) : IPersonService
 {
     public async Task<PersonResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
@@ -25,6 +29,8 @@ public sealed class PersonService(IPersonRepository personRepository) : IPersonS
 
     public async Task<PersonResponse> CreateAsync(CreatePersonRequest request, CancellationToken cancellationToken = default)
     {
+        await createValidator.ValidateAndThrowAsync(request, cancellationToken);
+
         var person = request.ToEntity();
         await personRepository.InsertAsync(person, cancellationToken);
         return person.ToResponse();
@@ -32,6 +38,8 @@ public sealed class PersonService(IPersonRepository personRepository) : IPersonS
 
     public async Task<PersonResponse> UpdateAsync(UpdatePersonRequest request, CancellationToken cancellationToken = default)
     {
+        await updateValidator.ValidateAndThrowAsync(request, cancellationToken);
+
         var person = await personRepository.GetForUpdateAsync(request.Id, cancellationToken)
             ?? throw NotFoundException.For("Person", request.Id);
 

@@ -1,5 +1,7 @@
 using Application.Services;
 using Application.ServicePorts;
+using Application.Validation;
+using FluentValidation;
 
 // Placed in the Microsoft.Extensions.DependencyInjection namespace (framework convention)
 // so the composition root discovers AddApplication() without an extra using.
@@ -15,6 +17,10 @@ public static class DependencyInjection
         services.AddScoped<IRoomService, RoomService>();
         services.AddScoped<ILocationService, LocationService>();
         services.AddScoped<IPersonService, PersonService>();
+
+        // Discovers every AbstractValidator<T> in this assembly (see Application/Validation)
+        // and registers it as IValidator<T> so services can take a validator by constructor injection.
+        services.AddValidatorsFromAssemblyContaining<CreateItemRequestValidator>();
 
         return services;
     }
