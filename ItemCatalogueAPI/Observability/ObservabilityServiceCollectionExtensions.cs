@@ -1,5 +1,6 @@
 using System.Reflection;
 using Azure.Monitor.OpenTelemetry.Exporter;
+using ItemCatalogueAPI.Observability;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -123,6 +124,16 @@ public static class ObservabilityServiceCollectionExtensions
                 }
             });
         });
+
+        // Surface the exporter decision once at startup (AddObservability runs before the logger
+        // factory exists, so the actual logging happens in the hosted service).
+        var exporterStatus = new TelemetryStartupLogger.ExporterStatus(
+            AzureMonitor: exportToAzureMonitor,
+            Otlp: exportToOtlp,
+            OtlpEndpoint: otlpEndpoint,
+            IsProduction: environment.IsProduction());
+        services.AddSingleton(exporterStatus);
+        services.AddHostedService<TelemetryStartupLogger>();
 
         return services;
     }

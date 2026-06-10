@@ -1,0 +1,22 @@
+# Standalone .NET Aspire Dashboard for viewing local OpenTelemetry (traces / logs / metrics).
+# The dashboard is independent of the API's runtime — it just ingests OTLP and renders it.
+#
+# Run:    docker compose -f docker-compose.aspire.yml up -d
+# UI:     http://localhost:18888   (anonymous access enabled for local dev)
+# OTLP:   http://localhost:4317    (gRPC; the API exports here via OTEL_EXPORTER_OTLP_ENDPOINT)
+# Stop:   docker compose -f docker-compose.aspire.yml down
+#
+# Then launch the API with the "http (Aspire)" / "https (Aspire)" profile (sets the OTLP endpoint),
+# exercise a few endpoints, and watch them appear under Traces / Structured logs / Metrics.
+services:
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:9.0
+    container_name: itemcatalogue-aspire-dashboard
+    environment:
+      # Local-dev convenience: skip the login-token requirement on the dashboard UI.
+      # Do NOT use this in any shared/hosted setting.
+      DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "true"
+    ports:
+      - "18888:18888"   # Dashboard web UI
+      - "4317:18889"    # OTLP gRPC ingestion: host 4317 -> container's 18889
+    restart: unless-stopped
