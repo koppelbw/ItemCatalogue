@@ -1,17 +1,20 @@
 using Application.DTOs;
+using Application.Logging;
 using Application.Mapping;
 using Application.ServicePorts;
 using Domain.Exceptions;
 using Domain.Pagination;
 using Domain.RepositoryPorts;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services;
 
 public sealed class LocationService(
     ILocationRepository locationRepository,
     IValidator<CreateLocationRequest> createValidator,
-    IValidator<UpdateLocationRequest> updateValidator) : ILocationService
+    IValidator<UpdateLocationRequest> updateValidator,
+    ILogger<LocationService> logger) : ILocationService
 {
     public async Task<LocationResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
@@ -33,6 +36,7 @@ public sealed class LocationService(
 
         var location = request.ToEntity();
         await locationRepository.InsertAsync(location, cancellationToken);
+        logger.EntityCreated("Location", location.Id);
         return location.ToResponse();
     }
 
@@ -45,11 +49,14 @@ public sealed class LocationService(
 
         request.ApplyTo(location);
         await locationRepository.UpdateAsync(location, cancellationToken);
+        logger.EntityUpdated("Location", location.Id);
         return location.ToResponse();
     }
 
     public async Task<int> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await locationRepository.DeleteAsync(id, cancellationToken);
+        var rowsAffected = await locationRepository.DeleteAsync(id, cancellationToken);
+        logger.EntityDeleted("Location", id, rowsAffected);
+        return rowsAffected;
     }
 }

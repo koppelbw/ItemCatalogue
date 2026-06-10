@@ -9,6 +9,10 @@ builder.Services
     .AddApplication()
     .AddPersistence(builder.Configuration);
 
+// AddObservability wires OpenTelemetry (traces/metrics/logs) with auto-instrumentation, exporting to
+// Application Insights in Azure (connection string) or OTLP locally (Aspire dashboard / collector).
+builder.Services.AddObservability(builder.Configuration, builder.Environment);
+
 // AddGlobalExceptionHandling registers the IExceptionHandler chain + RFC 9457 problem-details responses.
  builder.Services.AddGlobalExceptionHandling();
 

@@ -1,4 +1,5 @@
 using Application.DTOs;
+using Application.Logging;
 using Application.Mapping;
 using Application.ServicePorts;
 using Domain.Enums;
@@ -6,13 +7,15 @@ using Domain.Exceptions;
 using Domain.Pagination;
 using Domain.RepositoryPorts;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services;
 
 public sealed class ItemService(
-    IItemRepository itemRepository, 
-    IValidator<CreateItemRequest> createValidator, 
-    IValidator<UpdateItemRequest> updateValidator) : IItemService
+    IItemRepository itemRepository,
+    IValidator<CreateItemRequest> createValidator,
+    IValidator<UpdateItemRequest> updateValidator,
+    ILogger<ItemService> logger) : IItemService
 {
     public async Task<ItemResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
@@ -34,6 +37,7 @@ public sealed class ItemService(
 
         var item = request.ToEntity();
         await itemRepository.InsertAsync(item, cancellationToken);
+        logger.EntityCreated("Item", item.Id);
         return item.ToResponse();
     }
 
@@ -46,12 +50,14 @@ public sealed class ItemService(
 
         request.ApplyTo(item);
         await itemRepository.UpdateAsync(item, cancellationToken);
+        logger.EntityUpdated("Item", item.Id);
         return item.ToResponse();
     }
 
     public async Task<int> DeleteAsync(int id, DeletedReason reason, CancellationToken cancellationToken = default)
     {
         var numberOfEffectedRows = await itemRepository.SoftDeleteItemByIdAsync(id, reason, cancellationToken);
+        logger.ItemSoftDeleted(id, reason, numberOfEffectedRows);
         return numberOfEffectedRows;
     }
 }

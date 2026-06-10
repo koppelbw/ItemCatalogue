@@ -1,17 +1,20 @@
 using Application.DTOs;
+using Application.Logging;
 using Application.Mapping;
 using Application.ServicePorts;
 using Domain.Exceptions;
 using Domain.Pagination;
 using Domain.RepositoryPorts;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services;
 
 public sealed class RoomService(
     IRoomRepository roomRepository,
     IValidator<CreateRoomRequest> createValidator,
-    IValidator<UpdateRoomRequest> updateValidator) : IRoomService
+    IValidator<UpdateRoomRequest> updateValidator,
+    ILogger<RoomService> logger) : IRoomService
 {
     public async Task<RoomResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
@@ -33,6 +36,7 @@ public sealed class RoomService(
 
         var room = request.ToEntity();
         await roomRepository.InsertAsync(room, cancellationToken);
+        logger.EntityCreated("Room", room.Id);
         return room.ToResponse();
     }
 
@@ -45,11 +49,14 @@ public sealed class RoomService(
 
         request.ApplyTo(room);
         await roomRepository.UpdateAsync(room, cancellationToken);
+        logger.EntityUpdated("Room", room.Id);
         return room.ToResponse();
     }
 
     public async Task<int> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await roomRepository.DeleteAsync(id, cancellationToken);
+        var rowsAffected = await roomRepository.DeleteAsync(id, cancellationToken);
+        logger.EntityDeleted("Room", id, rowsAffected);
+        return rowsAffected;
     }
 }

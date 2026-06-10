@@ -4,6 +4,8 @@ using Domain.Pagination;
 using Domain.RepositoryPorts;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Persistence.Logging;
 
 namespace Persistence.RepositoryAdapters;
 
@@ -12,11 +14,17 @@ namespace Persistence.RepositoryAdapters;
 // and translation of provider errors into domain exceptions. Concrete repositories
 // override ReadQuery() to eager-load related data, and may override individual
 // methods for entity-specific behaviour.
-public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContext) : IGenericRepository<TEntity>
+public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContext, ILoggerFactory loggerFactory) : IGenericRepository<TEntity>
     where TEntity : class, IEntity
 {
     protected ItemCatalogueDbContext DbContext { get; } = dbContext;
     protected DbSet<TEntity> EntitySet => DbContext.Set<TEntity>();
+
+    // Lazily built so the category reflects the concrete adapter (e.g. RoomRepository) rather than
+    // the generic base, while still being injected once at the base. GetType() needs an instance,
+    // so it can't run in a field initializer — hence the lazy property.
+    private ILogger? _logger;
+    protected ILogger Logger => _logger ??= loggerFactory.CreateLogger(GetType());
 
 
 
@@ -78,6 +86,7 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
         }
         catch (DbUpdateConcurrencyException ex)
         {
+            Logger.ConcurrencyConflict(typeof(TEntity).Name, entity.Id);
             throw new ConcurrencyConflictException(
                 $"{typeof(TEntity).Name} with id {entity.Id} was modified by another process. Reload and try again.", ex);
         }
@@ -103,6 +112,7 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
             // 547 = FK reference constraint violation. The entity is still referenced by another
             // record under a restricted FK. Translate the provider error into a domain exception
             // so upper layers can map it to HTTP 409 without referencing EF.
+            Logger.EntityInUse(typeof(TEntity).Name, id);
             throw new EntityInUseException(
                 $"{typeof(TEntity).Name} with id {id} cannot be deleted because it is still referenced by another record.", ex);
         }

@@ -1,17 +1,20 @@
 using Application.DTOs;
+using Application.Logging;
 using Application.Mapping;
 using Application.ServicePorts;
 using Domain.Exceptions;
 using Domain.Pagination;
 using Domain.RepositoryPorts;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Services;
 
 public sealed class PersonService(
     IPersonRepository personRepository,
     IValidator<CreatePersonRequest> createValidator,
-    IValidator<UpdatePersonRequest> updateValidator) : IPersonService
+    IValidator<UpdatePersonRequest> updateValidator,
+    ILogger<PersonService> logger) : IPersonService
 {
     public async Task<PersonResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
@@ -33,6 +36,7 @@ public sealed class PersonService(
 
         var person = request.ToEntity();
         await personRepository.InsertAsync(person, cancellationToken);
+        logger.EntityCreated("Person", person.Id);
         return person.ToResponse();
     }
 
@@ -45,11 +49,14 @@ public sealed class PersonService(
 
         request.ApplyTo(person);
         await personRepository.UpdateAsync(person, cancellationToken);
+        logger.EntityUpdated("Person", person.Id);
         return person.ToResponse();
     }
 
     public async Task<int> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await personRepository.DeleteAsync(id, cancellationToken);
+        var rowsAffected = await personRepository.DeleteAsync(id, cancellationToken);
+        logger.EntityDeleted("Person", id, rowsAffected);
+        return rowsAffected;
     }
 }

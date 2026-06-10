@@ -2,13 +2,14 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.RepositoryPorts;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Persistence.RepositoryAdapters;
 
 // Reuses GenericRepository<Item> for the standard read/insert/update plumbing, but exposes a
 // soft delete instead of the generic hard delete (hence IItemRepository, not IGenericRepository<Item>).
-public sealed class ItemRepository(ItemCatalogueDbContext dbContext, TimeProvider timeProvider)
-    : GenericRepository<Item>(dbContext), IItemRepository
+public sealed class ItemRepository(ItemCatalogueDbContext dbContext, TimeProvider timeProvider, ILoggerFactory loggerFactory)
+    : GenericRepository<Item>(dbContext, loggerFactory), IItemRepository
 {
     // Read paths eager-load the Location and Owner graph for display.
     protected override IQueryable<Item> ReadQuery()
