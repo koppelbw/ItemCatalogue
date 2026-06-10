@@ -14,4 +14,8 @@
   <Folder Name="/External/Presentation/">
     <Project Path="ItemCatalogueAPI/ItemCatalogueAPI.csproj" />
   </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Application.Tests/Application.Tests.csproj" />
+    <Project Path="Domain.Tests/Domain.Tests.csproj" />
+  </Folder>
 </Solution>
