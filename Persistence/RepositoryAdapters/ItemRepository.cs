@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Exceptions;
 using Domain.RepositoryPorts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -30,7 +31,8 @@ public sealed class ItemRepository(ItemCatalogueDbContext dbContext, TimeProvide
 
         if (rowsAffected == 0)
         {
-            throw new InvalidOperationException($"Item with id {id} not found.");
+            // Domain-level not-found so the API maps it to 404 (see GenericRepository.DeleteAsync).
+            throw NotFoundException.For("Item", id);
         }
 
         return rowsAffected;

@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Exceptions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Persistence.RepositoryAdapters;
 using Persistence.Tests.Infrastructure;
@@ -71,9 +72,9 @@ public class ItemRepositoryTests(SqlServerFixture fixture) : PersistenceTestBase
     }
 
     [Fact]
-    public async Task SoftDeleteItemByIdAsync_WhenMissing_Throws()
+    public async Task SoftDeleteItemByIdAsync_WhenMissing_ThrowsNotFound()
     {
-        await Should.ThrowAsync<InvalidOperationException>(
+        await Should.ThrowAsync<NotFoundException>(
             () => Items().SoftDeleteItemByIdAsync(999_999, DeletedReason.Lost));
     }
 

@@ -123,8 +123,8 @@ public class GenericRepositoryTests(SqlServerFixture fixture) : PersistenceTestB
     }
 
     [Fact]
-    public async Task DeleteAsync_WhenMissing_Throws()
+    public async Task DeleteAsync_WhenMissing_ThrowsNotFound()
     {
-        await Should.ThrowAsync<InvalidOperationException>(() => NewRepository().DeleteAsync(999_999));
+        await Should.ThrowAsync<NotFoundException>(() => NewRepository().DeleteAsync(999_999));
     }
 }

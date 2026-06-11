@@ -162,6 +162,16 @@ public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
     }
 
     [Fact]
+    public async Task Delete_WhenMissing_Returns404()
+    {
+        var response = await Client.DeleteAsync("/api/rooms/999999");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        problem!.Title.ShouldBe("Resource not found");
+    }
+
+    [Fact]
     public async Task Delete_WhileReferencedByLocation_Returns409InUse()
     {
         var room = await CreateRoomAsync();

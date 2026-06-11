@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Application.DTOs;
 using Domain.Enums;
 using ItemCatalogueAPI.Tests.Infrastructure;
+using Microsoft.AspNetCore.Mvc;
 using Shouldly;
 
 namespace ItemCatalogueAPI.Tests;
@@ -57,6 +58,16 @@ public class ItemApiTests(ApiFactory factory) : ApiTestBase(factory)
         item.ShouldNotBeNull();
         item.Name.ShouldBe("Desk Lamp");
         item.ItemTypes.ShouldBe([ItemType.Electronics, ItemType.Books]);
+    }
+
+    [Fact]
+    public async Task Delete_WhenMissing_Returns404()
+    {
+        var response = await Client.DeleteAsync($"/api/items/999999?reason={DeletedReason.Lost}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        problem!.Title.ShouldBe("Resource not found");
     }
 
     [Fact]

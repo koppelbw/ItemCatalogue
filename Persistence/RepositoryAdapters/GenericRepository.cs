@@ -102,7 +102,9 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
 
             if (rowsAffected == 0)
             {
-                throw new InvalidOperationException($"{typeof(TEntity).Name} with id {id} not found.");
+                // Domain-level not-found so the API's NotFoundExceptionHandler maps it to 404,
+                // consistent with the get/update paths (which throw NotFoundException.For).
+                throw NotFoundException.For(typeof(TEntity).Name, id);
             }
 
             return rowsAffected;
