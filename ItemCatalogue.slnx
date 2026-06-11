@@ -17,5 +17,6 @@
   <Folder Name="/Tests/">
     <Project Path="Application.Tests/Application.Tests.csproj" />
     <Project Path="Domain.Tests/Domain.Tests.csproj" />
+    <Project Path="Persistence.Tests/Persistence.Tests.csproj" />
   </Folder>
 </Solution>
