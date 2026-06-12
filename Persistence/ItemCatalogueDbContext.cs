@@ -56,7 +56,7 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
               .HasMaxLength(255);
 
             builder.Property(e => e.Description)
-                  .HasMaxLength(4000);
+                  .HasColumnType("nvarchar(max)");
 
             builder.Property(e => e.Price)
                   .HasColumnType("decimal(18,2)");
@@ -70,7 +70,8 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
                 .HasDefaultValue(false);
 
             builder.Property(e => e.ReasonForDeletion)
-              .HasConversion<string>();
+              .HasConversion<string>()
+              .HasMaxLength(255);
 
 
             // Maps RowVersion to a SQL Server rowversion column and registers it as a
@@ -99,6 +100,9 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
                         ? new List<ItemType>()
                         : JsonSerializer.Deserialize<List<ItemType>>(v, _jsonOptions) ?? new List<ItemType>(), _itemTypesComparer)
                 .HasColumnType("nvarchar(max)")
+                // Mirror the SSDT DEFAULT '[]' so the model knows the column is store-generated on
+                // insert (matches the database for out-of-app writes; SchemaDriftTests enforces this).
+                .HasDefaultValueSql("'[]'")
                 .IsRequired();
         });
 

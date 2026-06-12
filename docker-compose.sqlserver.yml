@@ -1,0 +1,32 @@
+# Local SQL Server for development — full prod parity (real FK constraints, rowversion concurrency,
+# ExecuteUpdate/ExecuteDelete, error 547 translation) that the EF in-memory provider cannot reproduce.
+# Image is pinned to the SAME tag the integration tests use (SqlServerFixture) so dev == test == prod.
+#
+# Prefer init-db.ps1, which starts this container AND publishes the schema from the SSDT project
+# (Database.dacpac) in one step:
+#
+#   ./init-db.ps1
+#
+# Or run the container on its own:
+#   docker compose -f docker-compose.sqlserver.yml up -d
+#   docker compose -f docker-compose.sqlserver.yml down        # stop (data volume kept)
+#   docker compose -f docker-compose.sqlserver.yml down -v     # stop AND wipe the database volume
+#
+# The SA password defaults to a throwaway local value; override with $env:MSSQL_SA_PASSWORD before
+# 'up' if you wish. These credentials are for local development ONLY — never reuse them anywhere else.
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04
+    container_name: itemcatalogue-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-LocalDev!Pass123}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - itemcatalogue-mssql-data:/var/opt/mssql
+    restart: unless-stopped
+
+volumes:
+  itemcatalogue-mssql-data:

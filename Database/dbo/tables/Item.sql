@@ -1,5 +1,5 @@
 CREATE TABLE Item (
-    Id                INT             NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    Id                INT             NOT NULL IDENTITY(1,1),
     Name              NVARCHAR(255)   NOT NULL,
     Description       NVARCHAR(MAX)   NULL,
     Price             DECIMAL(18,2)   NULL,
@@ -13,6 +13,17 @@ CREATE TABLE Item (
     LastModifiedDate  DATETIME2       NULL,
     RowVersion        ROWVERSION      NOT NULL,
 
-    CONSTRAINT FK_Items_Location FOREIGN KEY (LocationId) REFERENCES Location(Id),
-    CONSTRAINT FK_Items_Owner    FOREIGN KEY (OwnerId)    REFERENCES Person(Id)
+    CONSTRAINT PK_Item PRIMARY KEY (Id),
+
+    -- ON DELETE SET NULL: deleting a referenced Location/Person clears the item's FK rather than
+    -- blocking the delete. Matches the EF model (ItemCatalogueDbContext: OnDelete(SetNull)).
+    -- Constraint and index names follow EF Core's conventions (FK_<Table>_<Principal>_<Col>,
+    -- IX_<Table>_<Col>) so the schema-drift test (SchemaDriftTests) can verify them by name.
+    CONSTRAINT FK_Item_Location_LocationId FOREIGN KEY (LocationId) REFERENCES Location(Id) ON DELETE SET NULL,
+    CONSTRAINT FK_Item_Person_OwnerId      FOREIGN KEY (OwnerId)    REFERENCES Person(Id)   ON DELETE SET NULL,
+
+    -- Supporting indexes on the FK columns. EF would emit these in a migration; under SSDT they are
+    -- declared explicitly so unindexed FKs don't hurt join/cascade performance.
+    INDEX IX_Item_LocationId NONCLUSTERED (LocationId),
+    INDEX IX_Item_OwnerId    NONCLUSTERED (OwnerId)
 );
