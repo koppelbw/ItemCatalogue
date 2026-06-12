@@ -78,4 +78,5 @@ export interface ResolvedItem {
 export type Selection =
   | { kind: 'item'; id: number }
   | { kind: 'room'; roomId: number }
+  | { kind: 'location'; id: number }
   | null;

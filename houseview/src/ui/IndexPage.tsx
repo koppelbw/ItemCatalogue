@@ -8,19 +8,38 @@ import { ITEM_TYPE_COLORS, ITEM_TYPE_NAMES, type ResolvedItem } from '../types';
 // searchable list of every catalogued item, rendered as a frosted sheet over
 // the 3D scene. Each row can jump back into the house, camera and all.
 
-type SortKey = 'name' | 'price' | 'newest';
+type SortKey = 'name' | 'price-desc' | 'price-asc' | 'newest' | 'oldest';
+type StoredFilter = 'all' | 'stored' | 'out';
+
+const SORT_OPTIONS: [SortKey, string][] = [
+  ['name', 'Name'],
+  ['price-desc', 'Price ↓'],
+  ['price-asc', 'Price ↑'],
+  ['newest', 'Newest'],
+  ['oldest', 'Oldest'],
+];
+
+const STORED_OPTIONS: [StoredFilter, string][] = [
+  ['all', 'All'],
+  ['stored', 'In storage'],
+  ['out', 'In use'],
+];
 
 interface IndexPageProps {
   model: SceneModel;
   live: boolean;
   onBack: () => void;
+  onAbout: () => void;
   onViewItem: (id: number) => void;
 }
 
-export function IndexPage({ model, live, onBack, onViewItem }: IndexPageProps) {
+export function IndexPage({ model, live, onBack, onAbout, onViewItem }: IndexPageProps) {
   const [query, setQuery] = useState('');
   const [types, setTypes] = useState<ReadonlySet<number>>(new Set<number>());
+  const [locationId, setLocationId] = useState<number | 'all' | 'none'>('all');
   const [roomId, setRoomId] = useState<number | 'all'>('all');
+  const [ownerId, setOwnerId] = useState<number | 'all' | 'none'>('all');
+  const [stored, setStored] = useState<StoredFilter>('all');
   const [sort, setSort] = useState<SortKey>('name');
   const rootRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -39,30 +58,87 @@ export function IndexPage({ model, live, onBack, onViewItem }: IndexPageProps) {
         if (!hay.includes(q)) return false;
       }
       if (types.size > 0 && !r.item.itemTypes.some((t) => types.has(t))) return false;
+      if (locationId === 'none' && r.location !== null) return false;
+      if (typeof locationId === 'number' && r.location?.id !== locationId) return false;
       if (roomId !== 'all' && r.room?.id !== roomId) return false;
+      if (ownerId === 'none' && r.owner !== null) return false;
+      if (typeof ownerId === 'number' && r.owner?.id !== ownerId) return false;
+      if (stored === 'stored' && !r.item.isStored) return false;
+      if (stored === 'out' && r.item.isStored) return false;
       return true;
     });
     switch (sort) {
-      case 'price':
-        return list.sort((a, b) => (b.item.price ?? -1) - (a.item.price ?? -1));
+      case 'price-desc':
+        return list.sort((a, b) => (b.item.price ?? -Infinity) - (a.item.price ?? -Infinity));
+      case 'price-asc':
+        return list.sort((a, b) => (a.item.price ?? Infinity) - (b.item.price ?? Infinity));
       case 'newest':
         return list.sort((a, b) => Date.parse(b.item.createdDate) - Date.parse(a.item.createdDate));
+      case 'oldest':
+        return list.sort((a, b) => Date.parse(a.item.createdDate) - Date.parse(b.item.createdDate));
       default:
         return list.sort((a, b) => a.item.name.localeCompare(b.item.name));
     }
-  }, [all, query, types, roomId, sort]);
+  }, [all, query, types, locationId, roomId, ownerId, stored, sort]);
 
   const totalValue = useMemo(() => filtered.reduce((sum, r) => sum + (r.item.price ?? 0), 0), [filtered]);
 
-  const roomsWithCounts = useMemo(() => {
+  // dropdown options, each with live counts so empty choices never appear
+  const locationOptions = useMemo(() => {
+    const counts = new Map<number, number>();
+    let unassigned = 0;
+    for (const r of all) {
+      if (r.location) counts.set(r.location.id, (counts.get(r.location.id) ?? 0) + 1);
+      else unassigned += 1;
+    }
+    const options = model.sites
+      .filter((s) => s.location !== null)
+      .map((s) => ({ id: s.location!.id, name: s.label, count: counts.get(s.location!.id) ?? 0 }))
+      .filter((o) => o.count > 0);
+    return { options, unassigned };
+  }, [all, model]);
+
+  const roomOptions = useMemo(() => {
     const counts = new Map<number, number>();
     for (const r of all) {
       if (r.room) counts.set(r.room.id, (counts.get(r.room.id) ?? 0) + 1);
     }
     return [...model.roomsById.values()]
-      .map((room) => ({ room, count: counts.get(room.id) ?? 0 }))
-      .filter((e) => e.count > 0);
+      .map((room) => ({ id: room.id, name: room.name, count: counts.get(room.id) ?? 0 }))
+      .filter((o) => o.count > 0);
   }, [all, model]);
+
+  const ownerOptions = useMemo(() => {
+    const counts = new Map<number, { name: string; count: number }>();
+    let unowned = 0;
+    for (const r of all) {
+      if (r.owner) {
+        const entry = counts.get(r.owner.id) ?? { name: r.owner.name, count: 0 };
+        entry.count += 1;
+        counts.set(r.owner.id, entry);
+      } else {
+        unowned += 1;
+      }
+    }
+    const options = [...counts.entries()]
+      .map(([id, e]) => ({ id, name: e.name, count: e.count }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return { options, unowned };
+  }, [all]);
+
+  const storedCounts = useMemo(() => {
+    let inStorage = 0;
+    for (const r of all) if (r.item.isStored) inStorage += 1;
+    return { stored: inStorage, out: all.length - inStorage };
+  }, [all]);
+
+  const activeFilterCount =
+    (query.trim() ? 1 : 0) +
+    (types.size > 0 ? 1 : 0) +
+    (locationId !== 'all' ? 1 : 0) +
+    (roomId !== 'all' ? 1 : 0) +
+    (ownerId !== 'all' ? 1 : 0) +
+    (stored !== 'all' ? 1 : 0);
 
   // page entrance
   useEffect(() => {
@@ -121,7 +197,10 @@ export function IndexPage({ model, live, onBack, onViewItem }: IndexPageProps) {
   const resetFilters = () => {
     setQuery('');
     setTypes(new Set<number>());
+    setLocationId('all');
     setRoomId('all');
+    setOwnerId('all');
+    setStored('all');
   };
 
   return (
@@ -129,9 +208,14 @@ export function IndexPage({ model, live, onBack, onViewItem }: IndexPageProps) {
       <div className="index-inner">
         <header className="index-header index-reveal">
           <button className="index-back" onClick={onBack}>
-            ← Back to the house
+            ← Back to the neighbourhood
           </button>
-          <span className={`data-badge ${live ? 'live' : 'demo'}`}>{live ? 'live data' : 'demo data'}</span>
+          <div className="about-header-right">
+            <button className="index-back" onClick={onAbout}>
+              About →
+            </button>
+            <span className={`data-badge ${live ? 'live' : 'demo'}`}>{live ? 'live data' : 'demo data'}</span>
+          </div>
         </header>
 
         <h1 className="index-title index-reveal">
@@ -144,7 +228,7 @@ export function IndexPage({ model, live, onBack, onViewItem }: IndexPageProps) {
           <input
             ref={searchRef}
             type="search"
-            placeholder="Search items, rooms, owners…"
+            placeholder="Search items, locations, rooms, owners…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search items"
@@ -168,6 +252,24 @@ export function IndexPage({ model, live, onBack, onViewItem }: IndexPageProps) {
                 </button>
               ) : null,
             )}
+
+            <select
+              className="room-select"
+              value={locationId === 'all' || locationId === 'none' ? locationId : String(locationId)}
+              onChange={(e) =>
+                setLocationId(e.target.value === 'all' || e.target.value === 'none' ? e.target.value : Number(e.target.value))
+              }
+              aria-label="Filter by location"
+            >
+              <option value="all">All locations</option>
+              {locationOptions.options.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name} ({o.count})
+                </option>
+              ))}
+              {locationOptions.unassigned > 0 && <option value="none">Unassigned ({locationOptions.unassigned})</option>}
+            </select>
+
             <select
               className="room-select"
               value={roomId === 'all' ? 'all' : String(roomId)}
@@ -175,21 +277,49 @@ export function IndexPage({ model, live, onBack, onViewItem }: IndexPageProps) {
               aria-label="Filter by room"
             >
               <option value="all">All rooms</option>
-              {roomsWithCounts.map(({ room, count }) => (
-                <option key={room.id} value={room.id}>
-                  {room.name} ({count})
+              {roomOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name} ({o.count})
                 </option>
               ))}
             </select>
+
+            <select
+              className="room-select"
+              value={ownerId === 'all' || ownerId === 'none' ? ownerId : String(ownerId)}
+              onChange={(e) =>
+                setOwnerId(e.target.value === 'all' || e.target.value === 'none' ? e.target.value : Number(e.target.value))
+              }
+              aria-label="Filter by owner"
+            >
+              <option value="all">All owners</option>
+              {ownerOptions.options.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name} ({o.count})
+                </option>
+              ))}
+              {ownerOptions.unowned > 0 && <option value="none">No owner ({ownerOptions.unowned})</option>}
+            </select>
+
+            <div className="index-sort" role="group" aria-label="Stored">
+              {STORED_OPTIONS.map(([key, label]) => (
+                <button key={key} className={stored === key ? 'on' : ''} onClick={() => setStored(key)} title={
+                  key === 'stored' ? `${storedCounts.stored} in storage` : key === 'out' ? `${storedCounts.out} in use` : 'Everything'
+                }>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {activeFilterCount > 0 && (
+              <button className="clear-filters" onClick={resetFilters}>
+                Clear {activeFilterCount} filter{activeFilterCount === 1 ? '' : 's'} ×
+              </button>
+            )}
           </div>
+
           <div className="index-sort" role="group" aria-label="Sort">
-            {(
-              [
-                ['name', 'Name'],
-                ['price', 'Price'],
-                ['newest', 'Newest'],
-              ] as [SortKey, string][]
-            ).map(([key, label]) => (
+            {SORT_OPTIONS.map(([key, label]) => (
               <button key={key} className={sort === key ? 'on' : ''} onClick={() => setSort(key)}>
                 {label}
               </button>
@@ -224,7 +354,7 @@ function IndexRow({ resolved, onView }: { resolved: ResolvedItem; onView: () => 
   const accent = ITEM_TYPE_COLORS[primaryType(item) % ITEM_TYPE_COLORS.length];
   return (
     <li className="index-row">
-      <button className="index-row-main" onClick={onView} title="View in the house">
+      <button className="index-row-main" onClick={onView} title="View in the neighbourhood">
         <i className="row-dot" style={{ background: accent }} />
         <span className="row-name">
           <strong>{item.name}</strong>
@@ -241,8 +371,11 @@ function IndexRow({ resolved, onView }: { resolved: ResolvedItem; onView: () => 
           )}
         </span>
         <span className="row-owner">{owner?.name ?? '—'}</span>
-        <span className="row-price">{formatPrice(item.price)}</span>
-        <span className="row-action">View in house ↗</span>
+        <span className="row-price">
+          {formatPrice(item.price)}
+          {item.isStored && <small className="row-stored">stored</small>}
+        </span>
+        <span className="row-action">View in 3D ↗</span>
       </button>
     </li>
   );

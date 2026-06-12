@@ -1,6 +1,6 @@
 import gsap from 'gsap';
 import { useEffect, useRef } from 'react';
-import type { SceneModel } from '../model';
+import type { SceneModel, Site } from '../model';
 import { formatPrice, primaryType } from '../model';
 import {
   DELETED_REASON_NAMES,
@@ -98,6 +98,45 @@ function RoomCard({
   );
 }
 
+function LocationCard({
+  site,
+  onSelectItem,
+}: {
+  site: Site;
+  onSelectItem: (id: number) => void;
+}) {
+  const location = site.location;
+  return (
+    <>
+      <div className="panel-kicker">Location{location ? ` #${location.id}` : ''}</div>
+      <h2>{site.label}</h2>
+      {location?.description && <p className="panel-desc">{location.description}</p>}
+      {site.featuredRoom && (
+        <div className="chip-row">
+          <span className="chip chip-muted">Room · {site.featuredRoom.name}</span>
+        </div>
+      )}
+      <div className="panel-section-label">
+        {site.items.length === 0 ? 'Nothing catalogued here yet' : `${site.items.length} item${site.items.length === 1 ? '' : 's'} here`}
+      </div>
+      <ul className="panel-items">
+        {site.items.map((r) => {
+          const accent = ITEM_TYPE_COLORS[primaryType(r.item) % ITEM_TYPE_COLORS.length];
+          return (
+            <li key={r.item.id}>
+              <button onClick={() => onSelectItem(r.item.id)}>
+                <i style={{ background: accent }} />
+                <span>{r.item.name}</span>
+                <em>{formatPrice(r.item.price)}</em>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
 export function DetailPanel({ model, selection, onSelectItem, onClose }: DetailPanelProps) {
   const ref = useRef<HTMLDivElement>(null);
   const open = selection !== null;
@@ -116,6 +155,9 @@ export function DetailPanel({ model, selection, onSelectItem, onClose }: DetailP
   if (selection.kind === 'item') {
     const resolved = model.itemsById.get(selection.id);
     body = resolved ? <ItemCard resolved={resolved} /> : null;
+  } else if (selection.kind === 'location') {
+    const site = model.sites.find((s) => s.location?.id === selection.id);
+    body = site ? <LocationCard site={site} onSelectItem={onSelectItem} /> : null;
   } else {
     const room = model.roomsById.get(selection.roomId);
     if (room) {

@@ -1,22 +1,25 @@
 import gsap from 'gsap';
 import { useEffect, useRef } from 'react';
 import { FLOOR_LABELS, FLOOR_ORDER, type FloorLevel } from '../layout';
-import type { CarRoom, PlacedRoom, SceneModel } from '../model';
+import type { SceneModel } from '../model';
 import { ITEM_TYPE_COLORS, ITEM_TYPE_NAMES } from '../types';
 
 interface HudProps {
   model: SceneModel;
   live: boolean;
   floor: FloorLevel;
+  activeSite: string;
   onFloor: (level: FloorLevel) => void;
   onFlyToRoom: (roomId: number) => void;
+  onSite: (key: string) => void;
   onResetView: () => void;
   onBrowse: () => void;
+  onAbout: () => void;
 }
 
 const FLOOR_SHORT: Record<FloorLevel, string> = { [-1]: 'B', 0: '1', 1: '2', 2: 'A' };
 
-export function Hud({ model, live, floor, onFloor, onFlyToRoom, onResetView, onBrowse }: HudProps) {
+export function Hud({ model, live, floor, activeSite, onFloor, onFlyToRoom, onSite, onResetView, onBrowse, onAbout }: HudProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,15 +33,21 @@ export function Hud({ model, live, floor, onFloor, onFlyToRoom, onResetView, onB
     );
   }, []);
 
-  const dockEntries: { id: number; name: string; count: number; level: FloorLevel | 'car' }[] = [
-    ...model.placedRooms.map((p: PlacedRoom) => ({
-      id: p.room.id,
-      name: p.room.name,
-      count: p.items.length,
-      level: p.def.level as FloorLevel | 'car',
-    })),
-    ...model.carRooms.map((c: CarRoom) => ({ id: c.room.id, name: c.room.name, count: c.items.length, level: 'car' as const })),
-  ];
+  const houseActive = activeSite === 'house';
+
+  // The floor switcher and room dock unmount while another place is active,
+  // so they need their own reveal each time the house becomes active again
+  // (the one-time intro above only catches elements present at mount).
+  useEffect(() => {
+    if (!houseActive) return;
+    const els = rootRef.current?.querySelectorAll('.hud-pop');
+    if (!els || els.length === 0) return;
+    gsap.fromTo(
+      els,
+      { autoAlpha: 0, y: 18 },
+      { autoAlpha: 1, y: 0, duration: 0.55, stagger: 0.1, delay: 0.2, ease: 'power3.out' },
+    );
+  }, [houseActive]);
 
   return (
     <div className="hud" ref={rootRef}>
@@ -57,33 +66,40 @@ export function Hud({ model, live, floor, onFloor, onFlyToRoom, onResetView, onB
               <span>items</span>
             </div>
             <div>
-              <strong>{model.placedRooms.length + model.carRooms.length}</strong>
-              <span>rooms</span>
+              <strong>{model.sites.length}</strong>
+              <span>places</span>
             </div>
           </div>
-          <button className="nav-btn" onClick={onBrowse}>
-            Browse the index ↗
-          </button>
+          <div className="nav-btn-row">
+            <button className="nav-btn" onClick={onBrowse}>
+              Browse the index ↗
+            </button>
+            <button className="nav-btn nav-btn-ghost" onClick={onAbout}>
+              About
+            </button>
+          </div>
         </div>
       </header>
 
-      <nav className="floor-switch hud-animate" aria-label="Floor">
-        {FLOOR_ORDER.map((level) => (
-          <button
-            key={level}
-            className={floor === level ? 'active' : ''}
-            onClick={() => onFloor(level)}
-            title={FLOOR_LABELS[level]}
-          >
-            <span className="floor-key">{FLOOR_SHORT[level]}</span>
-            <span className="floor-name">{FLOOR_LABELS[level]}</span>
+      {houseActive && (
+        <nav className="floor-switch hud-pop" aria-label="Floor">
+          {FLOOR_ORDER.map((level) => (
+            <button
+              key={level}
+              className={floor === level ? 'active' : ''}
+              onClick={() => onFloor(level)}
+              title={FLOOR_LABELS[level]}
+            >
+              <span className="floor-key">{FLOOR_SHORT[level]}</span>
+              <span className="floor-name">{FLOOR_LABELS[level]}</span>
+            </button>
+          ))}
+          <button className="reset" onClick={onResetView} title="Reset view">
+            ⟲
           </button>
-        ))}
-        <button className="reset" onClick={onResetView} title="Reset view">
-          ⟲
-        </button>
-        <span className="floor-hint">↑ ↓ keys</span>
-      </nav>
+          <span className="floor-hint">↑ ↓ floors</span>
+        </nav>
+      )}
 
       <aside className="legend hud-animate">
         {ITEM_TYPE_NAMES.map((name, i) => {
@@ -106,13 +122,27 @@ export function Hud({ model, live, floor, onFloor, onFlyToRoom, onResetView, onB
         )}
       </aside>
 
-      <nav className="room-dock hud-animate" aria-label="Rooms">
-        {dockEntries.map((entry) => (
-          <button key={entry.id} onClick={() => onFlyToRoom(entry.id)}>
-            {entry.name}
-            {entry.count > 0 && <em>{entry.count}</em>}
+      {/* rooms of the house, shown only while the house is the active place */}
+      {houseActive && (
+        <nav className="room-dock hud-pop" aria-label="Rooms">
+          {model.placedRooms.map((p) => (
+            <button key={p.room.id} onClick={() => onFlyToRoom(p.room.id)}>
+              {p.room.name}
+              {p.items.length > 0 && <em>{p.items.length}</em>}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      {/* the neighbourhood: one pill per database Location */}
+      <nav className="room-dock site-dock hud-animate" aria-label="Locations">
+        {model.sites.map((site) => (
+          <button key={site.key} className={activeSite === site.key ? 'on' : ''} onClick={() => onSite(site.key)}>
+            {site.label}
+            {site.items.length > 0 && <em>{site.items.length}</em>}
           </button>
         ))}
+        <span className="floor-hint dock-hint">← → keys</span>
       </nav>
     </div>
   );

@@ -86,6 +86,41 @@ export type CarSlot = (typeof CAR_ROOM_MATCHES)[number];
 /** Car park position on the driveway (group origin, ground level). */
 export const CAR_POSITION: [number, number, number] = [12.3, 0, 8.6];
 
+// ---------------------------------------------------------------------------
+// Sites: every database Location is its own building in the neighbourhood.
+// The full dollhouse is the "house" site; locations are matched by name and
+// anything unrecognised gets an auto-placed cabin.
+// ---------------------------------------------------------------------------
+
+export type SiteKind = 'house' | 'apartment' | 'cottage' | 'storage' | 'car' | 'cabin';
+
+export interface SiteDef {
+  kind: SiteKind;
+  /** north-west corner of the site footprint on the lawn */
+  origin: [number, number];
+  /** camera fly-to target when the site becomes active */
+  focus: [number, number, number];
+  zoom: number;
+}
+
+export const SITE_DEFS: Record<string, SiteDef> = {
+  house: { kind: 'house', origin: [0, 0], focus: [6.5, 1.2, 5.5], zoom: 1 },
+  apartment: { kind: 'apartment', origin: [-13, -8], focus: [-10.7, 1.4, -5.9], zoom: 1.8 },
+  grandmas: { kind: 'cottage', origin: [-15, 9], focus: [-12.7, 1.2, 11.1], zoom: 1.8 },
+  'storage unit': { kind: 'storage', origin: [19, -3], focus: [21.3, 1.2, -0.9], zoom: 1.8 },
+  car: { kind: 'car', origin: [CAR_POSITION[0], CAR_POSITION[2]], focus: [CAR_POSITION[0], 1, CAR_POSITION[2]], zoom: 2.0 },
+};
+
+/** Auto-placed cabins for locations the layout does not know by name. */
+export function cabinSiteDef(index: number): SiteDef {
+  const x = -4 - index * 7;
+  const z = 17;
+  return { kind: 'cabin', origin: [x, z], focus: [x + 2.3, 1.1, z + 2.1], zoom: 1.8 };
+}
+
+/** Interior footprint shared by all small site buildings. */
+export const SITE_INTERIOR: Rect = { x: 0, z: 0, w: 4.6, d: 4.2 };
+
 /** Footprints for database rooms that match nothing above: cabins west of the house. */
 export function extraRoomDef(index: number): RoomDef {
   return {

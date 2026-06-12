@@ -57,7 +57,8 @@ body {
   z-index: 10;
 }
 
-.hud-animate {
+.hud-animate,
+.hud-pop {
   visibility: hidden; /* GSAP autoAlpha reveals these */
 }
 
@@ -280,7 +281,7 @@ body {
 .room-dock {
   position: absolute;
   left: 50%;
-  bottom: 26px;
+  bottom: 78px;
   transform: translateX(-50%);
   display: flex;
   gap: 8px;
@@ -333,6 +334,33 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* the locations dock sits below the room dock and marks the active place */
+.site-dock {
+  bottom: 24px;
+}
+
+.site-dock button.on {
+  background: var(--ink);
+  color: #f8f2e7;
+  border-color: var(--ink);
+}
+
+.site-dock button.on em {
+  background: var(--accent);
+}
+
+.dock-hint {
+  align-self: center;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+/* nameplates over the site buildings read slightly larger than room tags */
+.site-tag {
+  font-size: 13px;
+  padding: 7px 14px;
 }
 
 /* ---------- 3D-pinned tags & tooltips ---------- */
@@ -862,6 +890,34 @@ body {
   color: #f8f2e7;
 }
 
+.clear-filters {
+  border: none;
+  background: rgba(208, 79, 58, 0.12);
+  color: #b13c28;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.clear-filters:hover {
+  background: rgba(208, 79, 58, 0.2);
+  transform: translateY(-2px);
+}
+
+.row-stored {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
 .index-list {
   list-style: none;
   margin-top: 8px;
@@ -1022,6 +1078,213 @@ body {
   .row-where {
     display: none;
   }
+}
+
+/* ---------- the about page ---------- */
+
+.nav-btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-btn-ghost {
+  background: var(--glass);
+  color: var(--ink);
+  border: 1px solid var(--glass-border);
+}
+
+.nav-btn-ghost:hover {
+  background: #fffdf7;
+}
+
+.about-header-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.about-page .index-inner {
+  max-width: 880px;
+}
+
+.about-section {
+  margin-top: 44px;
+}
+
+.about-section h2 {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.about-section p {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: var(--ink);
+  margin-bottom: 12px;
+  max-width: 70ch;
+}
+
+.about-section p strong {
+  font-weight: 700;
+}
+
+.about-section code {
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 0.84em;
+  background: rgba(43, 38, 32, 0.07);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.arch-diagram {
+  margin: 20px 0 18px;
+}
+
+.arch-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.arch-row i {
+  align-self: center;
+  font-style: normal;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  letter-spacing: -0.08em;
+}
+
+.arch-box {
+  flex: 1 1 140px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 24px rgba(64, 50, 32, 0.08);
+}
+
+.arch-box strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.arch-box span {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-top: 3px;
+  letter-spacing: 0.03em;
+}
+
+.arch-core {
+  background: rgba(43, 38, 32, 0.88);
+  border-color: rgba(43, 38, 32, 0.88);
+}
+
+.arch-core strong {
+  color: #f8f2e7;
+}
+
+.arch-core span {
+  color: rgba(248, 242, 231, 0.7);
+}
+
+.arch-row-db {
+  margin-top: 8px;
+  justify-content: center;
+}
+
+.arch-db {
+  flex: 0 1 460px;
+  text-align: center;
+  border-style: dashed;
+  border-color: rgba(43, 38, 32, 0.3);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.stack-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 16px;
+}
+
+.pattern-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.pattern-card {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 8px 24px rgba(64, 50, 32, 0.07);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.pattern-card:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.pattern-card h3 {
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+.pattern-card p {
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.about-credit {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 22px;
+  padding: 18px 22px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, rgba(239, 111, 108, 0.12), rgba(91, 141, 247, 0.1));
+  border: 1px solid rgba(239, 111, 108, 0.3);
+}
+
+.about-credit-mark {
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+
+.about-credit strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.about-credit span {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+.about-footer {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 48px;
 }
 
 /* ---------- small screens ---------- */

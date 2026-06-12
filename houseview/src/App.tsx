@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { loadCatalogue } from './api';
 import { CAR_POSITION, FLOOR_ORDER, LEVEL_HEIGHT, levelY, type FloorLevel } from './layout';
-import { buildSceneModel, roomCenter, type PlacedRoom } from './model';
+import { buildSceneModel, roomCenter, siteKeyForLocation, type PlacedRoom, type Site } from './model';
 import { OVERVIEW_FOCUS, Scene, type Focus } from './scene/Scene';
+import { AboutPage } from './ui/AboutPage';
 import { DetailPanel } from './ui/DetailPanel';
 import { Hud } from './ui/Hud';
 import { IndexPage } from './ui/IndexPage';
 import { Splash } from './ui/Splash';
 import type { CatalogueData, Selection } from './types';
 
-type View = 'house' | 'index';
+type View = 'house' | 'index' | 'about';
 
-const viewFromHash = (): View => (window.location.hash === '#/index' ? 'index' : 'house');
+const viewFromHash = (): View =>
+  window.location.hash === '#/index' ? 'index' : window.location.hash === '#/about' ? 'about' : 'house';
 
 export default function App() {
   const [data, setData] = useState<CatalogueData | null>(null);
@@ -19,6 +21,7 @@ export default function App() {
   const [selection, setSelection] = useState<Selection>(null);
   const [focus, setFocus] = useState<Focus>({ ...OVERVIEW_FOCUS, seq: 0 });
   const [view, setView] = useState<View>(viewFromHash);
+  const [activeSite, setActiveSite] = useState('house');
   const seqRef = useRef(0);
 
   // hash routing: #/index <-> the 3D house, so refresh and deep links work
@@ -29,7 +32,7 @@ export default function App() {
   }, []);
 
   const navigate = useCallback((next: View) => {
-    window.location.hash = next === 'index' ? '#/index' : '#/';
+    window.location.hash = next === 'index' ? '#/index' : next === 'about' ? '#/about' : '#/';
     setView(next);
   }, []);
 
@@ -63,20 +66,48 @@ export default function App() {
     [flyTo],
   );
 
-  // Arrow keys step between floors (house view only).
+  // Fly to a site and make it the active one.
+  const goToSite = useCallback(
+    (site: Site, zoomOverride?: number) => {
+      setActiveSite(site.key);
+      flyTo(site.def.focus, zoomOverride ?? site.def.zoom);
+    },
+    [flyTo],
+  );
+
+  const selectSite = (key: string) => {
+    if (!model) return;
+    const site = model.sites.find((s) => s.key === key);
+    if (!site) return;
+    setSelection(site.location ? { kind: 'location', id: site.location.id } : null);
+    goToSite(site);
+  };
+
+  // Keyboard: up/down steps floors (house only); left/right hops between locations.
   useEffect(() => {
     if (view !== 'house') return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-      const idx = FLOOR_ORDER.indexOf(floor); // FLOOR_ORDER is top-down
-      const next = e.key === 'ArrowUp' ? FLOOR_ORDER[idx - 1] : FLOOR_ORDER[idx + 1];
-      if (next === undefined) return;
-      e.preventDefault();
-      changeFloor(next);
+      if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && activeSite === 'house') {
+        const idx = FLOOR_ORDER.indexOf(floor); // FLOOR_ORDER is top-down
+        const next = e.key === 'ArrowUp' ? FLOOR_ORDER[idx - 1] : FLOOR_ORDER[idx + 1];
+        if (next === undefined) return;
+        e.preventDefault();
+        changeFloor(next);
+        return;
+      }
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && model) {
+        e.preventDefault();
+        const keys = model.sites.map((s) => s.key);
+        const idx = Math.max(0, keys.indexOf(activeSite));
+        const next = e.key === 'ArrowRight' ? (idx + 1) % keys.length : (idx - 1 + keys.length) % keys.length;
+        const site = model.sites[next];
+        setSelection(site.location ? { kind: 'location', id: site.location.id } : null);
+        goToSite(site);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [floor, changeFloor, view]);
+  }, [floor, changeFloor, view, activeSite, model, goToSite]);
 
   // Selecting a room or item never changes the active floor - the floor is
   // locked to the switcher / arrow keys. Rooms on other floors are visible as
@@ -95,30 +126,39 @@ export default function App() {
     setSelection({ kind: 'room', roomId });
     const placed = model.placedRooms.find((p) => p.room.id === roomId);
     if (placed) {
+      setActiveSite('house');
       flyToPlaced(placed, 2.2);
       return;
     }
-    const car = model.carRooms.find((c) => c.room.id === roomId);
-    if (car) {
+    if (model.carRooms.some((c) => c.room.id === roomId)) {
+      setActiveSite('car');
       flyTo([CAR_POSITION[0], CAR_POSITION[1] + 1, CAR_POSITION[2]], 2.2);
     }
   };
 
+  // An item lives at its location's site: house items fly to their room,
+  // everything else flies to the site building.
   const selectItem = (itemId: number) => {
     if (!model) return;
     setSelection({ kind: 'item', id: itemId });
     const resolved = model.itemsById.get(itemId);
-    if (!resolved?.room) return;
-    const placed = model.placedRooms.find((p) => p.room.id === resolved.room!.id);
-    if (placed) {
-      flyToPlaced(placed, 2.6);
-    } else if (model.carRooms.some((c) => c.room.id === resolved.room!.id)) {
-      flyTo([CAR_POSITION[0], CAR_POSITION[1] + 1, CAR_POSITION[2]], 2.6);
+    if (!resolved?.location) return;
+    const siteKey = siteKeyForLocation(resolved.location);
+    const site = model.sites.find((s) => s.key === siteKey);
+    if (!site) return;
+    if (siteKey === 'house') {
+      setActiveSite('house');
+      const placed = resolved.room ? model.placedRooms.find((p) => p.room.id === resolved.room!.id) : undefined;
+      if (placed) flyToPlaced(placed, 2.6);
+      else flyTo(site.def.focus, 2.0);
+      return;
     }
+    goToSite(site, site.def.zoom + 0.4);
   };
 
   const resetView = () => {
     setSelection(null);
+    setActiveSite('house');
     flyTo(OVERVIEW_FOCUS.target, OVERVIEW_FOCUS.zoomFactor);
   };
 
@@ -141,8 +181,10 @@ export default function App() {
             floor={floor}
             selection={selection}
             focus={focus}
+            activeSite={activeSite}
             onSelectItem={selectItem}
             onSelectRoom={selectRoom}
+            onSelectSite={selectSite}
             onClear={clearSelection}
           />
           {view === 'house' && (
@@ -151,16 +193,28 @@ export default function App() {
                 model={model}
                 live={data.live}
                 floor={floor}
+                activeSite={activeSite}
                 onFloor={changeFloor}
                 onFlyToRoom={selectRoom}
+                onSite={selectSite}
                 onResetView={resetView}
                 onBrowse={() => navigate('index')}
+                onAbout={() => navigate('about')}
               />
               <DetailPanel model={model} selection={selection} onSelectItem={selectItem} onClose={clearSelection} />
             </>
           )}
           {view === 'index' && (
-            <IndexPage model={model} live={data.live} onBack={() => navigate('house')} onViewItem={viewItemInHouse} />
+            <IndexPage
+              model={model}
+              live={data.live}
+              onBack={() => navigate('house')}
+              onAbout={() => navigate('about')}
+              onViewItem={viewItemInHouse}
+            />
+          )}
+          {view === 'about' && (
+            <AboutPage model={model} live={data.live} onBack={() => navigate('house')} onIndex={() => navigate('index')} />
           )}
         </>
       )}
