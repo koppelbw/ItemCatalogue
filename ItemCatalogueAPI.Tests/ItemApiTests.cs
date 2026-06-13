@@ -13,7 +13,12 @@ namespace ItemCatalogueAPI.Tests;
 public class ItemApiTests(ApiFactory factory) : ApiTestBase(factory)
 {
     private static CreateItemRequest ValidItem() =>
-        new("Desk Lamp", "A small lamp", [ItemType.Electronics, ItemType.Books], 19.99m, false, null, null, null);
+        new("Desk Lamp", "A small lamp", [ItemType.Electronics, ItemType.Books], 19.99m,
+            CurrentValue: 12.50m,
+            Brand: "Acme", Model: "L-100", SerialNumber: "SN-123", PurchasedFrom: "Hardware Store",
+            Quantity: 1, Condition: Condition.Good, AcquisitionType: AcquisitionType.Purchased,
+            PurchaseDate: null, WarrantyExpiryDate: null,
+            IsStored: false, RoomId: null, ContainerId: null, OwnerId: null);
 
     private async Task<ItemResponse> CreateItemAsync()
     {
@@ -32,7 +37,13 @@ public class ItemApiTests(ApiFactory factory) : ApiTestBase(factory)
         created.ShouldNotBeNull();
         created.Id.ShouldBeGreaterThan(0);
         created.ItemTypes.ShouldBe([ItemType.Electronics, ItemType.Books]);
-        created.Price.ShouldBe(19.99m);
+        created.PurchasePrice.ShouldBe(19.99m);
+        created.CurrentValue.ShouldBe(12.50m);
+        created.Brand.ShouldBe("Acme");
+        created.SerialNumber.ShouldBe("SN-123");
+        created.Quantity.ShouldBe(1);
+        created.Condition.ShouldBe(Condition.Good);
+        created.AcquisitionType.ShouldBe(AcquisitionType.Purchased);
         created.IsDeleted.ShouldBeFalse();
     }
 

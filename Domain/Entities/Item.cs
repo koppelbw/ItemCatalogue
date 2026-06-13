@@ -12,7 +12,29 @@ public class Item : IEntity, IAuditable
 
     public List<ItemType> ItemTypes { get; set; } = [];
 
-    public decimal? Price { get; set; }
+    // What the item originally cost.
+    public decimal? PurchasePrice { get; set; }
+
+    // Estimated present-day worth (may exceed PurchasePrice for items that appreciate).
+    public decimal? CurrentValue { get; set; }
+
+    public string? Brand { get; set; }
+
+    public string? Model { get; set; }
+
+    public string? SerialNumber { get; set; }
+
+    public string? PurchasedFrom { get; set; }
+
+    public int Quantity { get; set; } = 1;
+
+    public Condition? Condition { get; set; }
+
+    public AcquisitionType? AcquisitionType { get; set; }
+
+    public DateTime? PurchaseDate { get; set; }
+
+    public DateTime? WarrantyExpiryDate { get; set; }
 
     public bool IsStored { get; set; }
     public bool IsDeleted { get; set; }

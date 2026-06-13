@@ -2,7 +2,17 @@ CREATE TABLE Item (
     Id                INT             NOT NULL IDENTITY(1,1),
     Name              NVARCHAR(255)   NOT NULL,
     Description       NVARCHAR(MAX)   NULL,
-    Price             DECIMAL(18,2)   NULL,
+    PurchasePrice     DECIMAL(18,2)   NULL,
+    CurrentValue      DECIMAL(18,2)   NULL,
+    Brand             NVARCHAR(100)   NULL,
+    Model             NVARCHAR(100)   NULL,
+    SerialNumber      NVARCHAR(100)   NULL,
+    PurchasedFrom     NVARCHAR(150)   NULL,
+    Quantity          INT             NOT NULL DEFAULT 1,
+    Condition         NVARCHAR(50)    NULL,
+    AcquisitionType   NVARCHAR(50)    NULL,
+    PurchaseDate      DATETIME2       NULL,
+    WarrantyExpiryDate DATETIME2      NULL,
     IsStored          BIT             NOT NULL DEFAULT 0,
     IsDeleted         BIT             NOT NULL DEFAULT 0,
     ReasonForDeletion NVARCHAR(255)   NULL,
@@ -28,5 +38,6 @@ CREATE TABLE Item (
     -- declared explicitly so unindexed FKs don't hurt join/cascade performance.
     INDEX IX_Item_RoomId      NONCLUSTERED (RoomId),
     INDEX IX_Item_ContainerId NONCLUSTERED (ContainerId),
-    INDEX IX_Item_OwnerId     NONCLUSTERED (OwnerId)
+    INDEX IX_Item_OwnerId     NONCLUSTERED (OwnerId),        
+    INDEX IX_Item_SerialNumber NONCLUSTERED (SerialNumber)
 );

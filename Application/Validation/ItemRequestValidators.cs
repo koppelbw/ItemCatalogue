@@ -25,10 +25,16 @@ public sealed class CreateItemRequestValidator : AbstractValidator<CreateItemReq
             .IsInEnum();
 
         // decimal(18,2): non-negative and within the two-decimal-place scale of the column.
-        RuleFor(x => x.Price)
+        // CurrentValue may exceed PurchasePrice (items can appreciate), so there is no cross-field rule.
+        RuleFor(x => x.PurchasePrice)
             .GreaterThanOrEqualTo(0)
             .PrecisionScale(18, 2, ignoreTrailingZeros: true)
-            .When(x => x.Price.HasValue);
+            .When(x => x.PurchasePrice.HasValue);
+
+        RuleFor(x => x.CurrentValue)
+            .GreaterThanOrEqualTo(0)
+            .PrecisionScale(18, 2, ignoreTrailingZeros: true)
+            .When(x => x.CurrentValue.HasValue);
 
         RuleFor(x => x.RoomId)
             .GreaterThan(0)
@@ -47,6 +53,35 @@ public sealed class CreateItemRequestValidator : AbstractValidator<CreateItemReq
         RuleFor(x => x.OwnerId)
             .GreaterThan(0)
             .When(x => x.OwnerId.HasValue);
+
+        RuleFor(x => x.Brand)
+            .MaximumLength(100);
+
+        RuleFor(x => x.Model)
+            .MaximumLength(100);
+
+        RuleFor(x => x.SerialNumber)
+            .MaximumLength(100);
+
+        RuleFor(x => x.PurchasedFrom)
+            .MaximumLength(150);
+
+        RuleFor(x => x.Quantity)
+            .GreaterThanOrEqualTo(1);
+
+        RuleFor(x => x.Condition)
+            .IsInEnum()
+            .When(x => x.Condition.HasValue);
+
+        RuleFor(x => x.AcquisitionType)
+            .IsInEnum()
+            .When(x => x.AcquisitionType.HasValue);
+
+        RuleFor(x => x)
+            .Must(x => x.WarrantyExpiryDate >= x.PurchaseDate)
+            .WithMessage("WarrantyExpiryDate cannot be earlier than PurchaseDate.")
+            .WithName("WarrantyExpiryDate")
+            .When(x => x.PurchaseDate.HasValue && x.WarrantyExpiryDate.HasValue);
     }
 }
 
@@ -70,10 +105,16 @@ public sealed class UpdateItemRequestValidator : AbstractValidator<UpdateItemReq
         RuleForEach(x => x.ItemTypes)
             .IsInEnum();
 
-        RuleFor(x => x.Price)
+        // CurrentValue may exceed PurchasePrice (items can appreciate), so there is no cross-field rule.
+        RuleFor(x => x.PurchasePrice)
             .GreaterThanOrEqualTo(0)
             .PrecisionScale(18, 2, ignoreTrailingZeros: true)
-            .When(x => x.Price.HasValue);
+            .When(x => x.PurchasePrice.HasValue);
+
+        RuleFor(x => x.CurrentValue)
+            .GreaterThanOrEqualTo(0)
+            .PrecisionScale(18, 2, ignoreTrailingZeros: true)
+            .When(x => x.CurrentValue.HasValue);
 
         RuleFor(x => x.RoomId)
             .GreaterThan(0)
@@ -92,6 +133,35 @@ public sealed class UpdateItemRequestValidator : AbstractValidator<UpdateItemReq
         RuleFor(x => x.OwnerId)
             .GreaterThan(0)
             .When(x => x.OwnerId.HasValue);
+
+        RuleFor(x => x.Brand)
+            .MaximumLength(100);
+
+        RuleFor(x => x.Model)
+            .MaximumLength(100);
+
+        RuleFor(x => x.SerialNumber)
+            .MaximumLength(100);
+
+        RuleFor(x => x.PurchasedFrom)
+            .MaximumLength(150);
+
+        RuleFor(x => x.Quantity)
+            .GreaterThanOrEqualTo(1);
+
+        RuleFor(x => x.Condition)
+            .IsInEnum()
+            .When(x => x.Condition.HasValue);
+
+        RuleFor(x => x.AcquisitionType)
+            .IsInEnum()
+            .When(x => x.AcquisitionType.HasValue);
+
+        RuleFor(x => x)
+            .Must(x => x.WarrantyExpiryDate >= x.PurchaseDate)
+            .WithMessage("WarrantyExpiryDate cannot be earlier than PurchaseDate.")
+            .WithName("WarrantyExpiryDate")
+            .When(x => x.PurchaseDate.HasValue && x.WarrantyExpiryDate.HasValue);
 
         // The optimistic-concurrency token must be supplied on update so the repository can
         // detect a stale write; an empty token would defeat the rowversion check.

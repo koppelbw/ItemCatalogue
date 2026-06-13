@@ -35,7 +35,8 @@ public class ItemRepositoryTests(SqlServerFixture fixture) : PersistenceTestBase
         {
             Name = "Desk Lamp",
             ItemTypes = [ItemType.Electronics, ItemType.Books],
-            Price = 19.99m,
+            PurchasePrice = 19.99m,
+            CurrentValue = 12.50m,
             RoomId = roomId,
             OwnerId = ownerId,
         });
@@ -45,7 +46,8 @@ public class ItemRepositoryTests(SqlServerFixture fixture) : PersistenceTestBase
         found.ShouldNotBeNull();
         // The list column survives serialize -> store as nvarchar(max) -> deserialize, order intact.
         found.ItemTypes.ShouldBe([ItemType.Electronics, ItemType.Books]);
-        found.Price.ShouldBe(19.99m);
+        found.PurchasePrice.ShouldBe(19.99m);
+        found.CurrentValue.ShouldBe(12.50m);
         // ReadQuery eager-loads Room and Owner.
         found.Room.ShouldNotBeNull();
         found.Room.Name.ShouldBe("Garage");

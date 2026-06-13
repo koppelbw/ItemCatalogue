@@ -10,7 +10,17 @@ public static class ItemMappings
         Name = request.Name,
         Description = request.Description,
         ItemTypes = request.ItemTypes,
-        Price = request.Price,
+        PurchasePrice = request.PurchasePrice,
+        CurrentValue = request.CurrentValue,
+        Brand = request.Brand,
+        Model = request.Model,
+        SerialNumber = request.SerialNumber,
+        PurchasedFrom = request.PurchasedFrom,
+        Quantity = request.Quantity,
+        Condition = request.Condition,
+        AcquisitionType = request.AcquisitionType,
+        PurchaseDate = request.PurchaseDate,
+        WarrantyExpiryDate = request.WarrantyExpiryDate,
         IsStored = request.IsStored,
         RoomId = request.RoomId,
         ContainerId = request.ContainerId,
@@ -22,7 +32,17 @@ public static class ItemMappings
         item.Name = request.Name;
         item.Description = request.Description;
         item.ItemTypes = request.ItemTypes;
-        item.Price = request.Price;
+        item.PurchasePrice = request.PurchasePrice;
+        item.CurrentValue = request.CurrentValue;
+        item.Brand = request.Brand;
+        item.Model = request.Model;
+        item.SerialNumber = request.SerialNumber;
+        item.PurchasedFrom = request.PurchasedFrom;
+        item.Quantity = request.Quantity;
+        item.Condition = request.Condition;
+        item.AcquisitionType = request.AcquisitionType;
+        item.PurchaseDate = request.PurchaseDate;
+        item.WarrantyExpiryDate = request.WarrantyExpiryDate;
         item.IsStored = request.IsStored;
         item.RoomId = request.RoomId;
         item.ContainerId = request.ContainerId;
@@ -37,7 +57,17 @@ public static class ItemMappings
         item.Name,
         item.Description,
         item.ItemTypes,
-        item.Price,
+        item.PurchasePrice,
+        item.CurrentValue,
+        item.Brand,
+        item.Model,
+        item.SerialNumber,
+        item.PurchasedFrom,
+        item.Quantity,
+        item.Condition,
+        item.AcquisitionType,
+        item.PurchaseDate,
+        item.WarrantyExpiryDate,
         item.IsStored,
         item.IsDeleted,
         item.ReasonForDeletion,

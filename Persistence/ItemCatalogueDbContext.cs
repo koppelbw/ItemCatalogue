@@ -59,8 +59,37 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
             builder.Property(e => e.Description)
                   .HasColumnType("nvarchar(max)");
 
-            builder.Property(e => e.Price)
+            builder.Property(e => e.PurchasePrice)
                   .HasColumnType("decimal(18,2)");
+
+            builder.Property(e => e.CurrentValue)
+                  .HasColumnType("decimal(18,2)");
+
+            builder.Property(e => e.Brand)
+                  .HasMaxLength(100);
+
+            builder.Property(e => e.Model)
+                  .HasMaxLength(100);
+
+            builder.Property(e => e.SerialNumber)
+                  .HasMaxLength(100);
+
+            builder.Property(e => e.PurchasedFrom)
+                  .HasMaxLength(150);
+
+            builder.Property(i => i.Quantity)
+                .IsRequired()
+                .HasDefaultValue(1);
+
+            builder.Property(e => e.Condition)
+                .HasConversion<string>()
+                .HasMaxLength(50);
+
+            builder.Property(e => e.AcquisitionType)
+                .HasConversion<string>()
+                .HasMaxLength(50);
+
+            builder.HasIndex(i => i.SerialNumber);
 
             builder.Property(i => i.IsStored)
                 .IsRequired()
