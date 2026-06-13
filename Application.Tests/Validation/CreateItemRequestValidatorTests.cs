@@ -28,7 +28,10 @@ public class CreateItemRequestValidatorTests
             IsStored: false,
             RoomId: null,
             ContainerId: null,
-            OwnerId: null);
+            OwnerId: null,
+            ReleaseDate: null,
+            ValuationDate: null,
+            AcquisitionReference: null);
 
     [Fact]
     public void ValidRequest_HasNoErrors()
@@ -198,5 +201,32 @@ public class CreateItemRequestValidatorTests
             PurchaseDate = new DateTime(2024, 1, 1),
             WarrantyExpiryDate = new DateTime(2025, 1, 1),
         }).ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void PurchaseDate_BeforeReleaseDate_IsRejected()
+    {
+        _validator.TestValidate(Valid() with
+        {
+            ReleaseDate = new DateTime(2025, 1, 1),
+            PurchaseDate = new DateTime(2024, 1, 1),
+        }).ShouldHaveValidationErrorFor("PurchaseDate");
+    }
+
+    [Fact]
+    public void PurchaseDate_OnOrAfterReleaseDate_IsAllowed()
+    {
+        _validator.TestValidate(Valid() with
+        {
+            ReleaseDate = new DateTime(2024, 1, 1),
+            PurchaseDate = new DateTime(2024, 1, 1),
+        }).ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void AcquisitionReference_LongerThan100_IsRejected()
+    {
+        _validator.TestValidate(Valid() with { AcquisitionReference = new string('a', 101) })
+            .ShouldHaveValidationErrorFor(x => x.AcquisitionReference);
     }
 }

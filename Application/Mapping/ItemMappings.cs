@@ -21,6 +21,9 @@ public static class ItemMappings
         AcquisitionType = request.AcquisitionType,
         PurchaseDate = request.PurchaseDate,
         WarrantyExpiryDate = request.WarrantyExpiryDate,
+        ReleaseDate = request.ReleaseDate,
+        ValuationDate = request.ValuationDate,
+        AcquisitionReference = request.AcquisitionReference,
         IsStored = request.IsStored,
         RoomId = request.RoomId,
         ContainerId = request.ContainerId,
@@ -43,6 +46,9 @@ public static class ItemMappings
         item.AcquisitionType = request.AcquisitionType;
         item.PurchaseDate = request.PurchaseDate;
         item.WarrantyExpiryDate = request.WarrantyExpiryDate;
+        item.ReleaseDate = request.ReleaseDate;
+        item.ValuationDate = request.ValuationDate;
+        item.AcquisitionReference = request.AcquisitionReference;
         item.IsStored = request.IsStored;
         item.RoomId = request.RoomId;
         item.ContainerId = request.ContainerId;
@@ -74,6 +80,9 @@ public static class ItemMappings
         item.RoomId,
         item.ContainerId,
         item.OwnerId,
+        item.ReleaseDate,
+        item.ValuationDate,
+        item.AcquisitionReference,
         item.CreatedDate,
         item.LastModifiedDate,
         item.RowVersion);

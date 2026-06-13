@@ -36,6 +36,12 @@ public class Item : IEntity, IAuditable
 
     public DateTime? WarrantyExpiryDate { get; set; }
 
+    public DateTime? ReleaseDate { get; set; }
+
+    public DateTime? ValuationDate { get; set; }
+
+    public string? AcquisitionReference { get; set; }
+
     public bool IsStored { get; set; }
     public bool IsDeleted { get; set; }
     public DeletedReason? ReasonForDeletion { get; set; }

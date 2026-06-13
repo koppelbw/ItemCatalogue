@@ -77,6 +77,9 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
             builder.Property(e => e.PurchasedFrom)
                   .HasMaxLength(150);
 
+            builder.Property(e => e.AcquisitionReference)
+                  .HasMaxLength(100);
+
             builder.Property(i => i.Quantity)
                 .IsRequired()
                 .HasDefaultValue(1);

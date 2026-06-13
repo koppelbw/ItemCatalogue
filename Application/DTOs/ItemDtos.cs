@@ -20,7 +20,10 @@ public sealed record CreateItemRequest(
     bool IsStored,
     int? RoomId,
     int? ContainerId,
-    int? OwnerId);
+    int? OwnerId,
+    DateTime? ReleaseDate,
+    DateTime? ValuationDate,
+    string? AcquisitionReference);
 
 public sealed record UpdateItemRequest(
     int Id,
@@ -42,6 +45,9 @@ public sealed record UpdateItemRequest(
     int? RoomId,
     int? ContainerId,
     int? OwnerId,
+    DateTime? ReleaseDate,
+    DateTime? ValuationDate,
+    string? AcquisitionReference,
     byte[] RowVersion);
 
 public sealed record ItemResponse(
@@ -66,6 +72,9 @@ public sealed record ItemResponse(
     int? RoomId,
     int? ContainerId,
     int? OwnerId,
+    DateTime? ReleaseDate,
+    DateTime? ValuationDate,
+    string? AcquisitionReference,
     DateTime CreatedDate,
     DateTime? LastModifiedDate,
     byte[] RowVersion);

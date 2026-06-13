@@ -29,6 +29,9 @@ public class UpdateItemRequestValidatorTests
             RoomId: null,
             ContainerId: null,
             OwnerId: null,
+            ReleaseDate: null,
+            ValuationDate: null,
+            AcquisitionReference: null,
             RowVersion: [1, 2, 3, 4]);
 
     [Fact]
@@ -49,5 +52,22 @@ public class UpdateItemRequestValidatorTests
     {
         _validator.TestValidate(Valid() with { RowVersion = [] })
             .ShouldHaveValidationErrorFor(x => x.RowVersion);
+    }
+
+    [Fact]
+    public void PurchaseDate_BeforeReleaseDate_IsRejected()
+    {
+        _validator.TestValidate(Valid() with
+        {
+            ReleaseDate = new DateTime(2025, 1, 1),
+            PurchaseDate = new DateTime(2024, 1, 1),
+        }).ShouldHaveValidationErrorFor("PurchaseDate");
+    }
+
+    [Fact]
+    public void AcquisitionReference_LongerThan100_IsRejected()
+    {
+        _validator.TestValidate(Valid() with { AcquisitionReference = new string('a', 101) })
+            .ShouldHaveValidationErrorFor(x => x.AcquisitionReference);
     }
 }

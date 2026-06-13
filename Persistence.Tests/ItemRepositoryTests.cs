@@ -37,6 +37,9 @@ public class ItemRepositoryTests(SqlServerFixture fixture) : PersistenceTestBase
             ItemTypes = [ItemType.Electronics, ItemType.Books],
             PurchasePrice = 19.99m,
             CurrentValue = 12.50m,
+            ReleaseDate = new DateTime(2024, 1, 1),
+            ValuationDate = new DateTime(2025, 1, 1),
+            AcquisitionReference = "INV-001",
             RoomId = roomId,
             OwnerId = ownerId,
         });
@@ -48,6 +51,9 @@ public class ItemRepositoryTests(SqlServerFixture fixture) : PersistenceTestBase
         found.ItemTypes.ShouldBe([ItemType.Electronics, ItemType.Books]);
         found.PurchasePrice.ShouldBe(19.99m);
         found.CurrentValue.ShouldBe(12.50m);
+        found.ReleaseDate.ShouldBe(new DateTime(2024, 1, 1));
+        found.ValuationDate.ShouldBe(new DateTime(2025, 1, 1));
+        found.AcquisitionReference.ShouldBe("INV-001");
         // ReadQuery eager-loads Room and Owner.
         found.Room.ShouldNotBeNull();
         found.Room.Name.ShouldBe("Garage");

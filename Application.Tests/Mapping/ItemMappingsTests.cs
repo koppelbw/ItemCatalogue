@@ -29,7 +29,10 @@ public class ItemMappingsTests
             IsStored: true,
             RoomId: 7,
             ContainerId: null,
-            OwnerId: 3);
+            OwnerId: 3,
+            ReleaseDate: new DateTime(2025, 1, 1),
+            ValuationDate: new DateTime(2026, 1, 1),
+            AcquisitionReference: "INV-001");
 
         var item = request.ToEntity();
 
@@ -50,12 +53,15 @@ public class ItemMappingsTests
         item.IsStored.ShouldBeTrue();
         item.RoomId.ShouldBe(7);
         item.OwnerId.ShouldBe(3);
+        item.ReleaseDate.ShouldBe(new DateTime(2025, 1, 1));
+        item.ValuationDate.ShouldBe(new DateTime(2026, 1, 1));
+        item.AcquisitionReference.ShouldBe("INV-001");
     }
 
     [Fact]
     public void ToEntity_DoesNotSetServerOwnedFields()
     {
-        var item = new CreateItemRequest("Lamp", null, [ItemType.Electronics], null, null, null, null, null, null, 1, null, null, null, null, false, null, null, null).ToEntity();
+        var item = new CreateItemRequest("Lamp", null, [ItemType.Electronics], null, null, null, null, null, null, 1, null, null, null, null, false, null, null, null, null, null, null).ToEntity();
 
         item.Id.ShouldBe(0);
         item.IsDeleted.ShouldBeFalse();
@@ -97,6 +103,9 @@ public class ItemMappingsTests
             RoomId: 2,
             ContainerId: null,
             OwnerId: 4,
+            ReleaseDate: new DateTime(2025, 1, 1),
+            ValuationDate: new DateTime(2026, 1, 1),
+            AcquisitionReference: "INV-200",
             RowVersion: [1, 2, 3]);
 
         request.ApplyTo(existing);
@@ -118,6 +127,9 @@ public class ItemMappingsTests
         existing.IsStored.ShouldBeTrue();
         existing.RoomId.ShouldBe(2);
         existing.OwnerId.ShouldBe(4);
+        existing.ReleaseDate.ShouldBe(new DateTime(2025, 1, 1));
+        existing.ValuationDate.ShouldBe(new DateTime(2026, 1, 1));
+        existing.AcquisitionReference.ShouldBe("INV-200");
         existing.RowVersion.ShouldBe([1, 2, 3]);
     }
 
@@ -126,7 +138,7 @@ public class ItemMappingsTests
     {
         var existing = new Item { Id = 5, Name = "Old", ItemTypes = [ItemType.Books] };
 
-        new UpdateItemRequest(5, "New", null, [ItemType.Books], null, null, null, null, null, null, 1, null, null, null, null, false, null, null, null, [1])
+        new UpdateItemRequest(5, "New", null, [ItemType.Books], null, null, null, null, null, null, 1, null, null, null, null, false, null, null, null, null, null, null, [1])
             .ApplyTo(existing);
 
         existing.Id.ShouldBe(5);
@@ -152,6 +164,9 @@ public class ItemMappingsTests
             AcquisitionType = AcquisitionType.Inherited,
             PurchaseDate = new DateTime(2025, 3, 3),
             WarrantyExpiryDate = new DateTime(2026, 3, 3),
+            ReleaseDate = new DateTime(2025, 1, 1),
+            ValuationDate = new DateTime(2026, 1, 1),
+            AcquisitionReference = "INV-300",
             IsStored = true,
             IsDeleted = true,
             ReasonForDeletion = DeletedReason.Broken,
@@ -177,6 +192,9 @@ public class ItemMappingsTests
         response.AcquisitionType.ShouldBe(AcquisitionType.Inherited);
         response.PurchaseDate.ShouldBe(new DateTime(2025, 3, 3));
         response.WarrantyExpiryDate.ShouldBe(new DateTime(2026, 3, 3));
+        response.ReleaseDate.ShouldBe(new DateTime(2025, 1, 1));
+        response.ValuationDate.ShouldBe(new DateTime(2026, 1, 1));
+        response.AcquisitionReference.ShouldBe("INV-300");
         response.ContainerId.ShouldBe(3);
         response.IsDeleted.ShouldBeTrue();
         response.ReasonForDeletion.ShouldBe(DeletedReason.Broken);

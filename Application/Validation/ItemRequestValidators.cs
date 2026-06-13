@@ -66,6 +66,9 @@ public sealed class CreateItemRequestValidator : AbstractValidator<CreateItemReq
         RuleFor(x => x.PurchasedFrom)
             .MaximumLength(150);
 
+        RuleFor(x => x.AcquisitionReference)
+            .MaximumLength(100);
+
         RuleFor(x => x.Quantity)
             .GreaterThanOrEqualTo(1);
 
@@ -82,6 +85,12 @@ public sealed class CreateItemRequestValidator : AbstractValidator<CreateItemReq
             .WithMessage("WarrantyExpiryDate cannot be earlier than PurchaseDate.")
             .WithName("WarrantyExpiryDate")
             .When(x => x.PurchaseDate.HasValue && x.WarrantyExpiryDate.HasValue);
+
+        RuleFor(x => x)
+            .Must(x => x.PurchaseDate >= x.ReleaseDate)
+            .WithMessage("PurchaseDate cannot be earlier than ReleaseDate.")
+            .WithName("PurchaseDate")
+            .When(x => x.PurchaseDate.HasValue && x.ReleaseDate.HasValue);
     }
 }
 
@@ -146,6 +155,9 @@ public sealed class UpdateItemRequestValidator : AbstractValidator<UpdateItemReq
         RuleFor(x => x.PurchasedFrom)
             .MaximumLength(150);
 
+        RuleFor(x => x.AcquisitionReference)
+            .MaximumLength(100);
+
         RuleFor(x => x.Quantity)
             .GreaterThanOrEqualTo(1);
 
@@ -162,6 +174,12 @@ public sealed class UpdateItemRequestValidator : AbstractValidator<UpdateItemReq
             .WithMessage("WarrantyExpiryDate cannot be earlier than PurchaseDate.")
             .WithName("WarrantyExpiryDate")
             .When(x => x.PurchaseDate.HasValue && x.WarrantyExpiryDate.HasValue);
+
+        RuleFor(x => x)
+            .Must(x => x.PurchaseDate >= x.ReleaseDate)
+            .WithMessage("PurchaseDate cannot be earlier than ReleaseDate.")
+            .WithName("PurchaseDate")
+            .When(x => x.PurchaseDate.HasValue && x.ReleaseDate.HasValue);
 
         // The optimistic-concurrency token must be supplied on update so the repository can
         // detect a stale write; an empty token would defeat the rowversion check.

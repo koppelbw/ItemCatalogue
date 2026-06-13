@@ -17,8 +17,10 @@ public class ItemApiTests(ApiFactory factory) : ApiTestBase(factory)
             CurrentValue: 12.50m,
             Brand: "Acme", Model: "L-100", SerialNumber: "SN-123", PurchasedFrom: "Hardware Store",
             Quantity: 1, Condition: Condition.Good, AcquisitionType: AcquisitionType.Purchased,
-            PurchaseDate: null, WarrantyExpiryDate: null,
-            IsStored: false, RoomId: null, ContainerId: null, OwnerId: null);
+            PurchaseDate: new DateTime(2024, 6, 1), WarrantyExpiryDate: null,
+            IsStored: false, RoomId: null, ContainerId: null, OwnerId: null,
+            ReleaseDate: new DateTime(2024, 1, 1), ValuationDate: new DateTime(2025, 1, 1),
+            AcquisitionReference: "INV-001");
 
     private async Task<ItemResponse> CreateItemAsync()
     {
@@ -44,6 +46,9 @@ public class ItemApiTests(ApiFactory factory) : ApiTestBase(factory)
         created.Quantity.ShouldBe(1);
         created.Condition.ShouldBe(Condition.Good);
         created.AcquisitionType.ShouldBe(AcquisitionType.Purchased);
+        created.ReleaseDate.ShouldBe(new DateTime(2024, 1, 1));
+        created.ValuationDate.ShouldBe(new DateTime(2025, 1, 1));
+        created.AcquisitionReference.ShouldBe("INV-001");
         created.IsDeleted.ShouldBeFalse();
     }
 

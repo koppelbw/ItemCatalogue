@@ -38,10 +38,10 @@ public class ItemServiceTests
     };
 
     private static CreateItemRequest ValidCreate() =>
-        new("Lamp", null, [ItemType.Electronics], 5m, null, null, null, null, null, 1, null, null, null, null, false, null, null, null);
+        new("Lamp", null, [ItemType.Electronics], 5m, null, null, null, null, null, 1, null, null, null, null, false, null, null, null, null, null, null);
 
     private static UpdateItemRequest ValidUpdate(int id = 1) =>
-        new(id, "Lamp", null, [ItemType.Electronics], 5m, null, null, null, null, null, 1, null, null, null, null, false, null, null, null, [1, 2, 3]);
+        new(id, "Lamp", null, [ItemType.Electronics], 5m, null, null, null, null, null, 1, null, null, null, null, false, null, null, null, null, null, null, [1, 2, 3]);
 
     [Fact]
     public async Task GetByIdAsync_WhenFound_ReturnsMappedResponse()
