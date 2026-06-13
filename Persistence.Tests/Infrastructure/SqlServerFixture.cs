@@ -67,9 +67,11 @@ public sealed class SqlServerFixture : IAsyncLifetime
     private async Task ClearSeedDataAsync()
     {
         await using var context = CreateContext(new FakeTimeProvider());
-        // FK-safe order: children before parents. Item -> Room -> Location; Person is independent.
+        // FK-safe order: children before parents. Item -> (Room|Container); Container -> (Room|Container);
+        // Room -> Location; Person is independent. A single DELETE FROM [Container] clears all rows at
+        // once, satisfying the self-referencing NO ACTION check at statement end.
         await context.Database.ExecuteSqlRawAsync(
-            "DELETE FROM [Item]; DELETE FROM [Room]; DELETE FROM [Location]; DELETE FROM [Person];");
+            "DELETE FROM [Item]; DELETE FROM [Container]; DELETE FROM [Room]; DELETE FROM [Location]; DELETE FROM [Person];");
     }
 }
 

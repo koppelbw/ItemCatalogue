@@ -13,6 +13,7 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
 {
     public DbSet<Item> Items { get; set; }
     public DbSet<Room> Rooms { get; set; }
+    public DbSet<Container> Containers { get; set; }
     public DbSet<Location> Locations { get; set; }
     public DbSet<Person> People { get; set; }
 
@@ -85,6 +86,12 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
                 .HasForeignKey(i => i.RoomId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // Foreign key to Container (an item may live inside a container instead of directly in a room).
+            builder.HasOne(i => i.Container)
+                .WithMany()
+                .HasForeignKey(i => i.ContainerId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // Foreign key to Person (Owner)
             builder.HasOne(i => i.Owner)
                 .WithMany(p => p.Items)
@@ -132,6 +139,42 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
                 .IsRequired();
 
             builder.Property(r => r.RowVersion)
+                .IsRowVersion();
+        });
+
+        // Configure Container entity
+        modelBuilder.Entity<Container>(builder =>
+        {
+            builder.ToTable("Container");
+
+            builder.HasKey(c => c.Id);
+
+            builder.Property(c => c.Id)
+                .ValueGeneratedOnAdd();
+
+            builder.Property(c => c.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(c => c.Description)
+                .HasMaxLength(500);
+
+            // A top-level container is owned by a Room. Restrict so a Room that still has containers
+            // cannot be deleted; SQL Server error 547 surfaces as EntityInUseException. Nullable
+            // because a nested container references a parent container instead (see below).
+            builder.HasOne(c => c.Room)
+                .WithMany(r => r.Containers)
+                .HasForeignKey(c => c.RoomId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Self-reference: a nested container is owned by a parent container. Restrict (SQL Server
+            // forbids cascade on a self-referencing FK), so a parent with children cannot be deleted.
+            builder.HasOne(c => c.ParentContainer)
+                .WithMany(c => c.Children)
+                .HasForeignKey(c => c.ParentContainerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Property(c => c.RowVersion)
                 .IsRowVersion();
         });
 

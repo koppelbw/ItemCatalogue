@@ -17,6 +17,7 @@ public class CreateItemRequestValidatorTests
             Price: 19.99m,
             IsStored: false,
             RoomId: null,
+            ContainerId: null,
             OwnerId: null);
 
     [Fact]
@@ -88,6 +89,28 @@ public class CreateItemRequestValidatorTests
     {
         _validator.TestValidate(Valid() with { RoomId = 0 })
             .ShouldHaveValidationErrorFor(x => x.RoomId);
+    }
+
+    [Fact]
+    public void ContainerId_WhenZero_IsRejected()
+    {
+        _validator.TestValidate(Valid() with { ContainerId = 0 })
+            .ShouldHaveValidationErrorFor(x => x.ContainerId);
+    }
+
+    [Fact]
+    public void RoomAndContainer_BothSet_IsRejected()
+    {
+        // An item lives in a Room or a Container, not both.
+        _validator.TestValidate(Valid() with { RoomId = 1, ContainerId = 2 })
+            .ShouldHaveValidationErrorFor("Placement");
+    }
+
+    [Fact]
+    public void RoomOrContainer_OnlyOneSet_IsAllowed()
+    {
+        _validator.TestValidate(Valid() with { ContainerId = 2 }).ShouldNotHaveAnyValidationErrors();
+        _validator.TestValidate(Valid() with { RoomId = 1 }).ShouldNotHaveAnyValidationErrors();
     }
 
     [Fact]

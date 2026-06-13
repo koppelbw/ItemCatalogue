@@ -34,6 +34,16 @@ public sealed class CreateItemRequestValidator : AbstractValidator<CreateItemReq
             .GreaterThan(0)
             .When(x => x.RoomId.HasValue);
 
+        RuleFor(x => x.ContainerId)
+            .GreaterThan(0)
+            .When(x => x.ContainerId.HasValue);
+
+        // An item lives either directly in a Room or inside a Container, not both.
+        RuleFor(x => x)
+            .Must(x => !(x.RoomId.HasValue && x.ContainerId.HasValue))
+            .WithMessage("An item cannot reference both a Room and a Container.")
+            .WithName("Placement");
+
         RuleFor(x => x.OwnerId)
             .GreaterThan(0)
             .When(x => x.OwnerId.HasValue);
@@ -68,6 +78,16 @@ public sealed class UpdateItemRequestValidator : AbstractValidator<UpdateItemReq
         RuleFor(x => x.RoomId)
             .GreaterThan(0)
             .When(x => x.RoomId.HasValue);
+
+        RuleFor(x => x.ContainerId)
+            .GreaterThan(0)
+            .When(x => x.ContainerId.HasValue);
+
+        // An item lives either directly in a Room or inside a Container, not both.
+        RuleFor(x => x)
+            .Must(x => !(x.RoomId.HasValue && x.ContainerId.HasValue))
+            .WithMessage("An item cannot reference both a Room and a Container.")
+            .WithName("Placement");
 
         RuleFor(x => x.OwnerId)
             .GreaterThan(0)

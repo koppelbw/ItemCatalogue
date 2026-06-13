@@ -21,10 +21,13 @@ public abstract class ApiTestBase : IAsyncLifetime
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ItemCatalogueDbContext>();
 
-        // Delete children before parents: Item -> (Room, Person), Room -> Location.
+        // Delete children before parents: Item -> (Room|Container|Person); Container -> (Room|Container);
+        // Room -> Location. A single DELETE FROM [Container] clears all rows at once, satisfying the
+        // self-referencing NO ACTION check at statement end.
         await db.Database.ExecuteSqlRawAsync(
             """
             DELETE FROM [Item];
+            DELETE FROM [Container];
             DELETE FROM [Room];
             DELETE FROM [Location];
             DELETE FROM [Person];

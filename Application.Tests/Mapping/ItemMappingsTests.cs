@@ -18,6 +18,7 @@ public class ItemMappingsTests
             Price: 12.50m,
             IsStored: true,
             RoomId: 7,
+            ContainerId: null,
             OwnerId: 3);
 
         var item = request.ToEntity();
@@ -34,7 +35,7 @@ public class ItemMappingsTests
     [Fact]
     public void ToEntity_DoesNotSetServerOwnedFields()
     {
-        var item = new CreateItemRequest("Lamp", null, [ItemType.Electronics], null, false, null, null).ToEntity();
+        var item = new CreateItemRequest("Lamp", null, [ItemType.Electronics], null, false, null, null, null).ToEntity();
 
         item.Id.ShouldBe(0);
         item.IsDeleted.ShouldBeFalse();
@@ -63,6 +64,7 @@ public class ItemMappingsTests
             Price: 99.99m,
             IsStored: true,
             RoomId: 2,
+            ContainerId: null,
             OwnerId: 4,
             RowVersion: [1, 2, 3]);
 
@@ -83,7 +85,7 @@ public class ItemMappingsTests
     {
         var existing = new Item { Id = 5, Name = "Old", ItemTypes = [ItemType.Books] };
 
-        new UpdateItemRequest(5, "New", null, [ItemType.Books], null, false, null, null, [1])
+        new UpdateItemRequest(5, "New", null, [ItemType.Books], null, false, null, null, null, [1])
             .ApplyTo(existing);
 
         existing.Id.ShouldBe(5);
@@ -102,7 +104,7 @@ public class ItemMappingsTests
             IsStored = true,
             IsDeleted = true,
             ReasonForDeletion = DeletedReason.Broken,
-            RoomId = 1,
+            ContainerId = 3,
             OwnerId = 2,
             CreatedDate = new DateTime(2026, 1, 1),
             LastModifiedDate = new DateTime(2026, 2, 2),
@@ -113,6 +115,7 @@ public class ItemMappingsTests
 
         response.Id.ShouldBe(8);
         response.Name.ShouldBe("Lamp");
+        response.ContainerId.ShouldBe(3);
         response.IsDeleted.ShouldBeTrue();
         response.ReasonForDeletion.ShouldBe(DeletedReason.Broken);
         response.CreatedDate.ShouldBe(new DateTime(2026, 1, 1));

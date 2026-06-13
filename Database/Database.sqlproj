@@ -14,6 +14,7 @@
     <PostDeploy Include="PostDeploymentScripts\Script.PostDeployment.sql" />
     <None Include="PostDeploymentScripts\Seed_Room.sql" />
     <None Include="PostDeploymentScripts\Seed_Location.sql" />
+    <None Include="PostDeploymentScripts\Seed_Container.sql" />
     <None Include="PostDeploymentScripts\Seed_Person.sql" />
     <None Include="PostDeploymentScripts\Seed_Item.sql" />
     <!-- Table schema objects (dbo\tables\*.sql) are picked up by the SDK's default *.sql

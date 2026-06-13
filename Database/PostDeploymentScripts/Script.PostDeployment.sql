@@ -6,8 +6,10 @@
 --  Set the Build Action for these sub-scripts to None in the Properties pane to prevent them from being compiled as schema objects.
 
 
--- Location seeds before Room: Room.LocationId is a required FK to Location.
+-- Order follows the FK chain: Location -> Room -> Container, then Person, then Item (Item references
+-- Room/Container/Person).
 :r .\Seed_Location.sql
 :r .\Seed_Room.sql
+:r .\Seed_Container.sql
 :r .\Seed_Person.sql
 :r .\Seed_Item.sql

@@ -13,7 +13,7 @@ namespace ItemCatalogueAPI.Tests;
 public class ItemApiTests(ApiFactory factory) : ApiTestBase(factory)
 {
     private static CreateItemRequest ValidItem() =>
-        new("Desk Lamp", "A small lamp", [ItemType.Electronics, ItemType.Books], 19.99m, false, null, null);
+        new("Desk Lamp", "A small lamp", [ItemType.Electronics, ItemType.Books], 19.99m, false, null, null, null);
 
     private async Task<ItemResponse> CreateItemAsync()
     {

@@ -14,6 +14,10 @@ public class Room : IEntity, IAuditable
 
     public Location? Location { get; set; }
 
+    // Top-level Containers that sit directly in this Room (nested containers reference a parent
+    // container instead). The owning FK lives on Container.RoomId.
+    public List<Container> Containers { get; set; } = [];
+
     public DateTime CreatedDate { get; set; }
 
     public DateTime? LastModifiedDate { get; set; }

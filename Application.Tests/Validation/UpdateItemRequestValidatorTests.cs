@@ -17,6 +17,7 @@ public class UpdateItemRequestValidatorTests
             Price: 19.99m,
             IsStored: false,
             RoomId: null,
+            ContainerId: null,
             OwnerId: null,
             RowVersion: [1, 2, 3, 4]);
 

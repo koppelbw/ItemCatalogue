@@ -21,10 +21,15 @@ public class Item : IEntity, IAuditable
 
 
 
-    // An item's location is derived through its room (Item -> Room -> Location).
+    // An item lives either directly in a Room or inside a Container (at most one of the two).
+    // Its location is derived through that link (Item -> Room/Container -> ... -> Location).
     public int? RoomId { get; set; }
 
     public Room? Room { get; set; }
+
+    public int? ContainerId { get; set; }
+
+    public Container? Container { get; set; }
 
     public int? OwnerId { get; set; }
 

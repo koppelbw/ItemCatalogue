@@ -13,6 +13,7 @@ public static class ItemMappings
         Price = request.Price,
         IsStored = request.IsStored,
         RoomId = request.RoomId,
+        ContainerId = request.ContainerId,
         OwnerId = request.OwnerId,
     };
 
@@ -24,6 +25,7 @@ public static class ItemMappings
         item.Price = request.Price;
         item.IsStored = request.IsStored;
         item.RoomId = request.RoomId;
+        item.ContainerId = request.ContainerId;
         item.OwnerId = request.OwnerId;
         // Carry the client's concurrency token onto the entity; the repository uses it as
         // the original value so a stale token is detected at save time.
@@ -40,6 +42,7 @@ public static class ItemMappings
         item.IsDeleted,
         item.ReasonForDeletion,
         item.RoomId,
+        item.ContainerId,
         item.OwnerId,
         item.CreatedDate,
         item.LastModifiedDate,

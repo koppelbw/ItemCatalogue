@@ -12,9 +12,9 @@ namespace Persistence.RepositoryAdapters;
 public sealed class ItemRepository(ItemCatalogueDbContext dbContext, TimeProvider timeProvider, ILoggerFactory loggerFactory)
     : GenericRepository<Item>(dbContext, loggerFactory), IItemRepository
 {
-    // Read paths eager-load the Room and Owner graph for display.
+    // Read paths eager-load the Room, Container, and Owner graph for display.
     protected override IQueryable<Item> ReadQuery()
-        => EntitySet.Include(i => i.Room).Include(i => i.Owner).AsNoTracking();
+        => EntitySet.Include(i => i.Room).Include(i => i.Container).Include(i => i.Owner).AsNoTracking();
 
 
     public async Task<int> SoftDeleteItemByIdAsync(int id, DeletedReason reason, CancellationToken cancellationToken = default)
