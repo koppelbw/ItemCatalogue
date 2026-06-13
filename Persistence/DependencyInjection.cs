@@ -17,6 +17,7 @@ public static class DependencyInjection
     {
         // Repositories (ports -> adapters)
         services.AddScoped<IItemRepository, ItemRepository>();
+        services.AddScoped<IItemEventRepository, ItemEventRepository>();
         services.AddScoped<IRoomRepository, RoomRepository>();
         services.AddScoped<IContainerRepository, ContainerRepository>();
         services.AddScoped<ILocationRepository, LocationRepository>();
@@ -25,10 +26,13 @@ public static class DependencyInjection
         // Single clock source for all audit stamping (CreatedDate/LastModifiedDate). Injected into both the auditing interceptor and ItemRepository's ExecuteUpdate soft-delete
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<AuditingSaveChangesInterceptor>();
+        services.AddSingleton<ItemEventInterceptor>();
 
         services.AddDbContext<ItemCatalogueDbContext>((sp, options) =>
             options.UseSqlServer(configuration.GetConnectionString("local"))
-                   .AddInterceptors(sp.GetRequiredService<AuditingSaveChangesInterceptor>()));
+                   .AddInterceptors(
+                       sp.GetRequiredService<AuditingSaveChangesInterceptor>(),
+                       sp.GetRequiredService<ItemEventInterceptor>()));
 
         return services;
     }

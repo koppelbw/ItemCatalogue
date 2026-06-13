@@ -12,6 +12,7 @@ namespace Persistence;
 public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbContext> options) : DbContext(options)
 {
     public DbSet<Item> Items { get; set; }
+    public DbSet<ItemEvent> ItemEvents { get; set; }
     public DbSet<Room> Rooms { get; set; }
     public DbSet<Container> Containers { get; set; }
     public DbSet<Location> Locations { get; set; }
@@ -143,6 +144,35 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
                 // insert (matches the database for out-of-app writes; SchemaDriftTests enforces this).
                 .HasDefaultValueSql("'[]'")
                 .IsRequired();
+        });
+
+        modelBuilder.Entity<ItemEvent>(builder =>
+        {
+            builder.ToTable("ItemEvent");
+
+            builder.HasKey(e => e.Id);
+
+            builder.Property(e => e.EventType)
+                .HasConversion<string>()
+                .HasMaxLength(50)
+                .IsRequired();
+
+            builder.Property(e => e.OccurredAt)
+                .IsRequired();
+
+            builder.Property(e => e.OldValue)
+                .HasMaxLength(500);
+
+            builder.Property(e => e.NewValue)
+                .HasMaxLength(500);
+
+            builder.Property(e => e.Notes)
+                .HasMaxLength(500);
+
+            builder.HasOne(e => e.Item)
+                .WithMany()
+                .HasForeignKey(e => e.ItemId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Configure Room entity

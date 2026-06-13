@@ -16,6 +16,7 @@ namespace Application.Tests.Services;
 public class ItemServiceTests
 {
     private readonly IItemRepository _repository = Substitute.For<IItemRepository>();
+    private readonly IItemEventRepository _eventRepository = Substitute.For<IItemEventRepository>();
     private readonly ItemService _service;
 
     public ItemServiceTests()
@@ -24,6 +25,8 @@ public class ItemServiceTests
         // exercised exactly as in production; only the repository (I/O) is faked.
         _service = new ItemService(
             _repository,
+            _eventRepository,
+            TimeProvider.System,
             new CreateItemRequestValidator(),
             new UpdateItemRequestValidator(),
             NullLogger<ItemService>.Instance);
@@ -156,5 +159,30 @@ public class ItemServiceTests
 
         rows.ShouldBe(1);
         await _repository.Received(1).SoftDeleteItemByIdAsync(3, DeletedReason.Broken, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenRowDeleted_EmitsSoftDeletedEventWithReason()
+    {
+        _repository.SoftDeleteItemByIdAsync(3, DeletedReason.Broken, Arg.Any<CancellationToken>()).Returns(1);
+
+        await _service.DeleteAsync(3, DeletedReason.Broken);
+
+        await _eventRepository.Received(1).InsertAsync(
+            Arg.Is<ItemEvent>(e =>
+                e.ItemId == 3 &&
+                e.EventType == ItemEventType.SoftDeleted &&
+                e.Notes == DeletedReason.Broken.ToString()),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenRowNotFound_DoesNotEmitEvent()
+    {
+        _repository.SoftDeleteItemByIdAsync(99, DeletedReason.Lost, Arg.Any<CancellationToken>()).Returns(0);
+
+        await _service.DeleteAsync(99, DeletedReason.Lost);
+
+        await _eventRepository.DidNotReceive().InsertAsync(Arg.Any<ItemEvent>(), Arg.Any<CancellationToken>());
     }
 }

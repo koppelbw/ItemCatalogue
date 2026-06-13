@@ -2,6 +2,7 @@ using Application.DTOs;
 using Application.Logging;
 using Application.Mapping;
 using Application.ServicePorts;
+using Domain.Entities;
 using Domain.Enums;
 using Domain.Exceptions;
 using Domain.Pagination;
@@ -13,6 +14,8 @@ namespace Application.Services;
 
 public sealed class ItemService(
     IItemRepository itemRepository,
+    IItemEventRepository itemEventRepository,
+    TimeProvider timeProvider,
     IValidator<CreateItemRequest> createValidator,
     IValidator<UpdateItemRequest> updateValidator,
     ILogger<ItemService> logger) : IItemService
@@ -58,6 +61,18 @@ public sealed class ItemService(
     {
         var numberOfEffectedRows = await itemRepository.SoftDeleteItemByIdAsync(id, reason, cancellationToken);
         logger.ItemSoftDeleted(id, reason, numberOfEffectedRows);
+
+        if (numberOfEffectedRows > 0)
+        {
+            await itemEventRepository.InsertAsync(new ItemEvent
+            {
+                ItemId = id,
+                EventType = ItemEventType.SoftDeleted,
+                OccurredAt = timeProvider.GetUtcNow().UtcDateTime,
+                Notes = reason.ToString(),
+            }, cancellationToken);
+        }
+
         return numberOfEffectedRows;
     }
 }

@@ -56,7 +56,9 @@ public sealed class SqlServerFixture : IAsyncLifetime
     {
         var options = new DbContextOptionsBuilder<ItemCatalogueDbContext>()
             .UseSqlServer(ConnectionString)
-            .AddInterceptors(new AuditingSaveChangesInterceptor(clock))
+            .AddInterceptors(
+                new AuditingSaveChangesInterceptor(clock),
+                new ItemEventInterceptor(clock))
             .Options;
 
         return new ItemCatalogueDbContext(options);

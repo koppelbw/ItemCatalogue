@@ -14,6 +14,7 @@ public static class DependencyInjection
     {
         // Services (ports -> implementations)
         services.AddScoped<IItemService, ItemService>();
+        services.AddScoped<IItemEventService, ItemEventService>();
         services.AddScoped<IRoomService, RoomService>();
         services.AddScoped<IContainerService, ContainerService>();
         services.AddScoped<ILocationService, LocationService>();
