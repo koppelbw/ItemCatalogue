@@ -15,6 +15,9 @@ public sealed class CreateRoomRequestValidator : AbstractValidator<CreateRoomReq
 
         RuleFor(x => x.Description)
             .MaximumLength(500);
+
+        RuleFor(x => x.LocationId)
+            .GreaterThan(0);
     }
 }
 
@@ -31,6 +34,9 @@ public sealed class UpdateRoomRequestValidator : AbstractValidator<UpdateRoomReq
 
         RuleFor(x => x.Description)
             .MaximumLength(500);
+
+        RuleFor(x => x.LocationId)
+            .GreaterThan(0);
 
         RuleFor(x => x.RowVersion)
             .NotEmpty();

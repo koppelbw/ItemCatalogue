@@ -21,13 +21,13 @@ public abstract class ApiTestBase : IAsyncLifetime
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ItemCatalogueDbContext>();
 
-        // Delete children before parents: Item -> (Location, Person), Location -> Room.
+        // Delete children before parents: Item -> (Room, Person), Room -> Location.
         await db.Database.ExecuteSqlRawAsync(
             """
             DELETE FROM [Item];
+            DELETE FROM [Room];
             DELETE FROM [Location];
             DELETE FROM [Person];
-            DELETE FROM [Room];
             """);
 
         Client = _factory.CreateClient();

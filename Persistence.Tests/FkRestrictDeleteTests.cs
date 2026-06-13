@@ -7,8 +7,8 @@ using Shouldly;
 
 namespace Persistence.Tests;
 
-// The Location -> Room foreign key uses DeleteBehavior.Restrict. Deleting a Room that still has
-// Locations must surface as the domain-level EntityInUseException (translated from SQL Server
+// The Room -> Location foreign key uses DeleteBehavior.Restrict. Deleting a Location that still has
+// Rooms must surface as the domain-level EntityInUseException (translated from SQL Server
 // error 547), so the API can map it to 409 Conflict without referencing EF. This is the core of
 // the graceful-delete plan.
 public class FkRestrictDeleteTests(SqlServerFixture fixture) : PersistenceTestBase(fixture)
@@ -17,31 +17,31 @@ public class FkRestrictDeleteTests(SqlServerFixture fixture) : PersistenceTestBa
     private LocationRepository Locations() => new(Db, NullLoggerFactory.Instance);
 
     [Fact]
-    public async Task DeleteRoom_WhileReferencedByLocation_ThrowsEntityInUse()
+    public async Task DeleteLocation_WhileReferencedByRoom_ThrowsEntityInUse()
     {
-        var rooms = Rooms();
-        var roomId = await rooms.InsertAsync(new Room { Name = "Garage" });
-        await Locations().InsertAsync(new Location { Name = "Top shelf", RoomId = roomId });
+        var locations = Locations();
+        var locationId = await locations.InsertAsync(new Location { Name = "House" });
+        await Rooms().InsertAsync(new Room { Name = "Garage", LocationId = locationId });
 
-        await Should.ThrowAsync<EntityInUseException>(() => rooms.DeleteAsync(roomId));
+        await Should.ThrowAsync<EntityInUseException>(() => locations.DeleteAsync(locationId));
 
-        // The restrict means nothing was deleted; the room is still there.
-        (await rooms.GetByIdAsync(roomId)).ShouldNotBeNull();
+        // The restrict means nothing was deleted; the location is still there.
+        (await locations.GetByIdAsync(locationId)).ShouldNotBeNull();
     }
 
     [Fact]
-    public async Task DeleteRoom_AfterRemovingItsLocations_Succeeds()
+    public async Task DeleteLocation_AfterRemovingItsRooms_Succeeds()
     {
         var rooms = Rooms();
         var locations = Locations();
-        var roomId = await rooms.InsertAsync(new Room { Name = "Garage" });
-        var locationId = await locations.InsertAsync(new Location { Name = "Top shelf", RoomId = roomId });
+        var locationId = await locations.InsertAsync(new Location { Name = "House" });
+        var roomId = await rooms.InsertAsync(new Room { Name = "Garage", LocationId = locationId });
 
         // Remove the only child, then the parent delete is no longer restricted.
-        await locations.DeleteAsync(locationId);
-        var affected = await rooms.DeleteAsync(roomId);
+        await rooms.DeleteAsync(roomId);
+        var affected = await locations.DeleteAsync(locationId);
 
         affected.ShouldBe(1);
-        (await rooms.GetByIdAsync(roomId)).ShouldBeNull();
+        (await locations.GetByIdAsync(locationId)).ShouldBeNull();
     }
 }

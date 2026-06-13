@@ -79,10 +79,10 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
             builder.Property(i => i.RowVersion)
                 .IsRowVersion();
 
-            // Foreign key to Location
-            builder.HasOne(i => i.Location)
+            // Foreign key to Room. An item's location is derived through its room.
+            builder.HasOne(i => i.Room)
                 .WithMany()
-                .HasForeignKey(i => i.LocationId)
+                .HasForeignKey(i => i.RoomId)
                 .OnDelete(DeleteBehavior.SetNull);
 
             // Foreign key to Person (Owner)
@@ -123,6 +123,14 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
             builder.Property(r => r.Description)
                 .HasMaxLength(500);
 
+            // Foreign key to the owning Location (Required). Restrict so a Location that still
+            // has Rooms cannot be deleted; SQL Server error 547 surfaces as EntityInUseException.
+            builder.HasOne(r => r.Location)
+                .WithMany(l => l.Rooms)
+                .HasForeignKey(r => r.LocationId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
             builder.Property(r => r.RowVersion)
                 .IsRowVersion();
         });
@@ -144,12 +152,7 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
             builder.Property(l => l.Description)
                 .HasMaxLength(500);
 
-            // Foreign key to Room (Required)
-            builder.HasOne(l => l.Room)
-                .WithMany()
-                .HasForeignKey(l => l.RoomId)
-                .OnDelete(DeleteBehavior.Restrict)
-                .IsRequired();
+            // The Location -> Rooms one-to-many is configured from the Room side (Room.LocationId).
 
             builder.Property(l => l.RowVersion)
                 .IsRowVersion();

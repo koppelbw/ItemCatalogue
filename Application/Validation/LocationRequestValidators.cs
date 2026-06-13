@@ -4,8 +4,8 @@ using FluentValidation;
 namespace Application.Validation;
 
 // Input rules for location writes. Limits mirror the EF Core column mappings in
-// ItemCatalogueDbContext (Name nvarchar(100), Description nvarchar(500)); RoomId is a
-// required foreign key.
+// ItemCatalogueDbContext (Name nvarchar(100), Description nvarchar(500)). A Location's
+// Rooms are managed through the Room endpoints (Room.LocationId), not on the Location write.
 public sealed class CreateLocationRequestValidator : AbstractValidator<CreateLocationRequest>
 {
     public CreateLocationRequestValidator()
@@ -16,9 +16,6 @@ public sealed class CreateLocationRequestValidator : AbstractValidator<CreateLoc
 
         RuleFor(x => x.Description)
             .MaximumLength(500);
-
-        RuleFor(x => x.RoomId)
-            .GreaterThan(0);
     }
 }
 
@@ -35,9 +32,6 @@ public sealed class UpdateLocationRequestValidator : AbstractValidator<UpdateLoc
 
         RuleFor(x => x.Description)
             .MaximumLength(500);
-
-        RuleFor(x => x.RoomId)
-            .GreaterThan(0);
 
         RuleFor(x => x.RowVersion)
             .NotEmpty();

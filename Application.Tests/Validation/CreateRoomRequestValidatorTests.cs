@@ -8,7 +8,7 @@ public class CreateRoomRequestValidatorTests
 {
     private readonly CreateRoomRequestValidator _validator = new();
 
-    private static CreateRoomRequest Valid() => new(Name: "Garage", Description: "Out back");
+    private static CreateRoomRequest Valid() => new(Name: "Garage", Description: "Out back", LocationId: 3);
 
     [Fact]
     public void ValidRequest_HasNoErrors() =>
@@ -33,4 +33,9 @@ public class CreateRoomRequestValidatorTests
     public void Description_WhenNull_IsAllowed() =>
         _validator.TestValidate(Valid() with { Description = null })
             .ShouldNotHaveValidationErrorFor(x => x.Description);
+
+    [Fact]
+    public void LocationId_WhenNotPositive_IsRejected() =>
+        _validator.TestValidate(Valid() with { LocationId = 0 })
+            .ShouldHaveValidationErrorFor(x => x.LocationId);
 }

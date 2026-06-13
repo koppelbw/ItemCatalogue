@@ -9,12 +9,14 @@ public static class RoomMappings
     {
         Name = request.Name,
         Description = request.Description,
+        LocationId = request.LocationId,
     };
 
     public static void ApplyTo(this UpdateRoomRequest request, Room room)
     {
         room.Name = request.Name;
         room.Description = request.Description;
+        room.LocationId = request.LocationId;
         room.RowVersion = request.RowVersion;
     }
 
@@ -22,5 +24,6 @@ public static class RoomMappings
         room.Id,
         room.Name,
         room.Description,
+        room.LocationId,
         room.RowVersion);
 }

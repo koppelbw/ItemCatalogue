@@ -9,7 +9,7 @@ public class CreateLocationRequestValidatorTests
     private readonly CreateLocationRequestValidator _validator = new();
 
     private static CreateLocationRequest Valid() =>
-        new(Name: "Top shelf", Description: null, RoomId: 5);
+        new(Name: "Top shelf", Description: null);
 
     [Fact]
     public void ValidRequest_HasNoErrors() =>
@@ -19,9 +19,4 @@ public class CreateLocationRequestValidatorTests
     public void Name_WhenEmpty_IsRejected() =>
         _validator.TestValidate(Valid() with { Name = "" })
             .ShouldHaveValidationErrorFor(x => x.Name);
-
-    [Fact]
-    public void RoomId_WhenNotPositive_IsRejected() =>
-        _validator.TestValidate(Valid() with { RoomId = 0 })
-            .ShouldHaveValidationErrorFor(x => x.RoomId);
 }

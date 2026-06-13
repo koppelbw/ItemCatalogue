@@ -8,7 +8,7 @@ public sealed record CreateItemRequest(
     List<ItemType> ItemTypes,
     decimal? Price,
     bool IsStored,
-    int? LocationId,
+    int? RoomId,
     int? OwnerId);
 
 public sealed record UpdateItemRequest(
@@ -18,7 +18,7 @@ public sealed record UpdateItemRequest(
     List<ItemType> ItemTypes,
     decimal? Price,
     bool IsStored,
-    int? LocationId,
+    int? RoomId,
     int? OwnerId,
     byte[] RowVersion);
 
@@ -31,7 +31,7 @@ public sealed record ItemResponse(
     bool IsStored,
     bool IsDeleted,
     DeletedReason? ReasonForDeletion,
-    int? LocationId,
+    int? RoomId,
     int? OwnerId,
     DateTime CreatedDate,
     DateTime? LastModifiedDate,

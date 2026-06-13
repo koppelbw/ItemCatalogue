@@ -8,7 +8,7 @@ namespace Persistence.RepositoryAdapters;
 public sealed class LocationRepository(ItemCatalogueDbContext dbContext, ILoggerFactory loggerFactory)
     : GenericRepository<Location>(dbContext, loggerFactory), ILocationRepository
 {
-    // Read paths include the parent Room for display; the update path intentionally does not.
+    // Read paths include the child Rooms for display; the update path intentionally does not.
     protected override IQueryable<Location> ReadQuery()
-        => EntitySet.Include(l => l.Room).AsNoTracking();
+        => EntitySet.Include(l => l.Rooms).AsNoTracking();
 }

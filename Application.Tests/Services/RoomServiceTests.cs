@@ -27,7 +27,7 @@ public class RoomServiceTests
     }
 
     private static Room Existing(int id = 1) =>
-        new() { Id = id, Name = "Garage", RowVersion = [1, 2, 3] };
+        new() { Id = id, Name = "Garage", LocationId = 3, RowVersion = [1, 2, 3] };
 
     [Fact]
     public async Task GetByIdAsync_WhenMissing_ThrowsNotFound()
@@ -44,7 +44,7 @@ public class RoomServiceTests
         _repository.When(r => r.InsertAsync(Arg.Any<Room>(), Arg.Any<CancellationToken>()))
             .Do(ci => ci.Arg<Room>().Id = 10);
 
-        var response = await _service.CreateAsync(new CreateRoomRequest("Garage", "Out back"));
+        var response = await _service.CreateAsync(new CreateRoomRequest("Garage", "Out back", 3));
 
         response.Id.ShouldBe(10);
         response.Name.ShouldBe("Garage");
@@ -54,7 +54,7 @@ public class RoomServiceTests
     [Fact]
     public async Task CreateAsync_WithInvalidRequest_ThrowsAndDoesNotInsert()
     {
-        await Should.ThrowAsync<ValidationException>(() => _service.CreateAsync(new CreateRoomRequest("", null)));
+        await Should.ThrowAsync<ValidationException>(() => _service.CreateAsync(new CreateRoomRequest("", null, 3)));
 
         await _repository.DidNotReceive().InsertAsync(Arg.Any<Room>(), Arg.Any<CancellationToken>());
     }
@@ -65,7 +65,7 @@ public class RoomServiceTests
         var existing = Existing();
         _repository.GetForUpdateAsync(1, Arg.Any<CancellationToken>()).Returns(existing);
 
-        var response = await _service.UpdateAsync(new UpdateRoomRequest(1, "Shed", "Renamed", [9]));
+        var response = await _service.UpdateAsync(new UpdateRoomRequest(1, "Shed", "Renamed", 3, [9]));
 
         response.Name.ShouldBe("Shed");
         existing.Name.ShouldBe("Shed");
@@ -79,7 +79,7 @@ public class RoomServiceTests
         _repository.GetForUpdateAsync(2, Arg.Any<CancellationToken>()).Returns((Room?)null);
 
         await Should.ThrowAsync<NotFoundException>(
-            () => _service.UpdateAsync(new UpdateRoomRequest(2, "Shed", null, [9])));
+            () => _service.UpdateAsync(new UpdateRoomRequest(2, "Shed", null, 3, [9])));
 
         await _repository.DidNotReceive().UpdateAsync(Arg.Any<Room>(), Arg.Any<CancellationToken>());
     }

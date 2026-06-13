@@ -16,7 +16,7 @@ public class UpdateItemRequestValidatorTests
             ItemTypes: [ItemType.Electronics],
             Price: 19.99m,
             IsStored: false,
-            LocationId: null,
+            RoomId: null,
             OwnerId: null,
             RowVersion: [1, 2, 3, 4]);
 

@@ -30,9 +30,9 @@ public sealed class CreateItemRequestValidator : AbstractValidator<CreateItemReq
             .PrecisionScale(18, 2, ignoreTrailingZeros: true)
             .When(x => x.Price.HasValue);
 
-        RuleFor(x => x.LocationId)
+        RuleFor(x => x.RoomId)
             .GreaterThan(0)
-            .When(x => x.LocationId.HasValue);
+            .When(x => x.RoomId.HasValue);
 
         RuleFor(x => x.OwnerId)
             .GreaterThan(0)
@@ -65,9 +65,9 @@ public sealed class UpdateItemRequestValidator : AbstractValidator<UpdateItemReq
             .PrecisionScale(18, 2, ignoreTrailingZeros: true)
             .When(x => x.Price.HasValue);
 
-        RuleFor(x => x.LocationId)
+        RuleFor(x => x.RoomId)
             .GreaterThan(0)
-            .When(x => x.LocationId.HasValue);
+            .When(x => x.RoomId.HasValue);
 
         RuleFor(x => x.OwnerId)
             .GreaterThan(0)

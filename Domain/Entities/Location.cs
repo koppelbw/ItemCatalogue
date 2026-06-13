@@ -9,9 +9,8 @@ public class Location : IEntity, IAuditable
     public string? Description { get; set; }
 
 
-    public int RoomId { get; set; }
-
-    public Room? Room { get; set; }
+    // A Location holds many Rooms (one-to-many). The owning FK lives on Room.LocationId.
+    public List<Room> Rooms { get; set; } = [];
 
     public DateTime CreatedDate { get; set; }
 

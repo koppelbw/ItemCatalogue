@@ -67,9 +67,9 @@ public sealed class SqlServerFixture : IAsyncLifetime
     private async Task ClearSeedDataAsync()
     {
         await using var context = CreateContext(new FakeTimeProvider());
-        // FK-safe order: children before parents.
+        // FK-safe order: children before parents. Item -> Room -> Location; Person is independent.
         await context.Database.ExecuteSqlRawAsync(
-            "DELETE FROM [Item]; DELETE FROM [Location]; DELETE FROM [Person]; DELETE FROM [Room];");
+            "DELETE FROM [Item]; DELETE FROM [Room]; DELETE FROM [Location]; DELETE FROM [Person];");
     }
 }
 

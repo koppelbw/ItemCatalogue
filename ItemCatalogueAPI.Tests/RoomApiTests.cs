@@ -9,12 +9,22 @@ namespace ItemCatalogueAPI.Tests;
 
 // Drives the /api/rooms endpoints over real HTTP through the full pipeline (routing, model binding,
 // validation, services, EF, SQL Server, and the RFC 9457 problem-details mapping). Room exercises
-// the generic CRUD surface plus both 409 paths (optimistic concurrency and FK-restrict).
+// the generic CRUD surface plus the optimistic-concurrency 409 path. (The FK-restrict 409 path now
+// lives on Location, since Room owns the FK; see LocationApiTests.)
 public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
 {
-    private async Task<RoomResponse> CreateRoomAsync(string name = "Garage", string? description = "Out back")
+    // Every Room needs a parent Location (Room.LocationId is a required FK).
+    private async Task<int> CreateLocationIdAsync(string name = "House")
     {
-        var response = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest(name, description));
+        var response = await Client.PostAsJsonAsync("/api/locations", new CreateLocationRequest(name, null));
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        return (await response.Content.ReadFromJsonAsync<LocationResponse>())!.Id;
+    }
+
+    private async Task<RoomResponse> CreateRoomAsync(string name = "Garage", string? description = "Out back", int? locationId = null)
+    {
+        locationId ??= await CreateLocationIdAsync();
+        var response = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest(name, description, locationId.Value));
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         return (await response.Content.ReadFromJsonAsync<RoomResponse>())!;
     }
@@ -22,7 +32,8 @@ public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
     [Fact]
     public async Task Create_WithValidBody_Returns201WithLocationHeaderAndBody()
     {
-        var response = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("Garage", "Out back"));
+        var locationId = await CreateLocationIdAsync();
+        var response = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("Garage", "Out back", locationId));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         response.Headers.Location.ShouldNotBeNull();
@@ -41,7 +52,8 @@ public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
     [Fact]
     public async Task Create_WithEmptyName_Returns400ValidationProblem()
     {
-        var response = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("", null));
+        // LocationId is positive so it passes its own rule; the empty Name is the rejection under test.
+        var response = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("", null, 1));
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         response.Content.Headers.ContentType!.MediaType.ShouldBe("application/problem+json");
@@ -99,7 +111,7 @@ public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
 
         var response = await Client.PutAsJsonAsync(
             $"/api/rooms/{created.Id}",
-            new UpdateRoomRequest(created.Id, "Shed", "Renamed", created.RowVersion));
+            new UpdateRoomRequest(created.Id, "Shed", "Renamed", created.LocationId, created.RowVersion));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var updated = await response.Content.ReadFromJsonAsync<RoomResponse>();
@@ -114,7 +126,7 @@ public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
         // Route id and body id deliberately disagree; the controller maps this to a 400.
         var response = await Client.PutAsJsonAsync(
             $"/api/rooms/{created.Id}",
-            new UpdateRoomRequest(created.Id + 1, "Shed", null, created.RowVersion));
+            new UpdateRoomRequest(created.Id + 1, "Shed", null, created.LocationId, created.RowVersion));
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -124,7 +136,7 @@ public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
     {
         var response = await Client.PutAsJsonAsync(
             "/api/rooms/999999",
-            new UpdateRoomRequest(999999, "Shed", null, [0, 0, 0, 0, 0, 0, 0, 1]));
+            new UpdateRoomRequest(999999, "Shed", null, 1, [0, 0, 0, 0, 0, 0, 0, 1]));
 
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -137,13 +149,13 @@ public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
         // First update succeeds and bumps the server's rowversion.
         var first = await Client.PutAsJsonAsync(
             $"/api/rooms/{created.Id}",
-            new UpdateRoomRequest(created.Id, "Shed", null, created.RowVersion));
+            new UpdateRoomRequest(created.Id, "Shed", null, created.LocationId, created.RowVersion));
         first.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         // Reusing the original (now stale) rowversion must be rejected as a concurrency conflict.
         var second = await Client.PutAsJsonAsync(
             $"/api/rooms/{created.Id}",
-            new UpdateRoomRequest(created.Id, "Workshop", null, created.RowVersion));
+            new UpdateRoomRequest(created.Id, "Workshop", null, created.LocationId, created.RowVersion));
 
         second.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         var problem = await second.Content.ReadFromJsonAsync<ProblemDetails>();
@@ -169,21 +181,5 @@ public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
         problem!.Title.ShouldBe("Resource not found");
-    }
-
-    [Fact]
-    public async Task Delete_WhileReferencedByLocation_Returns409InUse()
-    {
-        var room = await CreateRoomAsync();
-        var location = await Client.PostAsJsonAsync(
-            "/api/locations",
-            new CreateLocationRequest("Top shelf", null, room.Id));
-        location.StatusCode.ShouldBe(HttpStatusCode.Created);
-
-        var response = await Client.DeleteAsync($"/api/rooms/{room.Id}");
-
-        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
-        problem!.Title.ShouldBe("Resource in use");
     }
 }

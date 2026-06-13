@@ -2,19 +2,17 @@ namespace Application.DTOs;
 
 public sealed record CreateLocationRequest(
     string Name,
-    string? Description,
-    int RoomId);
+    string? Description);
 
 public sealed record UpdateLocationRequest(
     int Id,
     string Name,
     string? Description,
-    int RoomId,
     byte[] RowVersion);
 
 public sealed record LocationResponse(
     int Id,
     string Name,
     string? Description,
-    int RoomId,
+    IReadOnlyList<RoomResponse> Rooms,
     byte[] RowVersion);

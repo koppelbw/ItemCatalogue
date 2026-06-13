@@ -16,7 +16,7 @@ public class CreateItemRequestValidatorTests
             ItemTypes: [ItemType.Electronics],
             Price: 19.99m,
             IsStored: false,
-            LocationId: null,
+            RoomId: null,
             OwnerId: null);
 
     [Fact]
@@ -84,10 +84,10 @@ public class CreateItemRequestValidatorTests
     }
 
     [Fact]
-    public void LocationId_WhenZero_IsRejected()
+    public void RoomId_WhenZero_IsRejected()
     {
-        _validator.TestValidate(Valid() with { LocationId = 0 })
-            .ShouldHaveValidationErrorFor(x => x.LocationId);
+        _validator.TestValidate(Valid() with { RoomId = 0 })
+            .ShouldHaveValidationErrorFor(x => x.RoomId);
     }
 
     [Fact]

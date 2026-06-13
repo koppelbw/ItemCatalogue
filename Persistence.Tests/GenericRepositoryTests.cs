@@ -16,11 +16,15 @@ public class GenericRepositoryTests(SqlServerFixture fixture) : PersistenceTestB
 {
     private RoomRepository NewRepository() => new(Db, NullLoggerFactory.Instance);
 
+    // Room.LocationId is a required FK, so every Room needs a parent Location to insert.
+    private Task<int> SeedLocationAsync() =>
+        new LocationRepository(Db, NullLoggerFactory.Instance).InsertAsync(new Location { Name = "House" });
+
     [Fact]
     public async Task InsertAsync_AssignsIdentityAndStampsCreatedDateAndRowVersion()
     {
         var repository = NewRepository();
-        var room = new Room { Name = "Garage" };
+        var room = new Room { Name = "Garage", LocationId = await SeedLocationAsync() };
 
         var id = await repository.InsertAsync(room);
 
@@ -43,7 +47,7 @@ public class GenericRepositoryTests(SqlServerFixture fixture) : PersistenceTestB
     public async Task GetByIdAsync_WhenPresent_ReturnsRow()
     {
         var repository = NewRepository();
-        var id = await repository.InsertAsync(new Room { Name = "Garage", Description = "Out back" });
+        var id = await repository.InsertAsync(new Room { Name = "Garage", Description = "Out back", LocationId = await SeedLocationAsync() });
 
         var found = await repository.GetByIdAsync(id);
 
@@ -56,9 +60,10 @@ public class GenericRepositoryTests(SqlServerFixture fixture) : PersistenceTestB
     public async Task GetAllAsync_ReturnsRequestedWindowOrderedByIdWithTotalCount()
     {
         var repository = NewRepository();
+        var locationId = await SeedLocationAsync();
         for (var i = 1; i <= 25; i++)
         {
-            await repository.InsertAsync(new Room { Name = $"Room {i:D2}" });
+            await repository.InsertAsync(new Room { Name = $"Room {i:D2}", LocationId = locationId });
         }
 
         var page = await repository.GetAllAsync(PageRequest.Create(page: 2, pageSize: 10));
@@ -76,7 +81,7 @@ public class GenericRepositoryTests(SqlServerFixture fixture) : PersistenceTestB
     public async Task UpdateAsync_PersistsChangesStampsModifiedDateAndBumpsRowVersion()
     {
         var repository = NewRepository();
-        var id = await repository.InsertAsync(new Room { Name = "Garage" });
+        var id = await repository.InsertAsync(new Room { Name = "Garage", LocationId = await SeedLocationAsync() });
         var originalRowVersion = (await repository.GetForUpdateAsync(id))!.RowVersion;
 
         // Advance the clock so LastModifiedDate is distinguishable from CreatedDate.
@@ -96,7 +101,7 @@ public class GenericRepositoryTests(SqlServerFixture fixture) : PersistenceTestB
     public async Task UpdateAsync_WithStaleRowVersion_ThrowsConcurrencyConflict()
     {
         var repository = NewRepository();
-        var id = await repository.InsertAsync(new Room { Name = "Garage" });
+        var id = await repository.InsertAsync(new Room { Name = "Garage", LocationId = await SeedLocationAsync() });
 
         // Load the row we intend to edit (carries the current rowversion as its original value)...
         var stale = await repository.GetForUpdateAsync(id);
@@ -114,7 +119,7 @@ public class GenericRepositoryTests(SqlServerFixture fixture) : PersistenceTestB
     public async Task DeleteAsync_RemovesRowAndReturnsAffectedCount()
     {
         var repository = NewRepository();
-        var id = await repository.InsertAsync(new Room { Name = "Garage" });
+        var id = await repository.InsertAsync(new Room { Name = "Garage", LocationId = await SeedLocationAsync() });
 
         var affected = await repository.DeleteAsync(id);
 

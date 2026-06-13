@@ -9,14 +9,12 @@ public static class LocationMappings
     {
         Name = request.Name,
         Description = request.Description,
-        RoomId = request.RoomId,
     };
 
     public static void ApplyTo(this UpdateLocationRequest request, Location location)
     {
         location.Name = request.Name;
         location.Description = request.Description;
-        location.RoomId = request.RoomId;
         location.RowVersion = request.RowVersion;
     }
 
@@ -24,6 +22,6 @@ public static class LocationMappings
         location.Id,
         location.Name,
         location.Description,
-        location.RoomId,
+        location.Rooms?.Select(r => r.ToResponse()).ToList() ?? [],
         location.RowVersion);
 }

@@ -17,7 +17,7 @@ public class ItemMappingsTests
             ItemTypes: [ItemType.Electronics, ItemType.Books],
             Price: 12.50m,
             IsStored: true,
-            LocationId: 7,
+            RoomId: 7,
             OwnerId: 3);
 
         var item = request.ToEntity();
@@ -27,7 +27,7 @@ public class ItemMappingsTests
         item.ItemTypes.ShouldBe([ItemType.Electronics, ItemType.Books]);
         item.Price.ShouldBe(12.50m);
         item.IsStored.ShouldBeTrue();
-        item.LocationId.ShouldBe(7);
+        item.RoomId.ShouldBe(7);
         item.OwnerId.ShouldBe(3);
     }
 
@@ -62,7 +62,7 @@ public class ItemMappingsTests
             ItemTypes: [ItemType.Electronics],
             Price: 99.99m,
             IsStored: true,
-            LocationId: 2,
+            RoomId: 2,
             OwnerId: 4,
             RowVersion: [1, 2, 3]);
 
@@ -73,7 +73,7 @@ public class ItemMappingsTests
         existing.ItemTypes.ShouldBe([ItemType.Electronics]);
         existing.Price.ShouldBe(99.99m);
         existing.IsStored.ShouldBeTrue();
-        existing.LocationId.ShouldBe(2);
+        existing.RoomId.ShouldBe(2);
         existing.OwnerId.ShouldBe(4);
         existing.RowVersion.ShouldBe([1, 2, 3]);
     }
@@ -102,7 +102,7 @@ public class ItemMappingsTests
             IsStored = true,
             IsDeleted = true,
             ReasonForDeletion = DeletedReason.Broken,
-            LocationId = 1,
+            RoomId = 1,
             OwnerId = 2,
             CreatedDate = new DateTime(2026, 1, 1),
             LastModifiedDate = new DateTime(2026, 2, 2),

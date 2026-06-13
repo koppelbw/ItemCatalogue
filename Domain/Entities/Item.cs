@@ -21,9 +21,10 @@ public class Item : IEntity, IAuditable
 
 
 
-    public int? LocationId { get; set; }
+    // An item's location is derived through its room (Item -> Room -> Location).
+    public int? RoomId { get; set; }
 
-    public Location? Location { get; set; }
+    public Room? Room { get; set; }
 
     public int? OwnerId { get; set; }
 

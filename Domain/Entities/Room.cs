@@ -8,6 +8,12 @@ public class Room : IEntity, IAuditable
 
     public string? Description { get; set; }
 
+
+    // Required FK to the owning Location. A Room belongs to exactly one Location.
+    public int LocationId { get; set; }
+
+    public Location? Location { get; set; }
+
     public DateTime CreatedDate { get; set; }
 
     public DateTime? LastModifiedDate { get; set; }

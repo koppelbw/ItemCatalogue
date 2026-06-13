@@ -16,10 +16,8 @@
     <None Include="PostDeploymentScripts\Seed_Location.sql" />
     <None Include="PostDeploymentScripts\Seed_Person.sql" />
     <None Include="PostDeploymentScripts\Seed_Item.sql" />
-    <Build Include="dbo\tables\Item.sql" />
-    <Build Include="dbo\tables\Location.sql" />
-    <Build Include="dbo\tables\Person.sql" />
-    <Build Include="dbo\tables\Room.sql" />
+    <!-- Table schema objects (dbo\tables\*.sql) are picked up by the SDK's default *.sql
+         build glob; they are intentionally not re-listed here to avoid duplicate Build items. -->
   </ItemGroup>
   <ItemGroup>
     <Folder Include="PostDeploymentScripts\" />

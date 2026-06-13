@@ -27,7 +27,7 @@ public class LocationServiceTests
     }
 
     private static Location Existing(int id = 1) =>
-        new() { Id = id, Name = "Top shelf", RoomId = 5, RowVersion = [1, 2, 3] };
+        new() { Id = id, Name = "Top shelf", RowVersion = [1, 2, 3] };
 
     [Fact]
     public async Task GetByIdAsync_WhenMissing_ThrowsNotFound()
@@ -44,7 +44,7 @@ public class LocationServiceTests
         _repository.When(r => r.InsertAsync(Arg.Any<Location>(), Arg.Any<CancellationToken>()))
             .Do(ci => ci.Arg<Location>().Id = 10);
 
-        var response = await _service.CreateAsync(new CreateLocationRequest("Top shelf", "By the door", 5));
+        var response = await _service.CreateAsync(new CreateLocationRequest("Top shelf", "By the door"));
 
         response.Id.ShouldBe(10);
         response.Name.ShouldBe("Top shelf");
@@ -55,7 +55,7 @@ public class LocationServiceTests
     public async Task CreateAsync_WithInvalidRequest_ThrowsAndDoesNotInsert()
     {
         await Should.ThrowAsync<ValidationException>(
-            () => _service.CreateAsync(new CreateLocationRequest("", null, 5)));
+            () => _service.CreateAsync(new CreateLocationRequest("", null)));
 
         await _repository.DidNotReceive().InsertAsync(Arg.Any<Location>(), Arg.Any<CancellationToken>());
     }
@@ -66,11 +66,10 @@ public class LocationServiceTests
         var existing = Existing();
         _repository.GetForUpdateAsync(1, Arg.Any<CancellationToken>()).Returns(existing);
 
-        var response = await _service.UpdateAsync(new UpdateLocationRequest(1, "Bottom shelf", "Renamed", 7, [9]));
+        var response = await _service.UpdateAsync(new UpdateLocationRequest(1, "Bottom shelf", "Renamed", [9]));
 
         response.Name.ShouldBe("Bottom shelf");
         existing.Name.ShouldBe("Bottom shelf");
-        existing.RoomId.ShouldBe(7);
         existing.RowVersion.ShouldBe([9]);
         await _repository.Received(1).UpdateAsync(existing, Arg.Any<CancellationToken>());
     }
@@ -81,7 +80,7 @@ public class LocationServiceTests
         _repository.GetForUpdateAsync(2, Arg.Any<CancellationToken>()).Returns((Location?)null);
 
         await Should.ThrowAsync<NotFoundException>(
-            () => _service.UpdateAsync(new UpdateLocationRequest(2, "Bottom shelf", null, 7, [9])));
+            () => _service.UpdateAsync(new UpdateLocationRequest(2, "Bottom shelf", null, [9])));
 
         await _repository.DidNotReceive().UpdateAsync(Arg.Any<Location>(), Arg.Any<CancellationToken>());
     }
