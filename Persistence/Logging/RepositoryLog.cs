@@ -13,4 +13,7 @@ internal static partial class RepositoryLog
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "{EntityType} {EntityId} cannot be deleted; still referenced by another record (FK restrict)")]
     public static partial void EntityInUse(this ILogger logger, string entityType, int entityId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{EntityType} write rejected; a record with the same unique value already exists")]
+    public static partial void DuplicateValue(this ILogger logger, string entityType);
 }

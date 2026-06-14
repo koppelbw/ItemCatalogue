@@ -63,7 +63,11 @@ public class Item : IEntity, IAuditable
 
     public Person? Owner { get; set; }
 
-    
+    public List<Tag> Tags { get; set; } = [];
+
+    public List<CollectionItem> CollectionMemberships { get; set; } = [];
+
+
     public DateTime CreatedDate { get; set; }
 
     public DateTime? LastModifiedDate { get; set; }

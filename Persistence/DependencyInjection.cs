@@ -22,6 +22,8 @@ public static class DependencyInjection
         services.AddScoped<IContainerRepository, ContainerRepository>();
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<IPersonRepository, PersonRepository>();
+        services.AddScoped<ITagRepository, TagRepository>();
+        services.AddScoped<ICollectionRepository, CollectionRepository>();
 
         // Single clock source for all audit stamping (CreatedDate/LastModifiedDate). Injected into both the auditing interceptor and ItemRepository's ExecuteUpdate soft-delete
         services.AddSingleton(TimeProvider.System);

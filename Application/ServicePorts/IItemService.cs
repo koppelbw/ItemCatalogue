@@ -14,4 +14,8 @@ public interface IItemService
     Task<ItemResponse> UpdateAsync(UpdateItemRequest request, CancellationToken cancellationToken = default);
 
     Task<int> DeleteAsync(int id, DeletedReason reason, CancellationToken cancellationToken = default);
+
+    Task<ItemTagsResponse> GetTagsAsync(int id, CancellationToken cancellationToken = default);
+
+    Task<ItemTagsResponse> SetTagsAsync(int id, SetItemTagsRequest request, CancellationToken cancellationToken = default);
 }

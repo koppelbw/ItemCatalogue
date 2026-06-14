@@ -17,6 +17,10 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
     public DbSet<Container> Containers { get; set; }
     public DbSet<Location> Locations { get; set; }
     public DbSet<Person> People { get; set; }
+    public DbSet<Tag> Tags { get; set; }
+    public DbSet<Collection> Collections { get; set; }
+    public DbSet<ItemTag> ItemTags { get; set; }
+    public DbSet<CollectionItem> CollectionItems { get; set; }
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -279,6 +283,107 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
 
             builder.Property(p => p.RowVersion)
                 .IsRowVersion();
+        });
+
+        modelBuilder.Entity<Tag>(builder =>
+        {
+            builder.ToTable("Tag");
+
+            builder.HasKey(t => t.Id);
+
+            builder.Property(t => t.Id)
+                .ValueGeneratedOnAdd();
+
+            builder.Property(t => t.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(t => t.Description)
+                .HasMaxLength(500);
+
+            builder.HasIndex(t => t.Name)
+                .IsUnique();
+
+            builder.Property(t => t.RowVersion)
+                .IsRowVersion();
+        });
+
+        modelBuilder.Entity<Collection>(builder =>
+        {
+            builder.ToTable("Collection");
+
+            builder.HasKey(c => c.Id);
+
+            builder.Property(c => c.Id)
+                .ValueGeneratedOnAdd();
+
+            builder.Property(c => c.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(c => c.Description)
+                .HasMaxLength(500);
+
+            builder.HasIndex(c => c.Name)
+                .IsUnique();
+
+            builder.Property(c => c.RowVersion)
+                .IsRowVersion();
+        });
+
+        // Item <-> Tag: a plain many-to-many through the ItemTag join entity. The skip-navigations
+        // (Item.Tags / Tag.Items) give a clean read surface; both FKs cascade so deleting an Item or a
+        // Tag removes its join rows. ItemId leads the composite key, so EF emits a single index on
+        // TagId — both mirrored by Database/dbo/tables/ItemTag.sql.
+        modelBuilder.Entity<Item>()
+            .HasMany(i => i.Tags)
+            .WithMany(t => t.Items)
+            .UsingEntity<ItemTag>(
+                right => right
+                    .HasOne(it => it.Tag)
+                    .WithMany()
+                    .HasForeignKey(it => it.TagId)
+                    .OnDelete(DeleteBehavior.Cascade),
+                left => left
+                    .HasOne(it => it.Item)
+                    .WithMany()
+                    .HasForeignKey(it => it.ItemId)
+                    .OnDelete(DeleteBehavior.Cascade),
+                join =>
+                {
+                    join.ToTable("ItemTag");
+                    join.HasKey(it => new { it.ItemId, it.TagId });
+                });
+
+        // Collection <-> Item: a *rich* many-to-many modelled explicitly (not a skip-navigation)
+        // because the join carries payload. CollectionItem is a dependent of both Collection and Item;
+        // both FKs cascade. Quantity/SortOrder defaults mirror Database/dbo/tables/CollectionItem.sql.
+        modelBuilder.Entity<CollectionItem>(builder =>
+        {
+            builder.ToTable("CollectionItem");
+
+            builder.HasKey(ci => new { ci.CollectionId, ci.ItemId });
+
+            builder.Property(ci => ci.Quantity)
+                .IsRequired()
+                .HasDefaultValue(1);
+
+            builder.Property(ci => ci.SortOrder)
+                .IsRequired()
+                .HasDefaultValue(0);
+
+            builder.Property(ci => ci.Role)
+                .HasMaxLength(100);
+
+            builder.HasOne(ci => ci.Collection)
+                .WithMany(c => c.Items)
+                .HasForeignKey(ci => ci.CollectionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(ci => ci.Item)
+                .WithMany(i => i.CollectionMemberships)
+                .HasForeignKey(ci => ci.ItemId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Audit columns are uniform across every IAuditable entity, so configure them once here

@@ -20,4 +20,8 @@ public interface IItemRepository
     Task UpdateAsync(Item item, CancellationToken cancellationToken = default);
 
     Task<int> SoftDeleteItemByIdAsync(int id, DeletedReason reason, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Tag>> GetTagsAsync(int itemId, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Tag>> SetTagsAsync(int itemId, IReadOnlyCollection<int> tagIds, CancellationToken cancellationToken = default);
 }

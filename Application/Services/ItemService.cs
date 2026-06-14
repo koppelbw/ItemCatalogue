@@ -18,6 +18,7 @@ public sealed class ItemService(
     TimeProvider timeProvider,
     IValidator<CreateItemRequest> createValidator,
     IValidator<UpdateItemRequest> updateValidator,
+    IValidator<SetItemTagsRequest> setTagsValidator,
     ILogger<ItemService> logger) : IItemService
 {
     public async Task<ItemResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -74,5 +75,20 @@ public sealed class ItemService(
         }
 
         return numberOfEffectedRows;
+    }
+
+    public async Task<ItemTagsResponse> GetTagsAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var tags = await itemRepository.GetTagsAsync(id, cancellationToken);
+        return new ItemTagsResponse(id, tags.Select(t => t.ToResponse()).ToList());
+    }
+
+    public async Task<ItemTagsResponse> SetTagsAsync(int id, SetItemTagsRequest request, CancellationToken cancellationToken = default)
+    {
+        await setTagsValidator.ValidateAndThrowAsync(request, cancellationToken);
+
+        var tags = await itemRepository.SetTagsAsync(id, request.TagIds, cancellationToken);
+        logger.EntityUpdated("Item", id);
+        return new ItemTagsResponse(id, tags.Select(t => t.ToResponse()).ToList());
     }
 }

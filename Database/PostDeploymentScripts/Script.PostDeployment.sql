@@ -7,9 +7,12 @@
 
 
 -- Order follows the FK chain: Location -> Room -> Container, then Person, then Item (Item references
--- Room/Container/Person).
+-- Room/Container/Person). Tag and Collection run last because their join rows (ItemTag,
+-- CollectionItem) reference seeded items.
 :r .\Seed_Location.sql
 :r .\Seed_Room.sql
 :r .\Seed_Container.sql
 :r .\Seed_Person.sql
 :r .\Seed_Item.sql
+:r .\Seed_Tag.sql
+:r .\Seed_Collection.sql

@@ -19,6 +19,8 @@ public static class DependencyInjection
         services.AddScoped<IContainerService, ContainerService>();
         services.AddScoped<ILocationService, LocationService>();
         services.AddScoped<IPersonService, PersonService>();
+        services.AddScoped<ITagService, TagService>();
+        services.AddScoped<ICollectionService, CollectionService>();
 
         // Discovers every AbstractValidator<T> in this assembly (see Application/Validation)
         // and registers it as IValidator<T> so services can take a validator by constructor injection.

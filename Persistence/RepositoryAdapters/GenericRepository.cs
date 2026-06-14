@@ -69,7 +69,14 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
     public virtual async Task<int> InsertAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         EntitySet.Add(entity);
-        await DbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await DbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            throw DuplicateConflict(ex);
+        }
         return entity.Id;
     }
 
@@ -89,6 +96,12 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
             Logger.ConcurrencyConflict(typeof(TEntity).Name, entity.Id);
             throw new ConcurrencyConflictException(
                 $"{typeof(TEntity).Name} with id {entity.Id} was modified by another process. Reload and try again.", ex);
+        }
+        // DbUpdateConcurrencyException is a subclass of DbUpdateException and is handled above, so this
+        // only catches a non-concurrency save failure that is a unique-constraint violation.
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            throw DuplicateConflict(ex);
         }
     }
 
@@ -118,5 +131,20 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
             throw new EntityInUseException(
                 $"{typeof(TEntity).Name} with id {id} cannot be deleted because it is still referenced by another record.", ex);
         }
+    }
+
+    // SaveChanges wraps provider errors in DbUpdateException (unlike ExecuteDelete, which throws the
+    // SqlException directly). 2627 = unique constraint, 2601 = unique index — both mean a duplicate key.
+    private static bool IsUniqueViolation(DbUpdateException ex)
+        => ex.InnerException is SqlException { Number: 2627 or 2601 };
+
+    // Translate a unique-violation save failure into a domain exception the API maps to 409 Conflict,
+    // logging it once here (the ConflictExceptionHandler does not log). No entity id: an insert has no
+    // id yet, and the entity isn't relevant to the caller beyond its type.
+    private DuplicateException DuplicateConflict(DbUpdateException ex)
+    {
+        Logger.DuplicateValue(typeof(TEntity).Name);
+        return new DuplicateException(
+            $"A {typeof(TEntity).Name} with the same unique value already exists.", ex);
     }
 }

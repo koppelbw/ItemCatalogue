@@ -4,10 +4,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ItemCatalogueAPI.ExceptionHandling;
 
-// Maps the two domain-level "you can't do that right now" exceptions to HTTP 409 Conflict:
+// Maps the domain-level "you can't do that right now" exceptions to HTTP 409 Conflict:
 //   - ConcurrencyConflictException: the row changed under the client (optimistic concurrency).
 //   - EntityInUseException: a restricted foreign key blocks the delete.
-// Both are legitimate 409s; the title differs so clients can tell them apart.
+//   - DuplicateException: an insert/update violates a unique constraint (e.g. a duplicate Tag name).
+// All are legitimate 409s; the title differs so clients can tell them apart.
 internal sealed class ConflictExceptionHandler(IProblemDetailsService problemDetailsService) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
@@ -16,6 +17,7 @@ internal sealed class ConflictExceptionHandler(IProblemDetailsService problemDet
         {
             ConcurrencyConflictException => "Concurrency conflict",
             EntityInUseException => "Resource in use",
+            DuplicateException => "Duplicate value",
             _ => null,
         };
 

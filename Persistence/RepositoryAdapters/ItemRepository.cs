@@ -37,4 +37,44 @@ public sealed class ItemRepository(ItemCatalogueDbContext dbContext, TimeProvide
 
         return rowsAffected;
     }
+
+    public async Task<IReadOnlyList<Tag>> GetTagsAsync(int itemId, CancellationToken cancellationToken = default)
+    {
+        var item = await EntitySet
+            .AsNoTracking()
+            .Include(i => i.Tags)
+            .FirstOrDefaultAsync(i => i.Id == itemId, cancellationToken)
+            ?? throw NotFoundException.For("Item", itemId);
+
+        return item.Tags;
+    }
+
+    public async Task<IReadOnlyList<Tag>> SetTagsAsync(int itemId, IReadOnlyCollection<int> tagIds, CancellationToken cancellationToken = default)
+    {
+        // Tracked load (with the current tags) so EF reconciles the ItemTag join rows on save:
+        // assigning a fresh list inserts the added pairings and deletes the removed ones.
+        var item = await EntitySet
+            .Include(i => i.Tags)
+            .FirstOrDefaultAsync(i => i.Id == itemId, cancellationToken)
+            ?? throw NotFoundException.For("Item", itemId);
+
+        var distinctIds = tagIds.Distinct().ToList();
+
+        var tags = await DbContext.Set<Tag>()
+            .Where(t => distinctIds.Contains(t.Id))
+            .ToListAsync(cancellationToken);
+
+        // Every requested tag must exist; otherwise the caller referenced an unknown tag id.
+        if (tags.Count != distinctIds.Count)
+        {
+            var missingId = distinctIds.Except(tags.Select(t => t.Id)).First();
+            throw NotFoundException.For("Tag", missingId);
+        }
+
+        item.Tags.Clear();
+        item.Tags.AddRange(tags);
+        await DbContext.SaveChangesAsync(cancellationToken);
+
+        return tags;
+    }
 }

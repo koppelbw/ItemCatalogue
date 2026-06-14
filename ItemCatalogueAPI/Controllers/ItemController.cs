@@ -75,4 +75,28 @@ public sealed class ItemController(IItemService itemService) : ControllerBase
         await itemService.DeleteAsync(id, reason, cancellationToken);
         return NoContent();
     }
+
+    // GET api/items/5/tags
+    // The cross-cutting tags currently assigned to the item.
+    [HttpGet("{id:int}/tags", Name = "GetItemTags")]
+    [ProducesResponseType(typeof(ItemTagsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ItemTagsResponse>> GetTags(int id, CancellationToken cancellationToken)
+    {
+        var tags = await itemService.GetTagsAsync(id, cancellationToken);
+        return Ok(tags);
+    }
+
+    // PUT api/items/5/tags
+    // Replaces the item's full tag set with the supplied tag ids (an empty list clears all tags).
+    // 404 if the item or any referenced tag is missing.
+    [HttpPut("{id:int}/tags")]
+    [ProducesResponseType(typeof(ItemTagsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ItemTagsResponse>> SetTags(int id, SetItemTagsRequest request, CancellationToken cancellationToken)
+    {
+        var tags = await itemService.SetTagsAsync(id, request, cancellationToken);
+        return Ok(tags);
+    }
 }

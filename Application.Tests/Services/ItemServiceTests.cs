@@ -29,6 +29,7 @@ public class ItemServiceTests
             TimeProvider.System,
             new CreateItemRequestValidator(),
             new UpdateItemRequestValidator(),
+            new SetItemTagsRequestValidator(),
             NullLogger<ItemService>.Instance);
     }
 
@@ -184,5 +185,38 @@ public class ItemServiceTests
         await _service.DeleteAsync(99, DeletedReason.Lost);
 
         await _eventRepository.DidNotReceive().InsertAsync(Arg.Any<ItemEvent>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetTagsAsync_ReturnsMappedTagsForItem()
+    {
+        _repository.GetTagsAsync(1, Arg.Any<CancellationToken>())
+            .Returns([new Tag { Id = 7, Name = "Fragile", RowVersion = [1] }]);
+
+        var response = await _service.GetTagsAsync(1);
+
+        response.ItemId.ShouldBe(1);
+        response.Tags.Count.ShouldBe(1);
+        response.Tags[0].Name.ShouldBe("Fragile");
+    }
+
+    [Fact]
+    public async Task SetTagsAsync_ReplacesTagsAndReturnsResult()
+    {
+        _repository.SetTagsAsync(1, Arg.Any<IReadOnlyCollection<int>>(), Arg.Any<CancellationToken>())
+            .Returns([new Tag { Id = 7, Name = "Fragile", RowVersion = [1] }]);
+
+        var response = await _service.SetTagsAsync(1, new SetItemTagsRequest([7]));
+
+        response.Tags.Single().Id.ShouldBe(7);
+        await _repository.Received(1).SetTagsAsync(1, Arg.Is<IReadOnlyCollection<int>>(ids => ids.Single() == 7), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task SetTagsAsync_WithNegativeTagId_ThrowsAndDoesNotTouchRepository()
+    {
+        await Should.ThrowAsync<ValidationException>(() => _service.SetTagsAsync(1, new SetItemTagsRequest([-3])));
+
+        await _repository.DidNotReceive().SetTagsAsync(Arg.Any<int>(), Arg.Any<IReadOnlyCollection<int>>(), Arg.Any<CancellationToken>());
     }
 }
