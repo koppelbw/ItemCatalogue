@@ -1,0 +1,12 @@
+# Keep the build context small and the image clean. Anything matched here is NOT
+# sent to the Docker daemon, so it can't be COPYed into the image.
+**/bin/
+**/obj/
+**/node_modules/
+catalogue-ui/
+houseview/
+.git/
+.vs/
+.vscode/
+**/*.user
+**/TestResults/
