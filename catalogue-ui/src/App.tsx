@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type SubmitEvent } from 'react'
 import type { LocationResponse, PagedResponse } from './api/types'
 
 import LocationTable from './components/LocationTable'
+import LocationForm from './components/LocationForm'
 
 function App() {
   // ── List state ────────────────────────────────────────────────────────────
@@ -46,7 +47,7 @@ function App() {
   }, []) // run once on mount
 
   // ── Create OR Update handler: PUT when editing an existing row, else POST ───
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: SubmitEvent) {
     e.preventDefault() // stop the browser's default full-page form POST
     setSubmitting(true)
     setError(null)
@@ -127,34 +128,11 @@ function App() {
     <main>
       <h1>Locations</h1>
 
-      {/* Create form. onSubmit fires on the submit button OR Enter in a field. */}
-      <form onSubmit={handleSubmit}>
-        <label>
-          Name:{' '}
-          {/* 👉 BLANK A1: make this controlled — bind it to `name`.
-              Add  value={name}  and  onChange={(e) => setName(e.target.value)} */}
-          <input value={name} onChange={(e) => setName(e.target.value)} />
-        </label>{' '}
-        <label>
-          Description:{' '}
-          {/* 👉 BLANK A2: same idea, bound to `description` / setDescription. */}
-          <input value={description} onChange={(e) => setDescription(e.target.value)}/>
-        </label>{' '}
-        <button type="submit" disabled={submitting}>
-          {submitting
-            ? 'Saving…'
-            : editingId === null
-              ? 'Add location'
-              : 'Save changes'}
-        </button>{' '}
-        {/* Cancel button only shows while editing (conditional render with &&). */}
-        {editingId !== null && (
-          <button type="button" onClick={cancelEdit}>
-            Cancel
-          </button>
-        )}
-      </form>
-
+      <LocationForm name={name} description={description}
+        submitting={submitting} isEditing={editingId !== null}
+        onNameChange={setName} onDescriptionChange={setDescription}
+        onSubmit={handleSubmit} onCancel={cancelEdit} />
+      
       {
         loading ? 
         (
