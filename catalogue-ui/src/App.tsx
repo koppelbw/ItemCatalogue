@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { LocationResponse, PagedResponse } from './api/types'
 
+import LocationTable from './components/LocationTable'
+
 function App() {
   // ── List state ────────────────────────────────────────────────────────────
   const [locations, setLocations] = useState<LocationResponse[]>([])
@@ -153,37 +155,20 @@ function App() {
         )}
       </form>
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : error ? (
-        <p className="error">{error}</p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Id</th>
-              <th>Name</th>
-              <th>Description</th>
-              <th>Rooms</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {locations.map((loc) => (
-              <tr key={loc.id}>
-                <td>{loc.id}</td>
-                <td>{loc.name}</td>
-                <td>{loc.description}</td>
-                <td>{loc.rooms.length}</td>
-                <td>
-                  <button onClick={() => startEdit(loc)}>Edit</button>{' '}
-                  <button onClick={() => handleDelete(loc.id)}>Delete</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      {
+        loading ? 
+        (
+          <p>Loading...</p>
+        ) 
+        : error ? 
+        (
+          <p className="error">{error}</p>
+        ) 
+        : 
+        (
+          <LocationTable locations={locations} onEdit={startEdit} onDelete={handleDelete} />
+        )
+      }
     </main>
   )
 }
