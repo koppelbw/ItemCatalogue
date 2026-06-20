@@ -1,4 +1,5 @@
 import type { LocationResponse } from "../api/types";
+import { Link } from "react-router"
 
 interface LocationTableProps {
     locations: LocationResponse[];
@@ -21,7 +22,7 @@ function LocationTable({locations, onEdit, onDelete}: LocationTableProps){
           <tbody>
             {locations.map((loc) => (
               <tr key={loc.id}>
-                <td>{loc.id}</td>
+                <td><Link to={`/locations/${loc.id}`}>{loc.id}</Link></td>
                 <td>{loc.name}</td>
                 <td>{loc.description}</td>
                 <td>{loc.rooms.length}</td>

@@ -1,5 +1,5 @@
 import { useEffect, useState, type SubmitEvent } from 'react'
-import type { LocationResponse, PagedResponse } from './api/types'
+import type { LocationResponse, PagedResponse } from '../api/types'
 
 import LocationTable from '../components/LocationTable'
 import LocationForm from '../components/LocationForm'
