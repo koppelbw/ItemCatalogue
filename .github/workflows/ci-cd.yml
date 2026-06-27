@@ -104,6 +104,15 @@ jobs:
       - name: Build dacpac
         run: dotnet build Database/Database.sqlproj --configuration Release
 
+      # azure/sql-action shells out to the `sqlpackage` executable, which ships
+      # preinstalled on Windows runners but NOT on ubuntu-latest. Install the
+      # cross-platform build as a .NET global tool and add it to PATH so the
+      # next step can find it (fixes "spawn sqlpackage ENOENT").
+      - name: Install sqlpackage
+        run: |
+          dotnet tool install --global microsoft.sqlpackage
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+
       # ── Deploy: schema first, then the app that depends on it ────────────────
       - name: Deploy database schema (dacpac)
         uses: azure/sql-action@v2.3
