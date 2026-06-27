@@ -1,0 +1,68 @@
+name: CD
+
+# Publishes the database schema (SSDT dacpac) and the API to Azure on every push to
+# master. Targets the free F1 App Service via a publish profile (code/zip deploy, since
+# F1 can't run custom containers) and the Azure SQL serverless DB via sqlpackage.
+#
+# ── One-time setup (Settings ▸ Secrets and variables ▸ Actions) ──────────────────
+#   Variables:
+#     AZURE_WEBAPP_NAME            – the App Service name, e.g. itemcatalogue-api
+#   Secrets:
+#     AZURE_WEBAPP_PUBLISH_PROFILE – App Service ▸ Overview ▸ "Download publish profile"
+#                                    (paste the whole XML file contents)
+#     AZURE_SQL_CONNECTION_STRING  – ADO.NET connection string for the Azure SQL DB with
+#                                    admin login, e.g.
+#                                    Server=tcp:<srv>.database.windows.net,1433;
+#                                    Initial Catalog=ItemCatalogue;User ID=<admin>;
+#                                    Password=<pw>;Encrypt=True;
+# ─────────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch: # allow manual deploys from the Actions tab
+
+env:
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  deploy:
+    name: Build & deploy to Azure
+    runs-on: ubuntu-latest
+    environment: production # lets you add required reviewers / protection rules later
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      # ── Build artifacts ──────────────────────────────────────────────────────
+      - name: Publish API
+        run: dotnet publish ItemCatalogueAPI/ItemCatalogueAPI.csproj --configuration Release --output ./publish
+
+      # Builds Database.sqlproj, producing Database/bin/Release/Database.dacpac.
+      - name: Build dacpac
+        run: dotnet build Database/Database.sqlproj --configuration Release
+
+      # ── Deploy: schema first, then the app that depends on it ────────────────
+      - name: Deploy database schema (dacpac)
+        uses: azure/sql-action@v2.3
+        with:
+          connection-string: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          path: ./Database/bin/Release/Database.dacpac
+          action: publish
+          # AllowIncompatiblePlatform: the SSDT project targets SQL Server 2025 (Sql170)
+          # while Azure SQL reports a different platform; the schema uses no 2025-only
+          # features, so allow the cross-platform publish.
+          arguments: '/p:AllowIncompatiblePlatform=true'
+
+      - name: Deploy API to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./publish
