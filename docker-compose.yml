@@ -1,0 +1,44 @@
+# Runs the whole local backend: SQL Server + the containerised API, on one private
+# network so the API can reach the database by its service name ("sqlserver").
+#
+#   docker compose up -d --build      # build the API image and start everything
+#   docker compose logs -f api        # tail the API logs
+#   docker compose down               # stop (keeps the DB data volume)
+#   docker compose down -v            # stop AND wipe the database volume
+#
+# Schema + seed data are published separately via ./init-db.ps1 (SSDT dacpac), the
+# same way the rest of the repo provisions the database.
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04
+    container_name: itemcatalogue-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-LocalDev!Pass123}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - itemcatalogue-mssql-data:/var/opt/mssql
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: itemcatalogue-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_HTTP_PORTS: "8080"
+      # Inside the compose network the DB host is the service name, not localhost.
+      # This env var overrides ConnectionStrings:local from appsettings.
+      ConnectionStrings__local: "Server=sqlserver,1433;Database=ItemCatalogue;User Id=sa;Password=${MSSQL_SA_PASSWORD:-LocalDev!Pass123};Encrypt=True;Trust Server Certificate=True;Connect Timeout=30;Command Timeout=30"
+    ports:
+      # host:container — the Vite proxy keeps pointing at localhost:5012.
+      - "5012:8080"
+    depends_on:
+      - sqlserver
+    restart: unless-stopped
+
+volumes:
+  itemcatalogue-mssql-data:
