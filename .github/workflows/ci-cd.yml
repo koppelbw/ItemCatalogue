@@ -1,0 +1,124 @@
+name: CI/CD
+
+# Single pipeline with two ordered stages:
+#   build-and-test  – build the solution and run the full test suite (every push & PR)
+#   deploy          – publish the dacpac + API to Azure (only after tests pass, master only)
+#
+# The deploy job declares `needs: build-and-test`, so GitHub won't start it until the
+# tests succeed — CI always runs first, CD second, never in parallel.
+#
+# Runs on Linux (ubuntu-latest) to stay inside the free GitHub Actions minutes (Windows
+# bills at 2x). Docker is preinstalled, which the Persistence/API integration tests need
+# for their SQL Server Testcontainers.
+#
+# ── One-time setup (Settings ▸ Secrets and variables ▸ Actions) ──────────────────
+#   Variables:
+#     AZURE_WEBAPP_NAME            – App Service name (itemcatalogue-api-ufocqt)
+#   Secrets:
+#     AZURE_WEBAPP_PUBLISH_PROFILE – App Service ▸ Overview ▸ "Download publish profile"
+#     AZURE_SQL_CONNECTION_STRING  – ADO.NET connection string for the Azure SQL DB
+# ─────────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch: # allow manual runs from the Actions tab
+
+env:
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  build-and-test:
+    name: Build & test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      # Cache NuGet packages keyed on the project files so unchanged dependencies
+      # restore from cache instead of re-downloading on every run.
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/*.sqlproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore ItemCatalogue.slnx
+
+      # Building the whole solution in Release also builds Database.sqlproj, producing
+      # Database/bin/Release/Database.dacpac. The integration-test fixtures publish that
+      # dacpac into their SQL Server container, so it must exist before the tests run.
+      - name: Build
+        run: dotnet build ItemCatalogue.slnx --configuration Release --no-restore
+
+      - name: Test
+        run: >
+          dotnet test ItemCatalogue.slnx
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory TestResults
+
+      - name: Upload test results
+        if: ${{ !cancelled() }} # publish results even when tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/**/*.trx
+          if-no-files-found: ignore
+
+
+
+
+  deploy:
+    name: Deploy to Azure
+    runs-on: ubuntu-latest
+    needs: build-and-test                # ⬅ only runs after tests pass
+    if: github.event_name == 'push'      # ⬅ master pushes only, never on PRs
+    environment: production              # add required reviewers / protection rules here later
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      # ── Build artifacts ──────────────────────────────────────────────────────
+      - name: Publish API
+        run: dotnet publish ItemCatalogueAPI/ItemCatalogueAPI.csproj --configuration Release --output ./publish
+
+      # Builds Database.sqlproj, producing Database/bin/Release/Database.dacpac.
+      - name: Build dacpac
+        run: dotnet build Database/Database.sqlproj --configuration Release
+
+      # ── Deploy: schema first, then the app that depends on it ────────────────
+      - name: Deploy database schema (dacpac)
+        uses: azure/sql-action@v2.3
+        with:
+          connection-string: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+          path: ./Database/bin/Release/Database.dacpac
+          action: publish
+          # AllowIncompatiblePlatform: the SSDT project targets SQL Server 2025 (Sql170)
+          # while Azure SQL reports a different platform; the schema uses no 2025-only
+          # features, so allow the cross-platform publish.
+          arguments: '/p:AllowIncompatiblePlatform=true'
+
+      - name: Deploy API to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ./publish
