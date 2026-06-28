@@ -1,21 +1,84 @@
+import { useQuery } from '@tanstack/react-query';
 import { FALLBACK_DATA } from './fallbackData';
-import type { CatalogueData, ItemResponse, LocationResponse, PagedResponse, PersonResponse, RoomResponse } from './types';
+import type {
+  CatalogueData,
+  ContainerResponse,
+  ItemResponse,
+  LocationResponse,
+  PagedResponse,
+  PersonResponse,
+  RoomResponse,
+} from './types';
 
 const PAGE_SIZE = 100;
 const REQUEST_TIMEOUT_MS = 4000;
 
-async function fetchPage<T>(path: string, page: number, signal: AbortSignal): Promise<PagedResponse<T>> {
-  const res = await fetch(`/api/${path}?page=${page}&pageSize=${PAGE_SIZE}`, {
-    signal,
-    headers: { Accept: 'application/json' },
-  });
-  if (!res.ok) {
-    throw new Error(`GET /api/${path} responded ${res.status}`);
-  }
-  return (await res.json()) as PagedResponse<T>;
+// ---------------------------------------------------------------------------
+// Request core — shared by reads and the CRUD mutations. Surfaces the API's RFC
+// 9457 ProblemDetails so callers can map 400/404/409 precisely.
+// ---------------------------------------------------------------------------
+
+export interface ProblemDetails {
+  type?: string;
+  title?: string;
+  status?: number;
+  detail?: string;
+  /** validation failures keyed by PascalCase property name */
+  errors?: Record<string, string[]>;
 }
 
-async function fetchAll<T>(path: string, signal: AbortSignal): Promise<T[]> {
+export class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly problem: ProblemDetails | null,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
+async function parseProblem(res: Response): Promise<ProblemDetails | null> {
+  try {
+    const body = await res.json();
+    return body as ProblemDetails;
+  } catch {
+    return null;
+  }
+}
+
+async function request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(`/api/${path}`, {
+    method,
+    signal,
+    headers: body !== undefined ? { 'Content-Type': 'application/json', Accept: 'application/json' } : { Accept: 'application/json' },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const problem = await parseProblem(res);
+    throw new ApiError(res.status, problem, problem?.title ?? `${method} /api/${path} responded ${res.status}`);
+  }
+  if (res.status === 204) {
+    return undefined as T;
+  }
+  return (await res.json()) as T;
+}
+
+export const apiGet = <T>(path: string, signal?: AbortSignal) => request<T>('GET', path, undefined, signal);
+export const apiPost = <T>(path: string, body: unknown) => request<T>('POST', path, body);
+export const apiPut = <T>(path: string, body: unknown) => request<T>('PUT', path, body);
+export const apiDelete = (path: string) => request<void>('DELETE', path);
+
+// ---------------------------------------------------------------------------
+// Paginated reads
+// ---------------------------------------------------------------------------
+
+async function fetchPage<T>(path: string, page: number, signal: AbortSignal): Promise<PagedResponse<T>> {
+  return apiGet<PagedResponse<T>>(`${path}?page=${page}&pageSize=${PAGE_SIZE}`, signal);
+}
+
+/** Walk every page of a paginated list endpoint into a single array. */
+export async function fetchAll<T>(path: string, signal: AbortSignal): Promise<T[]> {
   const all: T[] = [];
   let page = 1;
   for (;;) {
@@ -36,16 +99,22 @@ export async function loadCatalogue(): Promise<CatalogueData> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const [rooms, locations, items, persons] = await Promise.all([
-      fetchAll<RoomResponse>('rooms', controller.signal),
+    const [locations, rooms, containers, items, persons] = await Promise.all([
       fetchAll<LocationResponse>('locations', controller.signal),
+      fetchAll<RoomResponse>('rooms', controller.signal),
+      fetchAll<ContainerResponse>('containers', controller.signal),
       fetchAll<ItemResponse>('items', controller.signal),
       fetchAll<PersonResponse>('persons', controller.signal),
     ]);
-    return { rooms, locations, items, persons, live: true };
+    return { locations, rooms, containers, items, persons, live: true };
   } catch {
     return FALLBACK_DATA;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/** React Query hook for the whole catalogue. */
+export function useCatalogue() {
+  return useQuery({ queryKey: ['catalogue'], queryFn: loadCatalogue });
 }

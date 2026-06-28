@@ -1,7 +1,7 @@
 import gsap from 'gsap';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SceneModel } from '../model';
-import { formatPrice, primaryType } from '../model';
+import { formatPrice, itemValue, primaryType } from '../model';
 import { ITEM_TYPE_COLORS, ITEM_TYPE_NAMES, type ResolvedItem } from '../types';
 
 // "The Index" - the traditional counterpart to the dollhouse: an editorial,
@@ -13,8 +13,8 @@ type StoredFilter = 'all' | 'stored' | 'out';
 
 const SORT_OPTIONS: [SortKey, string][] = [
   ['name', 'Name'],
-  ['price-desc', 'Price ↓'],
-  ['price-asc', 'Price ↑'],
+  ['price-desc', 'Value ↓'],
+  ['price-asc', 'Value ↑'],
   ['newest', 'Newest'],
   ['oldest', 'Oldest'],
 ];
@@ -51,7 +51,7 @@ export function IndexPage({ model, live, onBack, onAbout, onViewItem }: IndexPag
     const q = query.trim().toLowerCase();
     const list = all.filter((r) => {
       if (q) {
-        const hay = [r.item.name, r.item.description, r.location?.name, r.room?.name, r.owner?.name]
+        const hay = [r.item.name, r.item.description, r.item.brand, r.owner?.name, ...r.breadcrumb]
           .filter(Boolean)
           .join(' ')
           .toLowerCase();
@@ -69,9 +69,9 @@ export function IndexPage({ model, live, onBack, onAbout, onViewItem }: IndexPag
     });
     switch (sort) {
       case 'price-desc':
-        return list.sort((a, b) => (b.item.price ?? -Infinity) - (a.item.price ?? -Infinity));
+        return list.sort((a, b) => (itemValue(b.item) ?? -Infinity) - (itemValue(a.item) ?? -Infinity));
       case 'price-asc':
-        return list.sort((a, b) => (a.item.price ?? Infinity) - (b.item.price ?? Infinity));
+        return list.sort((a, b) => (itemValue(a.item) ?? Infinity) - (itemValue(b.item) ?? Infinity));
       case 'newest':
         return list.sort((a, b) => Date.parse(b.item.createdDate) - Date.parse(a.item.createdDate));
       case 'oldest':
@@ -81,7 +81,7 @@ export function IndexPage({ model, live, onBack, onAbout, onViewItem }: IndexPag
     }
   }, [all, query, types, locationId, roomId, ownerId, stored, sort]);
 
-  const totalValue = useMemo(() => filtered.reduce((sum, r) => sum + (r.item.price ?? 0), 0), [filtered]);
+  const totalValue = useMemo(() => filtered.reduce((sum, r) => sum + (itemValue(r.item) ?? 0), 0), [filtered]);
 
   // dropdown options, each with live counts so empty choices never appear
   const locationOptions = useMemo(() => {
@@ -372,7 +372,7 @@ function IndexRow({ resolved, onView }: { resolved: ResolvedItem; onView: () => 
         </span>
         <span className="row-owner">{owner?.name ?? '—'}</span>
         <span className="row-price">
-          {formatPrice(item.price)}
+          {formatPrice(itemValue(item))}
           {item.isStored && <small className="row-stored">stored</small>}
         </span>
         <span className="row-action">View in 3D ↗</span>

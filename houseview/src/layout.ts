@@ -118,6 +118,30 @@ export function cabinSiteDef(index: number): SiteDef {
   return { kind: 'cabin', origin: [x, z], focus: [x + 2.3, 1.1, z + 2.1], zoom: 1.8 };
 }
 
+/**
+ * A stable satellite slot on the lawn for a non-active Location, placed on an
+ * ellipse around the central dollhouse so buildings never overlap the stage or
+ * each other. Position depends only on (index, count) so the neighbourhood
+ * never reshuffles when the active Location changes — the active one's slot is
+ * simply left empty (it is drawn as the central dollhouse instead). `kind` is a
+ * placeholder; the model overrides it with a per-Location shell style.
+ */
+export function satelliteSlot(index: number, count: number): SiteDef {
+  const cx = 6;
+  const cz = 4;
+  const rx = 22;
+  const rz = 16;
+  const angle = -Math.PI / 2 + (index / Math.max(1, count)) * Math.PI * 2;
+  const ox = cx + Math.cos(angle) * rx - SITE_INTERIOR.w / 2;
+  const oz = cz + Math.sin(angle) * rz - SITE_INTERIOR.d / 2;
+  return {
+    kind: 'cabin',
+    origin: [ox, oz],
+    focus: [ox + SITE_INTERIOR.w / 2, 1.2, oz + SITE_INTERIOR.d / 2],
+    zoom: 1.8,
+  };
+}
+
 /** Interior footprint shared by all small site buildings. */
 export const SITE_INTERIOR: Rect = { x: 0, z: 0, w: 4.6, d: 4.2 };
 

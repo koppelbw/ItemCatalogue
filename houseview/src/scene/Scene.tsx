@@ -10,9 +10,8 @@ import {
   type OrthographicCamera as ThreeOrthographicCamera,
 } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { CAR_POSITION, FLOOR_ORDER, HOUSE_BASE, LEVEL_HEIGHT, levelY, itemSpots, type FloorLevel } from '../layout';
-import type { SceneModel } from '../model';
-import { Car } from './Car';
+import { FLOOR_ORDER, HOUSE_BASE, LEVEL_HEIGHT, levelY, itemSpots, type FloorLevel } from '../layout';
+import type { PlacedRoom, SceneModel } from '../model';
 import { ItemMarker } from './ItemMarker';
 import { RoomBox } from './RoomBox';
 import { SiteBuilding } from './Sites';
@@ -29,6 +28,8 @@ export const OVERVIEW_FOCUS: Omit<Focus, 'seq'> = { target: [6.5, 1.2, 5.5], zoo
 
 interface SceneProps {
   model: SceneModel;
+  /** rooms of the active Location, laid onto the central dollhouse footprints */
+  placedRooms: PlacedRoom[];
   floor: FloorLevel;
   selection: Selection;
   focus: Focus;
@@ -177,7 +178,13 @@ function Roof() {
   );
 }
 
-interface HouseLevelsProps extends Omit<SceneProps, 'focus' | 'onClear' | 'activeSite' | 'onSelectSite'> {}
+interface HouseLevelsProps {
+  placedRooms: PlacedRoom[];
+  floor: FloorLevel;
+  selection: Selection;
+  onSelectItem: (id: number) => void;
+  onSelectRoom: (roomId: number) => void;
+}
 
 /** How far a floor rises off the house while fading away. */
 const FLOOR_LIFT = 2.4;
@@ -192,21 +199,21 @@ interface FadeEntry {
 /** Opacity of inactive floors - present but see-through. */
 const GHOST_OPACITY = 0.16;
 
-function HouseLevels({ model, floor, selection, onSelectItem, onSelectRoom }: HouseLevelsProps) {
+function HouseLevels({ placedRooms, floor, selection, onSelectItem, onSelectRoom }: HouseLevelsProps) {
   const groupRefs = useRef(new Map<FloorLevel, ThreeGroup>());
   const fadeMats = useRef(new Map<FloorLevel, FadeEntry[]>());
   const fadeProxies = useRef(new Map<FloorLevel, { f: number }>());
   const firstRun = useRef(true);
 
   const byLevel = useMemo(() => {
-    const map = new Map<FloorLevel, typeof model.placedRooms>();
-    for (const placed of model.placedRooms) {
+    const map = new Map<FloorLevel, PlacedRoom[]>();
+    for (const placed of placedRooms) {
       const list = map.get(placed.def.level) ?? [];
       list.push(placed);
       map.set(placed.def.level, list);
     }
     return map;
-  }, [model]);
+  }, [placedRooms]);
 
   // Floor focus, dollhouse style: the active floor (and the ones below it) are
   // solid; floors above stay in place as translucent ghosts so the whole house
@@ -349,33 +356,10 @@ function UnassignedPallet({ model, selection, onSelectItem }: Pick<SceneProps, '
   );
 }
 
-function CarRig(props: Pick<SceneProps, 'model' | 'selection' | 'onSelectItem' | 'onSelectRoom'>) {
-  const ref = useRef<ThreeGroup>(null);
-  useEffect(() => {
-    const g = ref.current;
-    if (!g) return;
-    // the car arrives home during the intro
-    gsap.fromTo(
-      g.position,
-      { z: CAR_POSITION[2] - 16 },
-      { z: CAR_POSITION[2], duration: 1.6, delay: 0.7, ease: 'power3.out' },
-    );
-  }, []);
-  if (props.model.carRooms.length === 0) return null;
-  return (
-    <group ref={ref} position={CAR_POSITION}>
-      <Car
-        carRooms={props.model.carRooms}
-        selection={props.selection}
-        onSelectItem={props.onSelectItem}
-        onSelectRoom={props.onSelectRoom}
-      />
-    </group>
-  );
-}
-
-export function Scene({ model, floor, selection, focus, activeSite, onSelectItem, onSelectRoom, onSelectSite, onClear }: SceneProps) {
-  const buildingSites = model.sites.filter((s) => s.def.kind !== 'house' && s.def.kind !== 'car');
+export function Scene({ model, placedRooms, floor, selection, focus, activeSite, onSelectItem, onSelectRoom, onSelectSite, onClear }: SceneProps) {
+  // every Location except the active one is a satellite building; the active one
+  // is drawn as the central cutaway dollhouse from `placedRooms`.
+  const satellites = model.sites.filter((s) => s.key !== activeSite);
   return (
     <Canvas
       shadows
@@ -403,25 +387,18 @@ export function Scene({ model, floor, selection, focus, activeSite, onSelectItem
         shadow-bias={-0.0004}
       />
       <Lawn />
-      <HouseLevels model={model} floor={floor} selection={selection} onSelectItem={onSelectItem} onSelectRoom={onSelectRoom} />
-      {buildingSites.map((site, i) => (
+      <HouseLevels placedRooms={placedRooms} floor={floor} selection={selection} onSelectItem={onSelectItem} onSelectRoom={onSelectRoom} />
+      {satellites.map((site, i) => (
         <SiteBuilding
           key={site.key}
           site={site}
           index={i}
-          active={activeSite === site.key}
+          active={selection?.kind === 'location' && selection.id === site.location.id}
           selection={selection}
           onSelectItem={onSelectItem}
           onSelectSite={onSelectSite}
         />
       ))}
-      <CarRig model={model} selection={selection} onSelectItem={onSelectItem} onSelectRoom={onSelectRoom} />
-      {activeSite === 'car' && (
-        <mesh position={[CAR_POSITION[0], 0.02, CAR_POSITION[2]]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[3.1, 3.4, 48]} />
-          <meshBasicMaterial color="#7fa8c9" transparent opacity={0.5} depthWrite={false} />
-        </mesh>
-      )}
       <UnassignedPallet model={model} selection={selection} onSelectItem={onSelectItem} />
       <ContactShadows position={[5.5, 0.01, 5]} opacity={0.3} scale={56} blur={2.2} far={6} resolution={512} frames={1} />
     </Canvas>
