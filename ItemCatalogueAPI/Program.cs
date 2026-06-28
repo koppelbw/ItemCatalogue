@@ -16,6 +16,13 @@ builder.Services.AddObservability(builder.Configuration, builder.Environment);
 // AddGlobalExceptionHandling registers the IExceptionHandler chain + RFC 9457 problem-details responses.
  builder.Services.AddGlobalExceptionHandling();
 
+// Cross-origin: allow the deployed Static Web App to call the API. Origins come from
+// config (Cors:AllowedOrigins) — set in Azure as Cors__AllowedOrigins__0.
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(options =>
+    options.AddDefaultPolicy(policy =>
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()));
+
 #endregion
 
 
@@ -32,6 +39,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors();
 app.UseAuthorization();
 app.MapControllers();
 

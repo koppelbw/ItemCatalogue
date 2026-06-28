@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router"
+import { API_BASE } from '../api/client';
 
 import type { LocationResponse } from '../api/types'
 
@@ -13,7 +14,7 @@ function LocationDetailPage(){
 
     async function loadLocation(){
         try {
-            const res = await fetch(`/api/locations/${id}`)
+            const res = await fetch(`${API_BASE}/api/locations/${id}`)
             
             if(res.status === 404){
                 throw new Error("Location not found");

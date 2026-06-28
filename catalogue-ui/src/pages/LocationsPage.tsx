@@ -1,5 +1,6 @@
 import { useEffect, useState, type SubmitEvent } from 'react'
 import type { LocationResponse, PagedResponse } from '../api/types'
+import { API_BASE } from '../api/client';
 
 import LocationTable from '../components/LocationTable'
 import LocationForm from '../components/LocationForm'
@@ -25,7 +26,7 @@ function LocationsPage(){
   //    create handler can also call it to refresh after adding a row. ─────────
   async function loadLocations() {
     try {
-      const res = await fetch('/api/locations')
+      const res = await fetch(`${API_BASE}/api/locations`)
 
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`)
@@ -56,7 +57,7 @@ function LocationsPage(){
     try {
       if (editingId === null) {
         // CREATE (POST)
-        const res = await fetch('/api/locations', {
+        const res = await fetch(`${API_BASE}/api/locations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, description }),
@@ -65,7 +66,7 @@ function LocationsPage(){
           throw new Error(`HTTP ${res.status}`)
       } 
       else {
-        const result = await fetch(`/api/locations/${editingId}`, {
+        const result = await fetch(`${API_BASE}/api/locations/${editingId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -111,7 +112,7 @@ function LocationsPage(){
     if (!window.confirm('Delete this location?')) return // native confirm dialog
     setError(null)
     try {
-      const result = await fetch(`/api/locations/${id}`, {method: 'DELETE'})
+      const result = await fetch(`${API_BASE}/api/locations/${id}`, {method: 'DELETE'})
 
       if(result.status === 409)
         throw new Error('Location is in use (has rooms)')

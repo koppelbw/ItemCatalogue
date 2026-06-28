@@ -1,0 +1,76 @@
+name: Frontend (Static Web Apps)
+
+# Builds catalogue-ui and deploys it to Azure Static Web Apps. Independent of the
+# API's CI/CD pipeline — only runs when the frontend (or this file) changes, so a
+# frontend tweak never redeploys the API and vice-versa.
+#
+# PRs get an automatic SWA preview environment; merging/closing the PR tears it down.
+#
+# ── One-time setup (Settings ▸ Secrets and variables ▸ Actions) ──────────────────
+#   Secret:
+#     AZURE_STATIC_WEB_APPS_API_TOKEN – SWA deployment token
+#       (az staticwebapp secrets list -n stapp-itemcatalogue -g rg-itemcatalogue)
+# ─────────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'catalogue-ui/**'
+      - '.github/workflows/frontend.yml'
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - 'catalogue-ui/**'
+      - '.github/workflows/frontend.yml'
+
+jobs:
+  build-and-deploy:
+    name: Build & deploy
+    # Skip the build on the "closed" event — that run only tears down the preview env.
+    if: github.event_name == 'push' || github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: catalogue-ui/package-lock.json
+
+      # Build ourselves (rather than letting the SWA action's Oryx build) so we
+      # control the Node version Vite 8 needs and inject the API base URL.
+      - name: Build frontend
+        working-directory: catalogue-ui
+        env:
+          # Cross-origin: the deployed app calls the API by absolute URL. Read in
+          # code as import.meta.env.VITE_API_BASE_URL (unset locally → dev proxy).
+          VITE_API_BASE_URL: https://itemcatalogue-api-ufocqt.azurewebsites.net
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }} # lets the action post the preview URL on PRs
+          action: upload
+          app_location: catalogue-ui/dist # pre-built output
+          skip_app_build: true
+          output_location: ''
+
+  close-preview:
+    name: Close PR preview
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close preview environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: close
