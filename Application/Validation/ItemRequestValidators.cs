@@ -3,9 +3,6 @@ using FluentValidation;
 
 namespace Application.Validation;
 
-// Input rules for item writes. Limits mirror the EF Core column mappings in
-// ItemCatalogueDbContext (Name nvarchar(255), Description nvarchar(4000), Price decimal(18,2))
-// so bad input is rejected at the boundary with a 400 instead of failing deep in EF/SQL.
 public sealed class CreateItemRequestValidator : AbstractValidator<CreateItemRequest>
 {
     public CreateItemRequestValidator()
@@ -185,5 +182,44 @@ public sealed class UpdateItemRequestValidator : AbstractValidator<UpdateItemReq
         // detect a stale write; an empty token would defeat the rowversion check.
         RuleFor(x => x.RowVersion)
             .NotEmpty();
+    }
+}
+
+public sealed class ItemSearchQueryValidator : AbstractValidator<ItemSearchQuery>
+{
+    public ItemSearchQueryValidator()
+    {
+        RuleFor(x => x.RoomId)
+            .GreaterThan(0)
+            .When(x => x.RoomId.HasValue);
+
+        RuleFor(x => x.ContainerId)
+            .GreaterThan(0)
+            .When(x => x.ContainerId.HasValue);
+
+        RuleFor(x => x.TagId)
+            .GreaterThan(0)
+            .When(x => x.TagId.HasValue);
+
+        RuleFor(x => x.OwnerId)
+            .GreaterThan(0)
+            .When(x => x.OwnerId.HasValue);
+
+        RuleFor(x => x.MinValue)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.MinValue.HasValue);
+
+        RuleFor(x => x.MaxValue)
+            .GreaterThanOrEqualTo(0)
+            .When(x => x.MaxValue.HasValue);
+
+        RuleFor(x => x)
+            .Must(x => !x.MinValue.HasValue || !x.MaxValue.HasValue || x.MinValue <= x.MaxValue)
+            .WithMessage("MinValue cannot exceed MaxValue.")
+            .WithName("MinValue");
+
+        RuleFor(x => x.Condition)
+            .IsInEnum()
+            .When(x => x.Condition.HasValue);
     }
 }

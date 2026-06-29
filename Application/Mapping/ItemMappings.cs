@@ -1,10 +1,23 @@
 using Application.DTOs;
 using Domain.Entities;
+using Domain.Querying;
 
 namespace Application.Mapping;
 
 public static class ItemMappings
 {
+    public static ItemFilter ToFilter(this ItemSearchQuery query) => new(
+        Query: query.Query,
+        RoomId: query.RoomId,
+        ContainerId: query.ContainerId,
+        TagId: query.TagId,
+        OwnerId: query.OwnerId,
+        MinValue: query.MinValue,
+        MaxValue: query.MaxValue,
+        Condition: query.Condition,
+        IsStored: query.IsStored,
+        IncludeDeleted: query.IncludeDeleted);
+
     public static Item ToEntity(this CreateItemRequest request) => new()
     {
         Name = request.Name,

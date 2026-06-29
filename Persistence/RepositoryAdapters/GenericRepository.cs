@@ -49,13 +49,15 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
         return EntitySet.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
     }
 
-    public virtual async Task<PagedResult<TEntity>> GetAllAsync(PageRequest page, CancellationToken cancellationToken = default)
-    {
+    public virtual Task<PagedResult<TEntity>> GetAllAsync(PageRequest page, CancellationToken cancellationToken = default)
         // OFFSET/FETCH requires a deterministic order; Id (the clustered PK) is stable.
-        var query = ReadQuery().OrderBy(e => e.Id);
+        => PaginateAsync(ReadQuery().OrderBy(e => e.Id), page, cancellationToken);
 
-        // Count over the full filtered set, then fetch only the requested window. The COUNT
-        // is a separate round trip but keeps the page payload bounded regardless of table size.
+    // Shared pagination kernel: one COUNT round-trip, then the bounded Skip/Take window.
+    // Concrete repositories build a filtered IQueryable (already ordered) and delegate here.
+    protected async Task<PagedResult<TEntity>> PaginateAsync(
+        IQueryable<TEntity> query, PageRequest page, CancellationToken cancellationToken)
+    {
         var totalCount = await query.CountAsync(cancellationToken);
 
         var items = await query

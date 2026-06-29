@@ -19,6 +19,7 @@ public sealed class ItemService(
     IValidator<CreateItemRequest> createValidator,
     IValidator<UpdateItemRequest> updateValidator,
     IValidator<SetItemTagsRequest> setTagsValidator,
+    IValidator<ItemSearchQuery> searchQueryValidator,
     ILogger<ItemService> logger) : IItemService
 {
     public async Task<ItemResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -29,9 +30,12 @@ public sealed class ItemService(
         return item.ToResponse();
     }
 
-    public async Task<PagedResponse<ItemResponse>> GetAllAsync(PaginationQuery pagination, CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<ItemResponse>> GetAllAsync(ItemSearchQuery query, CancellationToken cancellationToken = default)
     {
-        var page = await itemRepository.GetAllAsync(PageRequest.Create(pagination.Page, pagination.PageSize), cancellationToken);
+        await searchQueryValidator.ValidateAndThrowAsync(query, cancellationToken);
+
+        var filter = query.ToFilter();
+        var page = await itemRepository.SearchAsync(filter, PageRequest.Create(query.Page, query.PageSize), cancellationToken);
         return page.ToResponse(i => i.ToResponse());
     }
 

@@ -1,6 +1,8 @@
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Exceptions;
+using Domain.Pagination;
+using Domain.Querying;
 using Domain.RepositoryPorts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -36,6 +38,44 @@ public sealed class ItemRepository(ItemCatalogueDbContext dbContext, TimeProvide
         }
 
         return rowsAffected;
+    }
+
+    public async Task<PagedResult<Item>> SearchAsync(ItemFilter filter, PageRequest page, CancellationToken cancellationToken = default)
+    {
+        var query = ReadQuery();
+
+        // Soft-deleted items are hidden by default; callers opt in with IncludeDeleted.
+        if (!filter.IncludeDeleted)
+            query = query.Where(i => !i.IsDeleted);
+
+        if (filter.Query is { Length: > 0 } q)
+            query = query.Where(i => i.Name.Contains(q) || (i.Description != null && i.Description.Contains(q)));
+
+        if (filter.RoomId.HasValue)
+            query = query.Where(i => i.RoomId == filter.RoomId.Value);
+
+        if (filter.ContainerId.HasValue)
+            query = query.Where(i => i.ContainerId == filter.ContainerId.Value);
+
+        if (filter.TagId.HasValue)
+            query = query.Where(i => i.Tags.Any(t => t.Id == filter.TagId.Value));
+
+        if (filter.OwnerId.HasValue)
+            query = query.Where(i => i.OwnerId == filter.OwnerId.Value);
+
+        if (filter.MinValue.HasValue)
+            query = query.Where(i => (i.CurrentValue ?? i.PurchasePrice) >= filter.MinValue.Value);
+
+        if (filter.MaxValue.HasValue)
+            query = query.Where(i => (i.CurrentValue ?? i.PurchasePrice) <= filter.MaxValue.Value);
+
+        if (filter.Condition.HasValue)
+            query = query.Where(i => i.Condition == filter.Condition.Value);
+
+        if (filter.IsStored.HasValue)
+            query = query.Where(i => i.IsStored == filter.IsStored.Value);
+
+        return await PaginateAsync(query.OrderBy(i => i.Id), page, cancellationToken);
     }
 
     public async Task<IReadOnlyList<Tag>> GetTagsAsync(int itemId, CancellationToken cancellationToken = default)
