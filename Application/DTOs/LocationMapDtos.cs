@@ -31,7 +31,8 @@ public sealed record RoomMap(
     string? FloorColor,
     string? CeilingColor,
     IReadOnlyList<ContainerNode> Containers,
-    IReadOnlyList<DoorMap> Doors);
+    IReadOnlyList<DoorMap> Doors,
+    IReadOnlyList<StairMap> Stairs);
 
 // Recursive node: a container plus its nested children.
 public sealed record ContainerNode(
@@ -61,3 +62,17 @@ public sealed record DoorMap(
     decimal HeightInches,
     HingeSide? HingeSide,
     Swing? Swing);
+
+public sealed record StairMap(
+    int Id,
+    string? Name,
+    int FromRoomId,
+    int? ToRoomId,
+    StairShape Shape,
+    decimal? PositionXInches,
+    decimal? PositionYInches,
+    decimal? Rotation,
+    decimal? RunInches,
+    decimal? WidthInches,
+    decimal? RiseInches,
+    int? StepCount);

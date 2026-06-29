@@ -14,6 +14,7 @@
 :r .\Seed_Room.sql
 :r .\Seed_Container.sql
 :r .\Seed_Door.sql
+:r .\Seed_Stair.sql
 :r .\Seed_Person.sql
 :r .\Seed_Item.sql
 :r .\Seed_Tag.sql

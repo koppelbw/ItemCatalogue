@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<IRoomRepository, RoomRepository>();
         services.AddScoped<IContainerRepository, ContainerRepository>();
         services.AddScoped<IDoorRepository, DoorRepository>();
+        services.AddScoped<IStairRepository, StairRepository>();
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<IPersonRepository, PersonRepository>();
         services.AddScoped<ITagRepository, TagRepository>();

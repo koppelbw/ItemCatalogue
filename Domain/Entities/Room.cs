@@ -40,6 +40,8 @@ public class Room : IEntity, IAuditable
 
     public List<Door> Doors { get; set; } = [];
 
+    public List<Stair> Stairs { get; set; } = [];
+
     public DateTime CreatedDate { get; set; }
 
     public DateTime? LastModifiedDate { get; set; }

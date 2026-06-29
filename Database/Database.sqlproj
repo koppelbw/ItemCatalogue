@@ -17,6 +17,7 @@
     <None Include="PostDeploymentScripts\Seed_Room.sql" />
     <None Include="PostDeploymentScripts\Seed_Container.sql" />
     <None Include="PostDeploymentScripts\Seed_Door.sql" />
+    <None Include="PostDeploymentScripts\Seed_Stair.sql" />
     <None Include="PostDeploymentScripts\Seed_Person.sql" />
     <None Include="PostDeploymentScripts\Seed_Item.sql" />
     <None Include="PostDeploymentScripts\Seed_Tag.sql" />

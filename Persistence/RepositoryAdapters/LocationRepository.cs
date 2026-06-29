@@ -23,6 +23,9 @@ public sealed class LocationRepository(ItemCatalogueDbContext dbContext, ILogger
                     .ThenInclude(r => r.Doors)
             .Include(l => l.Floors)
                 .ThenInclude(f => f.Rooms)
+                    .ThenInclude(r => r.Stairs)
+            .Include(l => l.Floors)
+                .ThenInclude(f => f.Rooms)
                     .ThenInclude(r => r.Containers)
             .FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
 

@@ -40,7 +40,8 @@ public static class LocationMapMappings
         room.CeilingColor,
         // room.Containers holds the top-level containers (RoomId set); nested ones hang off Children.
         room.Containers.Select(ToContainerNode).ToList(),
-        room.Doors.Select(ToDoorMap).ToList());
+        room.Doors.Select(ToDoorMap).ToList(),
+        room.Stairs.Select(ToStairMap).ToList());
 
     private static ContainerNode ToContainerNode(Container container) => new(
         container.Id,
@@ -69,4 +70,18 @@ public static class LocationMapMappings
         door.HeightInches,
         door.HingeSide,
         door.Swing);
+
+    private static StairMap ToStairMap(Stair stair) => new(
+        stair.Id,
+        stair.Name,
+        stair.FromRoomId,
+        stair.ToRoomId,
+        stair.Shape,
+        stair.PositionXInches,
+        stair.PositionYInches,
+        stair.Rotation,
+        stair.RunInches,
+        stair.WidthInches,
+        stair.RiseInches,
+        stair.StepCount);
 }

@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<IRoomService, RoomService>();
         services.AddScoped<IContainerService, ContainerService>();
         services.AddScoped<IDoorService, DoorService>();
+        services.AddScoped<IStairService, StairService>();
         services.AddScoped<ILocationService, LocationService>();
         services.AddScoped<IPersonService, PersonService>();
         services.AddScoped<ITagService, TagService>();

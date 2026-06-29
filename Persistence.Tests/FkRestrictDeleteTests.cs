@@ -15,6 +15,7 @@ public class FkRestrictDeleteTests(SqlServerFixture fixture) : PersistenceTestBa
     private LocationRepository Locations() => new(Db, NullLoggerFactory.Instance);
     private ContainerRepository Containers() => new(Db, NullLoggerFactory.Instance);
     private DoorRepository Doors() => new(Db, NullLoggerFactory.Instance);
+    private StairRepository Stairs() => new(Db, NullLoggerFactory.Instance);
 
     private async Task<int> SeedFloorAsync()
     {
@@ -125,6 +126,36 @@ public class FkRestrictDeleteTests(SqlServerFixture fixture) : PersistenceTestBa
         await rooms.DeleteAsync(toRoomId);
 
         var reloaded = await doors.GetByIdAsync(doorId);
+        reloaded.ShouldNotBeNull();
+        reloaded.ToRoomId.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task DeleteRoom_WhileReferencedByStairFromRoom_ThrowsEntityInUse()
+    {
+        var rooms = Rooms();
+        var roomId = await SeedRoomAsync();
+        await Stairs().InsertAsync(new Stair { Shape = StairShape.Straight, FromRoomId = roomId });
+
+        await Should.ThrowAsync<EntityInUseException>(() => rooms.DeleteAsync(roomId));
+
+        (await rooms.GetByIdAsync(roomId)).ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task DeleteRoom_ThatIsAStairToRoom_NullsToRoomIdViaSetNull()
+    {
+        var rooms = Rooms();
+        var stairs = Stairs();
+        var floorId = await SeedFloorAsync();
+        var fromRoomId = await rooms.InsertAsync(new Room { Name = "Cellar", FloorId = floorId });
+        var toRoomId = await rooms.InsertAsync(new Room { Name = "Hall", FloorId = floorId });
+
+        var stairId = await stairs.InsertAsync(new Stair { Shape = StairShape.Straight, FromRoomId = fromRoomId, ToRoomId = toRoomId });
+
+        await rooms.DeleteAsync(toRoomId);
+
+        var reloaded = await stairs.GetByIdAsync(stairId);
         reloaded.ShouldNotBeNull();
         reloaded.ToRoomId.ShouldBeNull();
     }

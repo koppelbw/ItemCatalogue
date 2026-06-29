@@ -17,6 +17,7 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
     public DbSet<Room> Rooms { get; set; }
     public DbSet<Container> Containers { get; set; }
     public DbSet<Door> Doors { get; set; }
+    public DbSet<Stair> Stairs { get; set; }
     public DbSet<Location> Locations { get; set; }
     public DbSet<Person> People { get; set; }
     public DbSet<Tag> Tags { get; set; }
@@ -335,6 +336,49 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
                 .OnDelete(DeleteBehavior.SetNull);
 
             builder.Property(d => d.RowVersion)
+                .IsRowVersion();
+        });
+
+        // Configure Stair entity
+        modelBuilder.Entity<Stair>(builder =>
+        {
+            builder.ToTable("Stair");
+
+            builder.HasKey(s => s.Id);
+
+            builder.Property(s => s.Id)
+                .ValueGeneratedOnAdd();
+
+            builder.Property(s => s.Name)
+                .HasMaxLength(100);
+
+            builder.Property(s => s.Shape)
+                .HasConversion<string>()
+                .HasMaxLength(50)
+                .IsRequired();
+
+            builder.Property(s => s.PositionXInches).HasColumnType("decimal(9,2)");
+            builder.Property(s => s.PositionYInches).HasColumnType("decimal(9,2)");
+            builder.Property(s => s.Rotation).HasColumnType("decimal(6,2)");
+            builder.Property(s => s.RunInches).HasColumnType("decimal(9,2)");
+            builder.Property(s => s.WidthInches).HasColumnType("decimal(9,2)");
+            builder.Property(s => s.RiseInches).HasColumnType("decimal(9,2)");
+
+            // The lower room the stair sits in. Restrict so a Room with stairs in it cannot be deleted.
+            builder.HasOne(s => s.FromRoom)
+                .WithMany(r => r.Stairs)
+                .HasForeignKey(s => s.FromRoomId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            // The upper room (NULL = leads to an exterior level). SetNull + Restrict (above) keep the
+            // two FKs to Room free of a multiple-cascade-path.
+            builder.HasOne(s => s.ToRoom)
+                .WithMany()
+                .HasForeignKey(s => s.ToRoomId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Property(s => s.RowVersion)
                 .IsRowVersion();
         });
 

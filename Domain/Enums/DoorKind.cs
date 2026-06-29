@@ -4,7 +4,6 @@ public enum DoorKind
 {
     Door,
     Doorway,
-    Stairs,
     SlidingDoor,
     Garage,
 }

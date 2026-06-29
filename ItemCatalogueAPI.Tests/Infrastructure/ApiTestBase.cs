@@ -33,6 +33,7 @@ public abstract class ApiTestBase : IAsyncLifetime
             DELETE FROM [Item];
             DELETE FROM [Container];
             DELETE FROM [Door];
+            DELETE FROM [Stair];
             DELETE FROM [Room];
             DELETE FROM [Floor];
             DELETE FROM [Location];

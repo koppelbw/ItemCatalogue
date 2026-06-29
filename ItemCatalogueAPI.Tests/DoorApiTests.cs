@@ -52,21 +52,6 @@ public class DoorApiTests(ApiFactory factory) : ApiTestBase(factory)
     }
 
     [Fact]
-    public async Task Create_Stairs_ConnectingRoomsOnDifferentFloors_Returns201()
-    {
-        var basementRoom = await CreateRoomIdAsync("Cellar", -1);
-        var firstFloorRoom = await CreateRoomIdAsync("Hall", 0);
-
-        var response = await Client.PostAsJsonAsync("/api/doors",
-            new CreateDoorRequest("Stairs", DoorKind.Stairs, basementRoom, firstFloorRoom, Wall.North, 24, 36, 84, null, null));
-
-        response.StatusCode.ShouldBe(HttpStatusCode.Created);
-        var created = await response.Content.ReadFromJsonAsync<DoorResponse>();
-        created!.Kind.ShouldBe(DoorKind.Stairs);
-        created.ToRoomId.ShouldBe(firstFloorRoom);
-    }
-
-    [Fact]
     public async Task Create_ConnectingRoomToItself_Returns400()
     {
         var roomId = await CreateRoomIdAsync();

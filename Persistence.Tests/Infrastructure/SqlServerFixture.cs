@@ -76,7 +76,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
         // clears all rows at once, satisfying the self-referencing / multiple-FK-to-Room checks.
         await context.Database.ExecuteSqlRawAsync(
             "DELETE FROM [ItemTag]; DELETE FROM [CollectionItem]; DELETE FROM [Item]; DELETE FROM [Container]; " +
-            "DELETE FROM [Door]; DELETE FROM [Room]; DELETE FROM [Floor]; DELETE FROM [Location]; " +
+            "DELETE FROM [Door]; DELETE FROM [Stair]; DELETE FROM [Room]; DELETE FROM [Floor]; DELETE FROM [Location]; " +
             "DELETE FROM [Person]; DELETE FROM [Tag]; DELETE FROM [Collection];");
     }
 }

@@ -115,12 +115,12 @@ public class LocationApiTests(ApiFactory factory) : ApiTestBase(factory)
             new CreateContainerRequest("Drawer", null, null, dresserId, ContainerType.Drawer));
         drawer.StatusCode.ShouldBe(HttpStatusCode.Created);
 
-        // Front door (leads outside) and stairs (cross-floor: basement <-> first).
+        // Front door (leads outside) and stairs (cross-floor: basement -> first).
         (await Client.PostAsJsonAsync("/api/doors",
             new CreateDoorRequest("Front Door", DoorKind.Door, livingRoom.Id, null, Wall.South, 12, 36, 80, null, null)))
             .StatusCode.ShouldBe(HttpStatusCode.Created);
-        (await Client.PostAsJsonAsync("/api/doors",
-            new CreateDoorRequest("Stairs", DoorKind.Stairs, basementRoom.Id, livingRoom.Id, Wall.North, 24, 36, 84, null, null)))
+        (await Client.PostAsJsonAsync("/api/stairs",
+            new CreateStairRequest("Stairs", basementRoom.Id, livingRoom.Id, StairShape.Straight)))
             .StatusCode.ShouldBe(HttpStatusCode.Created);
 
         var map = await Client.GetFromJsonAsync<LocationMapResponse>($"/api/locations/{location.Id}/map");
@@ -140,9 +140,9 @@ public class LocationApiTests(ApiFactory factory) : ApiTestBase(factory)
         living.Containers[0].Children.Count.ShouldBe(1);
         living.Containers[0].Children[0].Name.ShouldBe("Drawer");
 
-        // The living room has the front door; the basement room owns the stairs.
+        // The living room has the front door; the basement room owns the stairs (cross-floor to living).
         living.Doors.ShouldContain(d => d.Name == "Front Door" && d.ToRoomId == null);
         var cellar = map.Floors.Single(f => f.Name == "Basement").Rooms.Single();
-        cellar.Doors.ShouldContain(d => d.Kind == DoorKind.Stairs && d.ToRoomId == living.Id);
+        cellar.Stairs.ShouldContain(s => s.Shape == StairShape.Straight && s.ToRoomId == living.Id);
     }
 }
