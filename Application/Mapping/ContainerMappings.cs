@@ -11,6 +11,15 @@ public static class ContainerMappings
         Description = request.Description,
         RoomId = request.RoomId,
         ParentContainerId = request.ParentContainerId,
+        ContainerType = request.ContainerType,
+        PositionXInches = request.PositionXInches,
+        PositionYInches = request.PositionYInches,
+        PositionZInches = request.PositionZInches,
+        Rotation = request.Rotation,
+        WidthInches = request.WidthInches,
+        DepthInches = request.DepthInches,
+        HeightInches = request.HeightInches,
+        Color = request.Color,
     };
 
     public static void ApplyTo(this UpdateContainerRequest request, Container container)
@@ -19,6 +28,15 @@ public static class ContainerMappings
         container.Description = request.Description;
         container.RoomId = request.RoomId;
         container.ParentContainerId = request.ParentContainerId;
+        container.ContainerType = request.ContainerType;
+        container.PositionXInches = request.PositionXInches;
+        container.PositionYInches = request.PositionYInches;
+        container.PositionZInches = request.PositionZInches;
+        container.Rotation = request.Rotation;
+        container.WidthInches = request.WidthInches;
+        container.DepthInches = request.DepthInches;
+        container.HeightInches = request.HeightInches;
+        container.Color = request.Color;
         container.RowVersion = request.RowVersion;
     }
 
@@ -28,5 +46,14 @@ public static class ContainerMappings
         container.Description,
         container.RoomId,
         container.ParentContainerId,
+        container.ContainerType,
+        container.PositionXInches,
+        container.PositionYInches,
+        container.PositionZInches,
+        container.Rotation,
+        container.WidthInches,
+        container.DepthInches,
+        container.HeightInches,
+        container.Color,
         container.RowVersion);
 }

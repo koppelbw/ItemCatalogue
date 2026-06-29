@@ -12,9 +12,11 @@
          scripts below are excluded from the default *.sql build glob. -->
     <Build Remove="PostDeploymentScripts\**\*.sql" />
     <PostDeploy Include="PostDeploymentScripts\Script.PostDeployment.sql" />
-    <None Include="PostDeploymentScripts\Seed_Room.sql" />
     <None Include="PostDeploymentScripts\Seed_Location.sql" />
+    <None Include="PostDeploymentScripts\Seed_Floor.sql" />
+    <None Include="PostDeploymentScripts\Seed_Room.sql" />
     <None Include="PostDeploymentScripts\Seed_Container.sql" />
+    <None Include="PostDeploymentScripts\Seed_Door.sql" />
     <None Include="PostDeploymentScripts\Seed_Person.sql" />
     <None Include="PostDeploymentScripts\Seed_Item.sql" />
     <None Include="PostDeploymentScripts\Seed_Tag.sql" />

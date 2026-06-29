@@ -13,8 +13,10 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
 {
     public DbSet<Item> Items { get; set; }
     public DbSet<ItemEvent> ItemEvents { get; set; }
+    public DbSet<Floor> Floors { get; set; }
     public DbSet<Room> Rooms { get; set; }
     public DbSet<Container> Containers { get; set; }
+    public DbSet<Door> Doors { get; set; }
     public DbSet<Location> Locations { get; set; }
     public DbSet<Person> People { get; set; }
     public DbSet<Tag> Tags { get; set; }
@@ -42,14 +44,9 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
 
         modelBuilder.Entity<Item>(builder =>
         {
-            // We are using Singular naming convention for tables, so we specify "Item" instead of "Items".
-            // EF Core will use the DbSet property name as the table name, so since you declared: Items, it will default to "Items".
-            // If you want to specify a different table name, you can do so here:
             builder.ToTable("Item");
 
-
-            //  EF Core will infer IDENTITY(1,1) automatically for an int primary key named Id by convention,
-            //  so it won't cause a bug without it. But it's good practice to be explicit
+                       
             builder.HasKey(e => e.Id);
             builder.Property(e => e.Id)
                   .IsRequired()
@@ -57,7 +54,7 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
 
 
             builder.Property(e => e.Name)
-              .HasColumnType("nvarchar(255)")   // Optional: explicitly set the column type to nvarchar(255). EF Core will infer this from the string property and max length, but being explicit can help avoid issues.
+              .HasColumnType("nvarchar(255)")
               .IsRequired()
               .HasMaxLength(255);
 
@@ -112,24 +109,19 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
               .HasMaxLength(255);
 
 
-            // Maps RowVersion to a SQL Server rowversion column and registers it as a
-            // concurrency token, so every UPDATE/DELETE carries "AND RowVersion = @original".
             builder.Property(i => i.RowVersion)
                 .IsRowVersion();
 
-            // Foreign key to Room. An item's location is derived through its room.
             builder.HasOne(i => i.Room)
                 .WithMany()
                 .HasForeignKey(i => i.RoomId)
                 .OnDelete(DeleteBehavior.SetNull);
-
-            // Foreign key to Container (an item may live inside a container instead of directly in a room).
+                       
             builder.HasOne(i => i.Container)
                 .WithMany()
                 .HasForeignKey(i => i.ContainerId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // Foreign key to Person (Owner)
             builder.HasOne(i => i.Owner)
                 .WithMany(p => p.Items)
                 .HasForeignKey(i => i.OwnerId)
@@ -196,11 +188,24 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
             builder.Property(r => r.Description)
                 .HasMaxLength(500);
 
-            // Foreign key to the owning Location (Required). Restrict so a Location that still
-            // has Rooms cannot be deleted; SQL Server error 547 surfaces as EntityInUseException.
-            builder.HasOne(r => r.Location)
-                .WithMany(l => l.Rooms)
-                .HasForeignKey(r => r.LocationId)
+            builder.Property(r => r.RoomType)
+                .HasConversion<string>()
+                .HasMaxLength(50);
+
+            builder.Property(r => r.OriginXInches).HasColumnType("decimal(9,2)");
+            builder.Property(r => r.OriginYInches).HasColumnType("decimal(9,2)");
+            builder.Property(r => r.WidthInches).HasColumnType("decimal(9,2)");
+            builder.Property(r => r.DepthInches).HasColumnType("decimal(9,2)");
+            builder.Property(r => r.HeightInches).HasColumnType("decimal(9,2)");
+            builder.Property(r => r.Rotation).HasColumnType("decimal(6,2)");
+
+            builder.Property(r => r.WallColor).HasMaxLength(9);
+            builder.Property(r => r.FloorColor).HasMaxLength(9);
+            builder.Property(r => r.CeilingColor).HasMaxLength(9);
+                        
+            builder.HasOne(r => r.Floor)
+                .WithMany(f => f.Rooms)
+                .HasForeignKey(r => r.FloorId)
                 .OnDelete(DeleteBehavior.Restrict)
                 .IsRequired();
 
@@ -225,22 +230,111 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
             builder.Property(c => c.Description)
                 .HasMaxLength(500);
 
-            // A top-level container is owned by a Room. Restrict so a Room that still has containers
-            // cannot be deleted; SQL Server error 547 surfaces as EntityInUseException. Nullable
-            // because a nested container references a parent container instead (see below).
+            builder.Property(c => c.ContainerType)
+                .HasConversion<string>()
+                .HasMaxLength(50);
+                        
+            builder.Property(c => c.PositionXInches).HasColumnType("decimal(9,2)");
+            builder.Property(c => c.PositionYInches).HasColumnType("decimal(9,2)");
+            builder.Property(c => c.PositionZInches).HasColumnType("decimal(9,2)");
+            builder.Property(c => c.Rotation).HasColumnType("decimal(6,2)");
+            builder.Property(c => c.WidthInches).HasColumnType("decimal(9,2)");
+            builder.Property(c => c.DepthInches).HasColumnType("decimal(9,2)");
+            builder.Property(c => c.HeightInches).HasColumnType("decimal(9,2)");
+
+            builder.Property(c => c.Color).HasMaxLength(9);
+
             builder.HasOne(c => c.Room)
                 .WithMany(r => r.Containers)
                 .HasForeignKey(c => c.RoomId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Self-reference: a nested container is owned by a parent container. Restrict (SQL Server
-            // forbids cascade on a self-referencing FK), so a parent with children cannot be deleted.
             builder.HasOne(c => c.ParentContainer)
                 .WithMany(c => c.Children)
                 .HasForeignKey(c => c.ParentContainerId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Property(c => c.RowVersion)
+                .IsRowVersion();
+        });
+
+        // Configure Floor entity
+        modelBuilder.Entity<Floor>(builder =>
+        {
+            builder.ToTable("Floor");
+
+            builder.HasKey(f => f.Id);
+
+            builder.Property(f => f.Id)
+                .ValueGeneratedOnAdd();
+
+            builder.Property(f => f.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(f => f.ElevationInches).HasColumnType("decimal(9,2)");
+            builder.Property(f => f.CeilingHeightInches).HasColumnType("decimal(9,2)");
+                        
+            builder.HasOne(f => f.Location)
+                .WithMany(l => l.Floors)
+                .HasForeignKey(f => f.LocationId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            builder.HasIndex(f => new { f.LocationId, f.LevelIndex })
+                .IsUnique();
+
+            builder.Property(f => f.RowVersion)
+                .IsRowVersion();
+        });
+
+        // Configure Door entity
+        modelBuilder.Entity<Door>(builder =>
+        {
+            builder.ToTable("Door");
+
+            builder.HasKey(d => d.Id);
+
+            builder.Property(d => d.Id)
+                .ValueGeneratedOnAdd();
+
+            builder.Property(d => d.Name)
+                .HasMaxLength(100);
+
+            builder.Property(d => d.Kind)
+                .HasConversion<string>()
+                .HasMaxLength(50)
+                .IsRequired();
+
+            builder.Property(d => d.Wall)
+                .HasConversion<string>()
+                .HasMaxLength(50)
+                .IsRequired();
+
+            builder.Property(d => d.OffsetInches).HasColumnType("decimal(9,2)");
+            builder.Property(d => d.WidthInches).HasColumnType("decimal(9,2)");
+            builder.Property(d => d.HeightInches).HasColumnType("decimal(9,2)");
+
+            builder.Property(d => d.HingeSide)
+                .HasConversion<string>()
+                .HasMaxLength(50);
+
+            builder.Property(d => d.Swing)
+                .HasConversion<string>()
+                .HasMaxLength(50);
+                        
+            builder.HasOne(d => d.FromRoom)
+                .WithMany(r => r.Doors)
+                .HasForeignKey(d => d.FromRoomId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            builder.HasOne(d => d.ToRoom)
+                .WithMany()
+                .HasForeignKey(d => d.ToRoomId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Property(d => d.RowVersion)
                 .IsRowVersion();
         });
 
@@ -261,7 +355,6 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
             builder.Property(l => l.Description)
                 .HasMaxLength(500);
 
-            // The Location -> Rooms one-to-many is configured from the Room side (Room.LocationId).
 
             builder.Property(l => l.RowVersion)
                 .IsRowVersion();

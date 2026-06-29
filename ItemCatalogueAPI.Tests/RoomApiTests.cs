@@ -7,24 +7,24 @@ using Shouldly;
 
 namespace ItemCatalogueAPI.Tests;
 
-// Drives the /api/rooms endpoints over real HTTP through the full pipeline (routing, model binding,
-// validation, services, EF, SQL Server, and the RFC 9457 problem-details mapping). Room exercises
-// the generic CRUD surface plus the optimistic-concurrency 409 path. (The FK-restrict 409 path now
-// lives on Location, since Room owns the FK; see LocationApiTests.)
 public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
 {
-    // Every Room needs a parent Location (Room.LocationId is a required FK).
-    private async Task<int> CreateLocationIdAsync(string name = "House")
+    // Every Room needs a parent Floor (Room.FloorId is a required FK), which needs a Location.
+    private async Task<int> CreateFloorIdAsync(string name = "Main", int levelIndex = 0)
     {
-        var response = await Client.PostAsJsonAsync("/api/locations", new CreateLocationRequest(name, null));
+        var loc = await Client.PostAsJsonAsync("/api/locations", new CreateLocationRequest("House", null));
+        loc.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var locationId = (await loc.Content.ReadFromJsonAsync<LocationResponse>())!.Id;
+
+        var response = await Client.PostAsJsonAsync("/api/floors", new CreateFloorRequest(name, locationId, levelIndex, null, null));
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
-        return (await response.Content.ReadFromJsonAsync<LocationResponse>())!.Id;
+        return (await response.Content.ReadFromJsonAsync<FloorResponse>())!.Id;
     }
 
-    private async Task<RoomResponse> CreateRoomAsync(string name = "Garage", string? description = "Out back", int? locationId = null)
+    private async Task<RoomResponse> CreateRoomAsync(string name = "Garage", string? description = "Out back", int? floorId = null)
     {
-        locationId ??= await CreateLocationIdAsync();
-        var response = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest(name, description, locationId.Value));
+        floorId ??= await CreateFloorIdAsync();
+        var response = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest(name, description, floorId.Value));
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         return (await response.Content.ReadFromJsonAsync<RoomResponse>())!;
     }
@@ -32,8 +32,8 @@ public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
     [Fact]
     public async Task Create_WithValidBody_Returns201WithLocationHeaderAndBody()
     {
-        var locationId = await CreateLocationIdAsync();
-        var response = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("Garage", "Out back", locationId));
+        var floorId = await CreateFloorIdAsync();
+        var response = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("Garage", "Out back", floorId));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         response.Headers.Location.ShouldNotBeNull();
@@ -52,7 +52,7 @@ public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
     [Fact]
     public async Task Create_WithEmptyName_Returns400ValidationProblem()
     {
-        // LocationId is positive so it passes its own rule; the empty Name is the rejection under test.
+        // FloorId is positive so it passes its own rule; the empty Name is the rejection under test.
         var response = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("", null, 1));
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -111,7 +111,7 @@ public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
 
         var response = await Client.PutAsJsonAsync(
             $"/api/rooms/{created.Id}",
-            new UpdateRoomRequest(created.Id, "Shed", "Renamed", created.LocationId, created.RowVersion));
+            new UpdateRoomRequest(created.Id, "Shed", "Renamed", created.FloorId, created.RowVersion));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var updated = await response.Content.ReadFromJsonAsync<RoomResponse>();
@@ -126,7 +126,7 @@ public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
         // Route id and body id deliberately disagree; the controller maps this to a 400.
         var response = await Client.PutAsJsonAsync(
             $"/api/rooms/{created.Id}",
-            new UpdateRoomRequest(created.Id + 1, "Shed", null, created.LocationId, created.RowVersion));
+            new UpdateRoomRequest(created.Id + 1, "Shed", null, created.FloorId, created.RowVersion));
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -149,13 +149,13 @@ public class RoomApiTests(ApiFactory factory) : ApiTestBase(factory)
         // First update succeeds and bumps the server's rowversion.
         var first = await Client.PutAsJsonAsync(
             $"/api/rooms/{created.Id}",
-            new UpdateRoomRequest(created.Id, "Shed", null, created.LocationId, created.RowVersion));
+            new UpdateRoomRequest(created.Id, "Shed", null, created.FloorId, created.RowVersion));
         first.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         // Reusing the original (now stale) rowversion must be rejected as a concurrency conflict.
         var second = await Client.PutAsJsonAsync(
             $"/api/rooms/{created.Id}",
-            new UpdateRoomRequest(created.Id, "Workshop", null, created.LocationId, created.RowVersion));
+            new UpdateRoomRequest(created.Id, "Workshop", null, created.FloorId, created.RowVersion));
 
         second.StatusCode.ShouldBe(HttpStatusCode.Conflict);
         var problem = await second.Content.ReadFromJsonAsync<ProblemDetails>();

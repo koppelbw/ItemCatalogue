@@ -7,19 +7,19 @@ using Shouldly;
 
 namespace ItemCatalogueAPI.Tests;
 
-// Drives the /api/containers endpoints over real HTTP through the full pipeline. Container exercises
-// the generic CRUD surface, the Room-XOR-ParentContainer validation, the self-referencing hierarchy,
-// and both 409 paths (optimistic concurrency and FK-restrict on a parent with children).
 public class ContainerApiTests(ApiFactory factory) : ApiTestBase(factory)
-{
-    // A top-level container needs a Room, which needs a Location.
+{    
     private async Task<int> CreateRoomIdAsync()
     {
         var loc = await Client.PostAsJsonAsync("/api/locations", new CreateLocationRequest("House", null));
         loc.StatusCode.ShouldBe(HttpStatusCode.Created);
         var locationId = (await loc.Content.ReadFromJsonAsync<LocationResponse>())!.Id;
 
-        var room = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("Bedroom", null, locationId));
+        var floor = await Client.PostAsJsonAsync("/api/floors", new CreateFloorRequest("Main", locationId, 0, null, null));
+        floor.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var floorId = (await floor.Content.ReadFromJsonAsync<FloorResponse>())!.Id;
+
+        var room = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest("Bedroom", null, floorId));
         room.StatusCode.ShouldBe(HttpStatusCode.Created);
         return (await room.Content.ReadFromJsonAsync<RoomResponse>())!.Id;
     }

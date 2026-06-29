@@ -4,6 +4,22 @@ CREATE TABLE [Container] (
     [Description] NVARCHAR(500) NULL,
     [RoomId] INT NULL,
     [ParentContainerId] INT NULL,
+    
+    -- ContainerType stored as a string (Box, Shelf, Cabinet, …); nullable.
+    [ContainerType] NVARCHAR(50) NULL,
+    
+    -- Placement (inches) in room space (RoomId set) or parent-container space (ParentContainerId set).
+    -- All nullable: a container may be catalogued before it is positioned/sized. PositionZ is height
+    -- off the floor (wall shelves / stacked units).
+    [PositionXInches] DECIMAL(9, 2) NULL,
+    [PositionYInches] DECIMAL(9, 2) NULL,
+    [PositionZInches] DECIMAL(9, 2) NULL,
+    [Rotation] DECIMAL(6, 2) NULL,
+    [WidthInches] DECIMAL(9, 2) NULL,
+    [DepthInches] DECIMAL(9, 2) NULL,
+    [HeightInches] DECIMAL(9, 2) NULL,
+    [Color] NVARCHAR(9) NULL,
+
     [CreatedDate] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     [LastModifiedDate] DATETIME2 NULL,
     [RowVersion] ROWVERSION NOT NULL,

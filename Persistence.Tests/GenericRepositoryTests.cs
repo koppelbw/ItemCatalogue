@@ -9,22 +9,22 @@ using Shouldly;
 
 namespace Persistence.Tests;
 
-// Exercises the shared GenericRepository plumbing through the simplest concrete adapter
-// (RoomRepository): identity generation, audit stamping, paging, optimistic concurrency, and
-// hard delete. The behaviour is identical for Location/Person, which derive from the same base.
 public class GenericRepositoryTests(SqlServerFixture fixture) : PersistenceTestBase(fixture)
 {
     private RoomRepository NewRepository() => new(Db, NullLoggerFactory.Instance);
 
-    // Room.LocationId is a required FK, so every Room needs a parent Location to insert.
-    private Task<int> SeedLocationAsync() =>
-        new LocationRepository(Db, NullLoggerFactory.Instance).InsertAsync(new Location { Name = "House" });
+    // Room.FloorId is a required FK, so every Room needs a parent Floor (which needs a Location).
+    private async Task<int> SeedFloorAsync()
+    {
+        var locationId = await new LocationRepository(Db, NullLoggerFactory.Instance).InsertAsync(new Location { Name = "House" });
+        return await new FloorRepository(Db, NullLoggerFactory.Instance).InsertAsync(new Floor { Name = "Main", LocationId = locationId });
+    }
 
     [Fact]
     public async Task InsertAsync_AssignsIdentityAndStampsCreatedDateAndRowVersion()
     {
         var repository = NewRepository();
-        var room = new Room { Name = "Garage", LocationId = await SeedLocationAsync() };
+        var room = new Room { Name = "Garage", FloorId = await SeedFloorAsync() };
 
         var id = await repository.InsertAsync(room);
 
@@ -47,7 +47,7 @@ public class GenericRepositoryTests(SqlServerFixture fixture) : PersistenceTestB
     public async Task GetByIdAsync_WhenPresent_ReturnsRow()
     {
         var repository = NewRepository();
-        var id = await repository.InsertAsync(new Room { Name = "Garage", Description = "Out back", LocationId = await SeedLocationAsync() });
+        var id = await repository.InsertAsync(new Room { Name = "Garage", Description = "Out back", FloorId = await SeedFloorAsync() });
 
         var found = await repository.GetByIdAsync(id);
 
@@ -60,10 +60,10 @@ public class GenericRepositoryTests(SqlServerFixture fixture) : PersistenceTestB
     public async Task GetAllAsync_ReturnsRequestedWindowOrderedByIdWithTotalCount()
     {
         var repository = NewRepository();
-        var locationId = await SeedLocationAsync();
+        var floorId = await SeedFloorAsync();
         for (var i = 1; i <= 25; i++)
         {
-            await repository.InsertAsync(new Room { Name = $"Room {i:D2}", LocationId = locationId });
+            await repository.InsertAsync(new Room { Name = $"Room {i:D2}", FloorId = floorId });
         }
 
         var page = await repository.GetAllAsync(PageRequest.Create(page: 2, pageSize: 10));
@@ -81,7 +81,7 @@ public class GenericRepositoryTests(SqlServerFixture fixture) : PersistenceTestB
     public async Task UpdateAsync_PersistsChangesStampsModifiedDateAndBumpsRowVersion()
     {
         var repository = NewRepository();
-        var id = await repository.InsertAsync(new Room { Name = "Garage", LocationId = await SeedLocationAsync() });
+        var id = await repository.InsertAsync(new Room { Name = "Garage", FloorId = await SeedFloorAsync() });
         var originalRowVersion = (await repository.GetForUpdateAsync(id))!.RowVersion;
 
         // Advance the clock so LastModifiedDate is distinguishable from CreatedDate.
@@ -101,7 +101,7 @@ public class GenericRepositoryTests(SqlServerFixture fixture) : PersistenceTestB
     public async Task UpdateAsync_WithStaleRowVersion_ThrowsConcurrencyConflict()
     {
         var repository = NewRepository();
-        var id = await repository.InsertAsync(new Room { Name = "Garage", LocationId = await SeedLocationAsync() });
+        var id = await repository.InsertAsync(new Room { Name = "Garage", FloorId = await SeedFloorAsync() });
 
         // Load the row we intend to edit (carries the current rowversion as its original value)...
         var stale = await repository.GetForUpdateAsync(id);
@@ -119,7 +119,7 @@ public class GenericRepositoryTests(SqlServerFixture fixture) : PersistenceTestB
     public async Task DeleteAsync_RemovesRowAndReturnsAffectedCount()
     {
         var repository = NewRepository();
-        var id = await repository.InsertAsync(new Room { Name = "Garage", LocationId = await SeedLocationAsync() });
+        var id = await repository.InsertAsync(new Room { Name = "Garage", FloorId = await SeedFloorAsync() });
 
         var affected = await repository.DeleteAsync(id);
 

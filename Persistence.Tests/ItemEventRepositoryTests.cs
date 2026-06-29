@@ -12,6 +12,7 @@ public class ItemEventRepositoryTests(SqlServerFixture fixture) : PersistenceTes
     private ItemEventRepository Events() => new(Db);
     private ItemRepository Items() => new(Db, Clock, NullLoggerFactory.Instance);
     private RoomRepository Rooms() => new(Db, NullLoggerFactory.Instance);
+    private FloorRepository Floors() => new(Db, NullLoggerFactory.Instance);
     private LocationRepository Locations() => new(Db, NullLoggerFactory.Instance);
 
     private async Task<int> SeedItemAsync(int? roomId = null)
@@ -83,8 +84,9 @@ public class ItemEventRepositoryTests(SqlServerFixture fixture) : PersistenceTes
     public async Task Interceptor_OnRoomIdChange_EmitsMovedEvent()
     {
         var locationId = await Locations().InsertAsync(new Location { Name = "House" });
-        var roomA = await Rooms().InsertAsync(new Room { Name = "Garage", LocationId = locationId });
-        var roomB = await Rooms().InsertAsync(new Room { Name = "Attic", LocationId = locationId });
+        var floorId = await Floors().InsertAsync(new Floor { Name = "Main", LocationId = locationId });
+        var roomA = await Rooms().InsertAsync(new Room { Name = "Garage", FloorId = floorId });
+        var roomB = await Rooms().InsertAsync(new Room { Name = "Attic", FloorId = floorId });
 
         var itemId = await SeedItemAsync(roomA);
 

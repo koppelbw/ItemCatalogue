@@ -71,12 +71,13 @@ public sealed class SqlServerFixture : IAsyncLifetime
         await using var context = CreateContext(new FakeTimeProvider());
         // FK-safe order: children before parents. The join tables (ItemTag, CollectionItem) reference
         // Item/Tag/Collection, so clear them first; then Item -> (Room|Container); Container ->
-        // (Room|Container); Room -> Location; Person, Tag, Collection are independent once their join
-        // rows are gone. A single DELETE FROM [Container] clears all rows at once, satisfying the
-        // self-referencing NO ACTION check at statement end.
+        // (Room|Container); Door -> Room; Room -> Floor; Floor -> Location; Person, Tag, Collection are
+        // independent once their join rows are gone. A single DELETE FROM [Container] (and [Door])
+        // clears all rows at once, satisfying the self-referencing / multiple-FK-to-Room checks.
         await context.Database.ExecuteSqlRawAsync(
             "DELETE FROM [ItemTag]; DELETE FROM [CollectionItem]; DELETE FROM [Item]; DELETE FROM [Container]; " +
-            "DELETE FROM [Room]; DELETE FROM [Location]; DELETE FROM [Person]; DELETE FROM [Tag]; DELETE FROM [Collection];");
+            "DELETE FROM [Door]; DELETE FROM [Room]; DELETE FROM [Floor]; DELETE FROM [Location]; " +
+            "DELETE FROM [Person]; DELETE FROM [Tag]; DELETE FROM [Collection];");
     }
 }
 

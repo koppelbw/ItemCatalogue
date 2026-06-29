@@ -32,6 +32,18 @@ public sealed class LocationController(ILocationService locationService) : Contr
         return Ok(location);
     }
 
+    // GET api/locations/5/map
+    // Returns the full spatial graph for the location (floors -> rooms with geometry/colours ->
+    // nested container tree + doors) so a consumer can reconstruct the whole building in one call.
+    [HttpGet("{id:int}/map", Name = "GetLocationMap")]
+    [ProducesResponseType(typeof(LocationMapResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<LocationMapResponse>> GetMap(int id, CancellationToken cancellationToken)
+    {
+        var map = await locationService.GetMapAsync(id, cancellationToken);
+        return Ok(map);
+    }
+
     // POST api/locations
     [HttpPost]
     [ProducesResponseType(typeof(LocationResponse), StatusCodes.Status201Created)]

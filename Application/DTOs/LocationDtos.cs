@@ -14,5 +14,5 @@ public sealed record LocationResponse(
     int Id,
     string Name,
     string? Description,
-    IReadOnlyList<RoomResponse> Rooms,
+    IReadOnlyList<FloorResponse> Floors,
     byte[] RowVersion);
