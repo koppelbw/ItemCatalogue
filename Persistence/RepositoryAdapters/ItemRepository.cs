@@ -19,6 +19,20 @@ public sealed class ItemRepository(ItemCatalogueDbContext dbContext, TimeProvide
         => EntitySet.Include(i => i.Room).Include(i => i.Container).Include(i => i.Owner).AsNoTracking();
 
 
+    public async Task<Item?> GetWithLocationAsync(int id, CancellationToken cancellationToken = default)
+    {
+        // Each Include path covers a different route through the spatial hierarchy.
+        // Paths 3-4 handle 1 and 2 levels of container nesting respectively; deeper nesting
+        // is unsupported (an edge case not representable in the current seed data).
+        return await EntitySet
+            .AsNoTracking()
+            .Include(i => i.Room).ThenInclude(r => r!.Floor).ThenInclude(f => f!.Location)
+            .Include(i => i.Container).ThenInclude(c => c!.Room).ThenInclude(r => r!.Floor).ThenInclude(f => f!.Location)
+            .Include(i => i.Container).ThenInclude(c => c!.ParentContainer).ThenInclude(pc => pc!.Room).ThenInclude(r => r!.Floor).ThenInclude(f => f!.Location)
+            .Include(i => i.Container).ThenInclude(c => c!.ParentContainer).ThenInclude(pc => pc!.ParentContainer).ThenInclude(gpc => gpc!.Room).ThenInclude(r => r!.Floor).ThenInclude(f => f!.Location)
+            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+    }
+
     public async Task<int> SoftDeleteItemByIdAsync(int id, DeletedReason reason, CancellationToken cancellationToken = default)
     {
         // ExecuteUpdate bypasses the change tracker (and therefore the auditing interceptor),
@@ -74,6 +88,19 @@ public sealed class ItemRepository(ItemCatalogueDbContext dbContext, TimeProvide
 
         if (filter.IsStored.HasValue)
             query = query.Where(i => i.IsStored == filter.IsStored.Value);
+
+        // Floor/Location: match items directly in a room on the floor, or in a top-level
+        // container whose room is on the floor. Items in deeply nested containers (2+ levels)
+        // are not included — EF Core would need a recursive CTE for arbitrary depth.
+        if (filter.FloorId.HasValue)
+            query = query.Where(i =>
+                i.Room!.FloorId == filter.FloorId.Value ||
+                i.Container!.Room!.FloorId == filter.FloorId.Value);
+
+        if (filter.LocationId.HasValue)
+            query = query.Where(i =>
+                i.Room!.Floor!.LocationId == filter.LocationId.Value ||
+                i.Container!.Room!.Floor!.LocationId == filter.LocationId.Value);
 
         return await PaginateAsync(query.OrderBy(i => i.Id), page, cancellationToken);
     }

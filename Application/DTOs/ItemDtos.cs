@@ -21,6 +21,19 @@ public sealed record ItemSearchQuery : PaginationQuery
     public bool IncludeDeleted { get; init; }
 }
 
+public sealed record ContainerPathStep(int Id, string Name);
+
+public sealed record ItemLocationPathResponse(
+    int ItemId,
+    string ItemName,
+    int LocationId,
+    string LocationName,
+    int FloorId,
+    string FloorName,
+    int RoomId,
+    string RoomName,
+    IReadOnlyList<ContainerPathStep> ContainerPath);
+
 public sealed record CreateItemRequest(
     string Name,
     string? Description,

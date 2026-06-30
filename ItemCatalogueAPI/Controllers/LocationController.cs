@@ -9,8 +9,17 @@ namespace ItemCatalogueAPI.Controllers;
 [ApiController]
 [Route("api/locations")]
 [Produces("application/json")]
-public sealed class LocationController(ILocationService locationService) : ControllerBase
+public sealed class LocationController(ILocationService locationService, IItemService itemService) : ControllerBase
 {
+    // GET api/locations/5/items?page=1&pageSize=20
+    [HttpGet("{id:int}/items", Name = "GetLocationItems")]
+    [ProducesResponseType(typeof(PagedResponse<ItemResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<ItemResponse>>> GetItems(int id, [FromQuery] PaginationQuery pagination, CancellationToken cancellationToken)
+    {
+        var page = await itemService.GetItemsByLocationAsync(id, pagination, cancellationToken);
+        return Ok(page);
+    }
+
     // GET api/locations?page=2&pageSize=50
     // Paginated list. PaginationQuery is bound from the query string; its [Range] guards
     // reject obviously-bad input as 400, and the service clamps to safe bounds server-side.

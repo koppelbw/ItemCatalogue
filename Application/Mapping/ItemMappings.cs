@@ -18,6 +18,48 @@ public static class ItemMappings
         IsStored: query.IsStored,
         IncludeDeleted: query.IncludeDeleted);
 
+    public static ItemLocationPathResponse ToLocationPathResponse(this Item item)
+    {
+        var containers = new List<ContainerPathStep>();
+        Room room;
+
+        if (item.RoomId.HasValue)
+        {
+            room = item.Room!;
+        }
+        else
+        {
+            // Traverse up the container chain (innermost → outermost) to find the enclosing room.
+            var current = item.Container!;
+            while (true)
+            {
+                containers.Add(new ContainerPathStep(current.Id, current.Name));
+                if (current.RoomId.HasValue)
+                {
+                    room = current.Room!;
+                    break;
+                }
+                current = current.ParentContainer!;
+            }
+            // Reverse so the path reads outermost → innermost (e.g. [Wardrobe, Top Shelf]).
+            containers.Reverse();
+        }
+
+        var floor = room.Floor!;
+        var location = floor.Location!;
+
+        return new ItemLocationPathResponse(
+            ItemId: item.Id,
+            ItemName: item.Name,
+            LocationId: location.Id,
+            LocationName: location.Name,
+            FloorId: floor.Id,
+            FloorName: floor.Name,
+            RoomId: room.Id,
+            RoomName: room.Name,
+            ContainerPath: containers);
+    }
+
     public static Item ToEntity(this CreateItemRequest request) => new()
     {
         Name = request.Name,

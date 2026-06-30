@@ -24,6 +24,16 @@ public sealed class ItemController(IItemService itemService) : ControllerBase
         return Ok(page);
     }
 
+    // GET api/items/5/location-path
+    [HttpGet("{id:int}/location-path", Name = "GetItemLocationPath")]
+    [ProducesResponseType(typeof(ItemLocationPathResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ItemLocationPathResponse>> GetLocationPath(int id, CancellationToken cancellationToken)
+    {
+        var path = await itemService.GetLocationPathAsync(id, cancellationToken);
+        return Ok(path);
+    }
+
     // GET api/items/5
     [HttpGet("{id:int}", Name = "GetItemById")]
     [ProducesResponseType(typeof(ItemResponse), StatusCodes.Status200OK)]

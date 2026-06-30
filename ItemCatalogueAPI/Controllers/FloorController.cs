@@ -9,8 +9,17 @@ namespace ItemCatalogueAPI.Controllers;
 [ApiController]
 [Route("api/floors")]
 [Produces("application/json")]
-public sealed class FloorController(IFloorService floorService) : ControllerBase
+public sealed class FloorController(IFloorService floorService, IItemService itemService) : ControllerBase
 {
+    // GET api/floors/5/items?page=1&pageSize=20
+    [HttpGet("{id:int}/items", Name = "GetFloorItems")]
+    [ProducesResponseType(typeof(PagedResponse<ItemResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<ItemResponse>>> GetItems(int id, [FromQuery] PaginationQuery pagination, CancellationToken cancellationToken)
+    {
+        var page = await itemService.GetItemsByFloorAsync(id, pagination, cancellationToken);
+        return Ok(page);
+    }
+
     // GET api/floors?page=2&pageSize=50
     [HttpGet(Name = "GetFloors")]
     [ProducesResponseType(typeof(PagedResponse<FloorResponse>), StatusCodes.Status200OK)]

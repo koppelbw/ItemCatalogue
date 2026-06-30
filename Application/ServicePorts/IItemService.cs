@@ -9,6 +9,16 @@ public interface IItemService
 
     Task<PagedResponse<ItemResponse>> GetAllAsync(ItemSearchQuery query, CancellationToken cancellationToken = default);
 
+    Task<ItemLocationPathResponse> GetLocationPathAsync(int itemId, CancellationToken cancellationToken = default);
+
+    Task<PagedResponse<ItemResponse>> GetItemsByRoomAsync(int roomId, PaginationQuery pagination, CancellationToken cancellationToken = default);
+
+    Task<PagedResponse<ItemResponse>> GetItemsByContainerAsync(int containerId, PaginationQuery pagination, CancellationToken cancellationToken = default);
+
+    Task<PagedResponse<ItemResponse>> GetItemsByFloorAsync(int floorId, PaginationQuery pagination, CancellationToken cancellationToken = default);
+
+    Task<PagedResponse<ItemResponse>> GetItemsByLocationAsync(int locationId, PaginationQuery pagination, CancellationToken cancellationToken = default);
+
     Task<ItemResponse> CreateAsync(CreateItemRequest request, CancellationToken cancellationToken = default);
 
     Task<ItemResponse> UpdateAsync(UpdateItemRequest request, CancellationToken cancellationToken = default);

@@ -12,6 +12,10 @@ public interface IItemRepository
 {
     Task<Item?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
+    // Loads the item with its full location chain eager-loaded (Room/Container → Floor → Location).
+    // Handles up to 3 levels of container nesting. Used by the location-path endpoint.
+    Task<Item?> GetWithLocationAsync(int id, CancellationToken cancellationToken = default);
+
     Task<Item?> GetForUpdateAsync(int id, CancellationToken cancellationToken = default);
 
     Task<PagedResult<Item>> GetAllAsync(PageRequest page, CancellationToken cancellationToken = default);

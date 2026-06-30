@@ -9,8 +9,17 @@ namespace ItemCatalogueAPI.Controllers;
 [ApiController]
 [Route("api/containers")]
 [Produces("application/json")]
-public sealed class ContainerController(IContainerService containerService) : ControllerBase
+public sealed class ContainerController(IContainerService containerService, IItemService itemService) : ControllerBase
 {
+    // GET api/containers/5/items?page=1&pageSize=20
+    [HttpGet("{id:int}/items", Name = "GetContainerItems")]
+    [ProducesResponseType(typeof(PagedResponse<ItemResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<ItemResponse>>> GetItems(int id, [FromQuery] PaginationQuery pagination, CancellationToken cancellationToken)
+    {
+        var page = await itemService.GetItemsByContainerAsync(id, pagination, cancellationToken);
+        return Ok(page);
+    }
+
     // GET api/containers?page=2&pageSize=50
     // Paginated list. PaginationQuery is bound from the query string; its [Range] guards
     // reject obviously-bad input as 400, and the service clamps to safe bounds server-side.
