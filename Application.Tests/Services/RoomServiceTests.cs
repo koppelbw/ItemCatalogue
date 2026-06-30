@@ -27,7 +27,7 @@ public class RoomServiceTests
     }
 
     private static Room Existing(int id = 1) =>
-        new() { Id = id, Name = "Garage", LocationId = 3, RowVersion = [1, 2, 3] };
+        new() { Id = id, Name = "Garage", FloorId = 3, RowVersion = [1, 2, 3] };
 
     [Fact]
     public async Task GetByIdAsync_WhenMissing_ThrowsNotFound()

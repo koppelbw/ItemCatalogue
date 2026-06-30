@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Exceptions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Persistence.RepositoryAdapters;
@@ -7,49 +8,64 @@ using Shouldly;
 
 namespace Persistence.Tests;
 
-// The Room -> Location foreign key uses DeleteBehavior.Restrict. Deleting a Location that still has
-// Rooms must surface as the domain-level EntityInUseException (translated from SQL Server
-// error 547), so the API can map it to 409 Conflict without referencing EF. This is the core of
-// the graceful-delete plan.
 public class FkRestrictDeleteTests(SqlServerFixture fixture) : PersistenceTestBase(fixture)
 {
     private RoomRepository Rooms() => new(Db, NullLoggerFactory.Instance);
+    private FloorRepository Floors() => new(Db, NullLoggerFactory.Instance);
     private LocationRepository Locations() => new(Db, NullLoggerFactory.Instance);
     private ContainerRepository Containers() => new(Db, NullLoggerFactory.Instance);
+    private DoorRepository Doors() => new(Db, NullLoggerFactory.Instance);
+    private StairRepository Stairs() => new(Db, NullLoggerFactory.Instance);
+
+    private async Task<int> SeedFloorAsync()
+    {
+        var locationId = await Locations().InsertAsync(new Location { Name = "House" });
+        return await Floors().InsertAsync(new Floor { Name = "Main", LocationId = locationId });
+    }
 
     private async Task<int> SeedRoomAsync()
     {
-        var locationId = await Locations().InsertAsync(new Location { Name = "House" });
-        return await Rooms().InsertAsync(new Room { Name = "Bedroom", LocationId = locationId });
+        var floorId = await SeedFloorAsync();
+        return await Rooms().InsertAsync(new Room { Name = "Bedroom", FloorId = floorId });
     }
 
     [Fact]
-    public async Task DeleteLocation_WhileReferencedByRoom_ThrowsEntityInUse()
+    public async Task DeleteLocation_WhileReferencedByFloor_ThrowsEntityInUse()
     {
         var locations = Locations();
         var locationId = await locations.InsertAsync(new Location { Name = "House" });
-        await Rooms().InsertAsync(new Room { Name = "Garage", LocationId = locationId });
+        await Floors().InsertAsync(new Floor { Name = "Main", LocationId = locationId });
 
         await Should.ThrowAsync<EntityInUseException>(() => locations.DeleteAsync(locationId));
 
-        // The restrict means nothing was deleted; the location is still there.
         (await locations.GetByIdAsync(locationId)).ShouldNotBeNull();
     }
 
     [Fact]
-    public async Task DeleteLocation_AfterRemovingItsRooms_Succeeds()
+    public async Task DeleteFloor_WhileReferencedByRoom_ThrowsEntityInUse()
+    {
+        var floors = Floors();
+        var floorId = await SeedFloorAsync();
+        await Rooms().InsertAsync(new Room { Name = "Garage", FloorId = floorId });
+
+        await Should.ThrowAsync<EntityInUseException>(() => floors.DeleteAsync(floorId));
+
+        (await floors.GetByIdAsync(floorId)).ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task DeleteFloor_AfterRemovingItsRooms_Succeeds()
     {
         var rooms = Rooms();
-        var locations = Locations();
-        var locationId = await locations.InsertAsync(new Location { Name = "House" });
-        var roomId = await rooms.InsertAsync(new Room { Name = "Garage", LocationId = locationId });
+        var floors = Floors();
+        var floorId = await SeedFloorAsync();
+        var roomId = await rooms.InsertAsync(new Room { Name = "Garage", FloorId = floorId });
 
-        // Remove the only child, then the parent delete is no longer restricted.
         await rooms.DeleteAsync(roomId);
-        var affected = await locations.DeleteAsync(locationId);
+        var affected = await floors.DeleteAsync(floorId);
 
         affected.ShouldBe(1);
-        (await locations.GetByIdAsync(locationId)).ShouldBeNull();
+        (await floors.GetByIdAsync(floorId)).ShouldBeNull();
     }
 
     [Fact]
@@ -62,6 +78,86 @@ public class FkRestrictDeleteTests(SqlServerFixture fixture) : PersistenceTestBa
         await Should.ThrowAsync<EntityInUseException>(() => rooms.DeleteAsync(roomId));
 
         (await rooms.GetByIdAsync(roomId)).ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task DeleteRoom_WhileReferencedByDoorFromRoom_ThrowsEntityInUse()
+    {
+        var rooms = Rooms();
+        var roomId = await SeedRoomAsync();
+        // A door placed in the room (FromRoomId) that leads outside (ToRoomId null).
+        await Doors().InsertAsync(new Door
+        {
+            Kind = DoorKind.Door,
+            FromRoomId = roomId,
+            Wall = Wall.North,
+            OffsetInches = 12,
+            WidthInches = 36,
+            HeightInches = 80,
+        });
+
+        await Should.ThrowAsync<EntityInUseException>(() => rooms.DeleteAsync(roomId));
+
+        (await rooms.GetByIdAsync(roomId)).ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task DeleteRoom_ThatIsADoorToRoom_NullsToRoomIdViaSetNull()
+    {
+        var rooms = Rooms();
+        var doors = Doors();
+        var floorId = await SeedFloorAsync();
+        var fromRoomId = await rooms.InsertAsync(new Room { Name = "Hall", FloorId = floorId });
+        var toRoomId = await rooms.InsertAsync(new Room { Name = "Kitchen", FloorId = floorId });
+
+        var doorId = await doors.InsertAsync(new Door
+        {
+            Kind = DoorKind.Doorway,
+            FromRoomId = fromRoomId,
+            ToRoomId = toRoomId,
+            Wall = Wall.East,
+            OffsetInches = 6,
+            WidthInches = 32,
+            HeightInches = 80,
+        });
+
+        // Door -> ToRoom is OnDelete(SetNull): removing the connected room must not be blocked and
+        // must clear the door's ToRoomId (the door now leads outside).
+        await rooms.DeleteAsync(toRoomId);
+
+        var reloaded = await doors.GetByIdAsync(doorId);
+        reloaded.ShouldNotBeNull();
+        reloaded.ToRoomId.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task DeleteRoom_WhileReferencedByStairFromRoom_ThrowsEntityInUse()
+    {
+        var rooms = Rooms();
+        var roomId = await SeedRoomAsync();
+        await Stairs().InsertAsync(new Stair { Shape = StairShape.Straight, FromRoomId = roomId });
+
+        await Should.ThrowAsync<EntityInUseException>(() => rooms.DeleteAsync(roomId));
+
+        (await rooms.GetByIdAsync(roomId)).ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task DeleteRoom_ThatIsAStairToRoom_NullsToRoomIdViaSetNull()
+    {
+        var rooms = Rooms();
+        var stairs = Stairs();
+        var floorId = await SeedFloorAsync();
+        var fromRoomId = await rooms.InsertAsync(new Room { Name = "Cellar", FloorId = floorId });
+        var toRoomId = await rooms.InsertAsync(new Room { Name = "Hall", FloorId = floorId });
+
+        var stairId = await stairs.InsertAsync(new Stair { Shape = StairShape.Straight, FromRoomId = fromRoomId, ToRoomId = toRoomId });
+
+        await rooms.DeleteAsync(toRoomId);
+
+        var reloaded = await stairs.GetByIdAsync(stairId);
+        reloaded.ShouldNotBeNull();
+        reloaded.ToRoomId.ShouldBeNull();
     }
 
     [Fact]

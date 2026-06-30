@@ -9,7 +9,7 @@ public class UpdateRoomRequestValidatorTests
     private readonly UpdateRoomRequestValidator _validator = new();
 
     private static UpdateRoomRequest Valid() =>
-        new(Id: 1, Name: "Garage", Description: "Out back", LocationId: 3, RowVersion: [1, 2, 3]);
+        new(Id: 1, Name: "Garage", Description: "Out back", FloorId: 3, RowVersion: [1, 2, 3]);
 
     [Fact]
     public void ValidRequest_HasNoErrors() =>
@@ -21,9 +21,9 @@ public class UpdateRoomRequestValidatorTests
             .ShouldHaveValidationErrorFor(x => x.Id);
 
     [Fact]
-    public void LocationId_WhenNotPositive_IsRejected() =>
-        _validator.TestValidate(Valid() with { LocationId = 0 })
-            .ShouldHaveValidationErrorFor(x => x.LocationId);
+    public void FloorId_WhenNotPositive_IsRejected() =>
+        _validator.TestValidate(Valid() with { FloorId = 0 })
+            .ShouldHaveValidationErrorFor(x => x.FloorId);
 
     [Fact]
     public void RowVersion_WhenEmpty_IsRejected() =>

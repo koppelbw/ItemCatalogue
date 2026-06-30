@@ -1,15 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using Application.DTOs;
+using Domain.Enums;
 using ItemCatalogueAPI.Tests.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Shouldly;
 
 namespace ItemCatalogueAPI.Tests;
 
-// Drives the /api/locations endpoints. Location owns the one-to-many to Room (a Location has many
-// Rooms), so it exercises two behaviours specific to the new model: GetById embeds the child Rooms,
-// and Delete is FK-restricted while any Room still references the Location (409 Resource in use).
 public class LocationApiTests(ApiFactory factory) : ApiTestBase(factory)
 {
     private async Task<LocationResponse> CreateLocationAsync(string name = "House", string? description = null)
@@ -19,15 +17,22 @@ public class LocationApiTests(ApiFactory factory) : ApiTestBase(factory)
         return (await response.Content.ReadFromJsonAsync<LocationResponse>())!;
     }
 
-    private async Task<RoomResponse> CreateRoomAsync(int locationId, string name = "Garage")
+    private async Task<FloorResponse> CreateFloorAsync(int locationId, string name = "Main", int levelIndex = 0)
     {
-        var response = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest(name, null, locationId));
+        var response = await Client.PostAsJsonAsync("/api/floors", new CreateFloorRequest(name, locationId, levelIndex, null, null));
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        return (await response.Content.ReadFromJsonAsync<FloorResponse>())!;
+    }
+
+    private async Task<RoomResponse> CreateRoomAsync(int floorId, string name = "Garage")
+    {
+        var response = await Client.PostAsJsonAsync("/api/rooms", new CreateRoomRequest(name, null, floorId));
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         return (await response.Content.ReadFromJsonAsync<RoomResponse>())!;
     }
 
     [Fact]
-    public async Task Create_WithValidBody_Returns201WithEmptyRooms()
+    public async Task Create_WithValidBody_Returns201WithEmptyFloors()
     {
         var response = await Client.PostAsJsonAsync("/api/locations", new CreateLocationRequest("House", "My house"));
 
@@ -36,29 +41,29 @@ public class LocationApiTests(ApiFactory factory) : ApiTestBase(factory)
         created.ShouldNotBeNull();
         created.Id.ShouldBeGreaterThan(0);
         created.Name.ShouldBe("House");
-        created.Rooms.ShouldBeEmpty();
+        created.Floors.ShouldBeEmpty();
     }
 
     [Fact]
-    public async Task GetById_EmbedsItsRooms()
+    public async Task GetById_EmbedsItsFloors()
     {
         var location = await CreateLocationAsync();
-        await CreateRoomAsync(location.Id, "Garage");
-        await CreateRoomAsync(location.Id, "Kitchen");
+        await CreateFloorAsync(location.Id, "Basement", -1);
+        await CreateFloorAsync(location.Id, "First Floor", 0);
 
         var fetched = await Client.GetFromJsonAsync<LocationResponse>($"/api/locations/{location.Id}");
 
         fetched.ShouldNotBeNull();
-        fetched.Rooms.Count.ShouldBe(2);
-        fetched.Rooms.Select(r => r.Name).ShouldBe(["Garage", "Kitchen"], ignoreOrder: true);
-        fetched.Rooms.ShouldAllBe(r => r.LocationId == location.Id);
+        fetched.Floors.Count.ShouldBe(2);
+        fetched.Floors.Select(f => f.Name).ShouldBe(["Basement", "First Floor"], ignoreOrder: true);
+        fetched.Floors.ShouldAllBe(f => f.LocationId == location.Id);
     }
 
     [Fact]
-    public async Task Delete_WhileReferencedByRoom_Returns409InUse()
+    public async Task Delete_WhileReferencedByFloor_Returns409InUse()
     {
         var location = await CreateLocationAsync();
-        await CreateRoomAsync(location.Id);
+        await CreateFloorAsync(location.Id);
 
         var response = await Client.DeleteAsync($"/api/locations/{location.Id}");
 
@@ -68,7 +73,7 @@ public class LocationApiTests(ApiFactory factory) : ApiTestBase(factory)
     }
 
     [Fact]
-    public async Task Delete_WhenNoRooms_Returns204()
+    public async Task Delete_WhenNoFloors_Returns204()
     {
         var location = await CreateLocationAsync();
 
@@ -76,5 +81,68 @@ public class LocationApiTests(ApiFactory factory) : ApiTestBase(factory)
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         (await Client.GetAsync($"/api/locations/{location.Id}")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetMap_WhenMissing_Returns404()
+    {
+        var response = await Client.GetAsync("/api/locations/999999/map");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        problem!.Title.ShouldBe("Resource not found");
+    }
+
+    [Fact]
+    public async Task GetMap_ReturnsFullBuildingGraph()
+    {
+        // Build a small two-floor building: basement + first floor, a room on each, a nested
+        // container tree in one room, an exterior door, and stairs connecting the two floors.
+        var location = await CreateLocationAsync("House", "My house");
+        var basement = await CreateFloorAsync(location.Id, "Basement", -1);
+        var first = await CreateFloorAsync(location.Id, "First Floor", 0);
+
+        var basementRoom = await CreateRoomAsync(basement.Id, "Cellar");
+        var livingRoom = await CreateRoomAsync(first.Id, "Living Room");
+
+        // Top-level container with a nested child, both in the living room.
+        var dresser = await Client.PostAsJsonAsync("/api/containers",
+            new CreateContainerRequest("Dresser", null, livingRoom.Id, null, ContainerType.Cabinet));
+        dresser.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var dresserId = (await dresser.Content.ReadFromJsonAsync<ContainerResponse>())!.Id;
+
+        var drawer = await Client.PostAsJsonAsync("/api/containers",
+            new CreateContainerRequest("Drawer", null, null, dresserId, ContainerType.Drawer));
+        drawer.StatusCode.ShouldBe(HttpStatusCode.Created);
+
+        // Front door (leads outside) and stairs (cross-floor: basement -> first).
+        (await Client.PostAsJsonAsync("/api/doors",
+            new CreateDoorRequest("Front Door", DoorKind.Door, livingRoom.Id, null, Wall.South, 12, 36, 80, null, null)))
+            .StatusCode.ShouldBe(HttpStatusCode.Created);
+        (await Client.PostAsJsonAsync("/api/stairs",
+            new CreateStairRequest("Stairs", basementRoom.Id, livingRoom.Id, StairShape.Straight)))
+            .StatusCode.ShouldBe(HttpStatusCode.Created);
+
+        var map = await Client.GetFromJsonAsync<LocationMapResponse>($"/api/locations/{location.Id}/map");
+
+        map.ShouldNotBeNull();
+        map.Name.ShouldBe("House");
+        // Floors are ordered by LevelIndex (basement first).
+        map.Floors.Count.ShouldBe(2);
+        map.Floors.Select(f => f.Name).ShouldBe(["Basement", "First Floor"]);
+
+        var firstFloor = map.Floors.Single(f => f.Name == "First Floor");
+        var living = firstFloor.Rooms.Single(r => r.Name == "Living Room");
+
+        // Nested container tree round-trips: Dresser -> Drawer.
+        living.Containers.Count.ShouldBe(1);
+        living.Containers[0].Name.ShouldBe("Dresser");
+        living.Containers[0].Children.Count.ShouldBe(1);
+        living.Containers[0].Children[0].Name.ShouldBe("Drawer");
+
+        // The living room has the front door; the basement room owns the stairs (cross-floor to living).
+        living.Doors.ShouldContain(d => d.Name == "Front Door" && d.ToRoomId == null);
+        var cellar = map.Floors.Single(f => f.Name == "Basement").Rooms.Single();
+        cellar.Stairs.ShouldContain(s => s.Shape == StairShape.Straight && s.ToRoomId == living.Id);
     }
 }

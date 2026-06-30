@@ -18,8 +18,11 @@ public static class DependencyInjection
         // Repositories (ports -> adapters)
         services.AddScoped<IItemRepository, ItemRepository>();
         services.AddScoped<IItemEventRepository, ItemEventRepository>();
+        services.AddScoped<IFloorRepository, FloorRepository>();
         services.AddScoped<IRoomRepository, RoomRepository>();
         services.AddScoped<IContainerRepository, ContainerRepository>();
+        services.AddScoped<IDoorRepository, DoorRepository>();
+        services.AddScoped<IStairRepository, StairRepository>();
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<IPersonRepository, PersonRepository>();
         services.AddScoped<ITagRepository, TagRepository>();

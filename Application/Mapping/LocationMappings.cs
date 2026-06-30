@@ -22,6 +22,6 @@ public static class LocationMappings
         location.Id,
         location.Name,
         location.Description,
-        location.Rooms?.Select(r => r.ToResponse()).ToList() ?? [],
+        location.Floors?.Select(f => f.ToResponse()).ToList() ?? [],
         location.RowVersion);
 }

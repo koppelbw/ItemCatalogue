@@ -23,15 +23,19 @@ public abstract class ApiTestBase : IAsyncLifetime
 
         // Delete children before parents. The join tables (ItemTag, CollectionItem) reference
         // Item/Tag/Collection, so clear them first; then Item -> (Room|Container|Person); Container ->
-        // (Room|Container); Room -> Location. A single DELETE FROM [Container] clears all rows at once,
-        // satisfying the self-referencing NO ACTION check at statement end.
+        // (Room|Container); Door -> Room; Room -> Floor; Floor -> Location. A single DELETE FROM
+        // [Container] (and [Door]) clears all rows at once, satisfying the self-referencing /
+        // multiple-FK-to-Room checks at statement end.
         await db.Database.ExecuteSqlRawAsync(
             """
             DELETE FROM [ItemTag];
             DELETE FROM [CollectionItem];
             DELETE FROM [Item];
             DELETE FROM [Container];
+            DELETE FROM [Door];
+            DELETE FROM [Stair];
             DELETE FROM [Room];
+            DELETE FROM [Floor];
             DELETE FROM [Location];
             DELETE FROM [Person];
             DELETE FROM [Tag];

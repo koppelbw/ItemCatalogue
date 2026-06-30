@@ -24,6 +24,14 @@ public sealed class LocationService(
         return location.ToResponse();
     }
 
+    public async Task<LocationMapResponse> GetMapAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var location = await locationRepository.GetMapAsync(id, cancellationToken)
+            ?? throw NotFoundException.For("Location", id);
+
+        return location.ToMapResponse();
+    }
+
     public async Task<PagedResponse<LocationResponse>> GetAllAsync(PaginationQuery pagination, CancellationToken cancellationToken = default)
     {
         var page = await locationRepository.GetAllAsync(PageRequest.Create(pagination.Page, pagination.PageSize), cancellationToken);

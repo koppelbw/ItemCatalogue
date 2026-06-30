@@ -8,7 +8,7 @@ public class CreateRoomRequestValidatorTests
 {
     private readonly CreateRoomRequestValidator _validator = new();
 
-    private static CreateRoomRequest Valid() => new(Name: "Garage", Description: "Out back", LocationId: 3);
+    private static CreateRoomRequest Valid() => new(Name: "Garage", Description: "Out back", FloorId: 3);
 
     [Fact]
     public void ValidRequest_HasNoErrors() =>
@@ -35,7 +35,27 @@ public class CreateRoomRequestValidatorTests
             .ShouldNotHaveValidationErrorFor(x => x.Description);
 
     [Fact]
-    public void LocationId_WhenNotPositive_IsRejected() =>
-        _validator.TestValidate(Valid() with { LocationId = 0 })
-            .ShouldHaveValidationErrorFor(x => x.LocationId);
+    public void FloorId_WhenNotPositive_IsRejected() =>
+        _validator.TestValidate(Valid() with { FloorId = 0 })
+            .ShouldHaveValidationErrorFor(x => x.FloorId);
+
+    [Fact]
+    public void WidthInches_WhenNotPositive_IsRejected() =>
+        _validator.TestValidate(Valid() with { WidthInches = 0 })
+            .ShouldHaveValidationErrorFor(x => x.WidthInches);
+
+    [Fact]
+    public void WallColor_WhenNotHex_IsRejected() =>
+        _validator.TestValidate(Valid() with { WallColor = "blue" })
+            .ShouldHaveValidationErrorFor(x => x.WallColor);
+
+    [Fact]
+    public void WallColor_WhenHex_IsAllowed() =>
+        _validator.TestValidate(Valid() with { WallColor = "#1A2B3C" })
+            .ShouldNotHaveValidationErrorFor(x => x.WallColor);
+
+    [Fact]
+    public void Rotation_WhenAtLeast360_IsRejected() =>
+        _validator.TestValidate(Valid() with { Rotation = 360 })
+            .ShouldHaveValidationErrorFor(x => x.Rotation);
 }

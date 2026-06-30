@@ -1,3 +1,5 @@
+using Domain.Enums;
+
 namespace Domain.Entities;
 
 public class Container : IEntity, IAuditable
@@ -8,10 +10,6 @@ public class Container : IEntity, IAuditable
 
     public string? Description { get; set; }
 
-
-    // A Container is owned by exactly one parent: either a Room (top-level) via RoomId, or another
-    // Container (nested) via ParentContainerId. Exactly one of the two is set (enforced by the
-    // request validators and the CK_Container_RoomXorParent check constraint in the database).
     public int? RoomId { get; set; }
 
     public Room? Room { get; set; }
@@ -22,6 +20,24 @@ public class Container : IEntity, IAuditable
 
     // Containers nested directly inside this one.
     public List<Container> Children { get; set; } = [];
+
+    public ContainerType? ContainerType { get; set; }
+
+    public decimal? PositionXInches { get; set; }
+
+    public decimal? PositionYInches { get; set; }
+
+    public decimal? PositionZInches { get; set; }
+
+    public decimal? Rotation { get; set; }
+
+    public decimal? WidthInches { get; set; }
+
+    public decimal? DepthInches { get; set; }
+
+    public decimal? HeightInches { get; set; }
+
+    public string? Color { get; set; }
 
     public DateTime CreatedDate { get; set; }
 

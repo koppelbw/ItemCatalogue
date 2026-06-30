@@ -8,8 +8,6 @@ using Shouldly;
 
 namespace Persistence.Tests;
 
-// Item carries behaviour the generic adapters do not: a JSON-serialized ItemTypes column, eager
-// loading of its Room/Owner graph, and a soft delete (ExecuteUpdate) in place of a hard delete.
 public class ItemRepositoryTests(SqlServerFixture fixture) : PersistenceTestBase(fixture)
 {
     private ItemRepository Items() => new(Db, Clock, NullLoggerFactory.Instance);
@@ -17,10 +15,13 @@ public class ItemRepositoryTests(SqlServerFixture fixture) : PersistenceTestBase
     private LocationRepository Locations() => new(Db, NullLoggerFactory.Instance);
     private PersonRepository People() => new(Db, NullLoggerFactory.Instance);
 
+    private FloorRepository Floors() => new(Db, NullLoggerFactory.Instance);
+
     private async Task<(int roomId, int ownerId)> SeedRoomAndOwnerAsync()
     {
         var locationId = await Locations().InsertAsync(new Location { Name = "House" });
-        var roomId = await Rooms().InsertAsync(new Room { Name = "Garage", LocationId = locationId });
+        var floorId = await Floors().InsertAsync(new Floor { Name = "Main", LocationId = locationId });
+        var roomId = await Rooms().InsertAsync(new Room { Name = "Garage", FloorId = floorId });
         var ownerId = await People().InsertAsync(new Person { Name = "Alex" });
         return (roomId, ownerId);
     }
