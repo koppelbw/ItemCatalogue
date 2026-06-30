@@ -1,8 +1,11 @@
 using ItemCatalogue.TestSupport;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.MsSql;
 
 namespace ItemCatalogueAPI.Tests.Infrastructure;
@@ -59,6 +62,13 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 ["ConnectionStrings:local"] = _connectionString,
             });
         });
+
+        // AddApiRateLimiting captures PermitLimit eagerly at service-registration time (before
+        // ConfigureAppConfiguration overrides are applied), so a config key override arrives too late.
+        // PostConfigure runs after all Configure calls and sets GlobalLimiter to null, which disables
+        // global rate limiting entirely for the test host.
+        builder.ConfigureTestServices(services =>
+            services.PostConfigure<RateLimiterOptions>(o => o.GlobalLimiter = null));
     }
 
     public override async ValueTask DisposeAsync()
