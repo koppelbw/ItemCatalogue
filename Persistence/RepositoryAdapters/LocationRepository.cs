@@ -13,10 +13,10 @@ public sealed class LocationRepository(ItemCatalogueDbContext dbContext, ILogger
 
     public async Task<Location?> GetMapAsync(int id, CancellationToken cancellationToken = default)
     {
-        // Load the building skeleton: Floors -> Rooms, with each room's Doors and its top-level
-        // Containers. Tracked (not AsNoTracking) on purpose so the iterative child-container loads
-        // below are wired into each Container.Children navigation by EF relationship fixup — which
-        // only happens for tracked entities sharing this context.
+        // Load the building skeleton: Floors -> Rooms, with each room's Doors, Stairs, and top-level
+        // Containers. AsSplitQuery avoids the cartesian explosion from three sibling collection includes
+        // at the room level (Doors × Stairs × Containers rows per room). Tracking is preserved so the
+        // iterative child-container loads below are wired into Container.Children by EF relationship fixup.
         var location = await EntitySet
             .Include(l => l.Floors)
                 .ThenInclude(f => f.Rooms)
@@ -27,6 +27,7 @@ public sealed class LocationRepository(ItemCatalogueDbContext dbContext, ILogger
             .Include(l => l.Floors)
                 .ThenInclude(f => f.Rooms)
                     .ThenInclude(r => r.Containers)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
 
         if (location is null)
