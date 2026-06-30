@@ -26,16 +26,16 @@
        without duplicating the baseline data they define. Single source of truth stays in
        Database/PostDeploymentScripts; see ItemCatalogueAPI/ScheduledReset/DatabaseResetService.cs. -->
   <ItemGroup>
-    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Location.sql" LogicalName="Seed_Location.sql" />
-    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Floor.sql" LogicalName="Seed_Floor.sql" />
-    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Room.sql" LogicalName="Seed_Room.sql" />
-    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Container.sql" LogicalName="Seed_Container.sql" />
-    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Door.sql" LogicalName="Seed_Door.sql" />
-    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Stair.sql" LogicalName="Seed_Stair.sql" />
-    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Person.sql" LogicalName="Seed_Person.sql" />
-    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Item.sql" LogicalName="Seed_Item.sql" />
-    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Tag.sql" LogicalName="Seed_Tag.sql" />
-    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Collection.sql" LogicalName="Seed_Collection.sql" />
+    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Location.sql" Link="ScheduledReset\Seeds\Seed_Location.sql" LogicalName="Seed_Location.sql" />
+    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Floor.sql" Link="ScheduledReset\Seeds\Seed_Floor.sql" LogicalName="Seed_Floor.sql" />
+    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Room.sql" Link="ScheduledReset\Seeds\Seed_Room.sql" LogicalName="Seed_Room.sql" />
+    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Container.sql" Link="ScheduledReset\Seeds\Seed_Container.sql" LogicalName="Seed_Container.sql" />
+    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Door.sql" Link="ScheduledReset\Seeds\Seed_Door.sql" LogicalName="Seed_Door.sql" />
+    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Stair.sql" Link="ScheduledReset\Seeds\Seed_Stair.sql" LogicalName="Seed_Stair.sql" />
+    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Person.sql" Link="ScheduledReset\Seeds\Seed_Person.sql" LogicalName="Seed_Person.sql" />
+    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Item.sql" Link="ScheduledReset\Seeds\Seed_Item.sql" LogicalName="Seed_Item.sql" />
+    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Tag.sql" Link="ScheduledReset\Seeds\Seed_Tag.sql" LogicalName="Seed_Tag.sql" />
+    <EmbeddedResource Include="..\Database\PostDeploymentScripts\Seed_Collection.sql" Link="ScheduledReset\Seeds\Seed_Collection.sql" LogicalName="Seed_Collection.sql" />
   </ItemGroup>
 
 </Project>
