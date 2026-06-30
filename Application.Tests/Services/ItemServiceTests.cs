@@ -5,6 +5,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.Exceptions;
 using Domain.Pagination;
+using Domain.Querying;
 using Domain.RepositoryPorts;
 using FluentValidation;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -30,6 +31,7 @@ public class ItemServiceTests
             new CreateItemRequestValidator(),
             new UpdateItemRequestValidator(),
             new SetItemTagsRequestValidator(),
+            new ItemSearchQueryValidator(),
             NullLogger<ItemService>.Instance);
     }
 
@@ -71,9 +73,9 @@ public class ItemServiceTests
     public async Task GetAllAsync_MapsPageToResponse()
     {
         var page = new PagedResult<Item>([Existing(1), Existing(2)], TotalCount: 2, Page: 1, PageSize: 20);
-        _repository.GetAllAsync(Arg.Any<PageRequest>(), Arg.Any<CancellationToken>()).Returns(page);
+        _repository.SearchAsync(Arg.Any<ItemFilter>(), Arg.Any<PageRequest>(), Arg.Any<CancellationToken>()).Returns(page);
 
-        var response = await _service.GetAllAsync(new PaginationQuery { Page = 1, PageSize = 20 });
+        var response = await _service.GetAllAsync(new ItemSearchQuery { Page = 1, PageSize = 20 });
 
         response.Items.Count.ShouldBe(2);
         response.TotalCount.ShouldBe(2);
@@ -82,16 +84,55 @@ public class ItemServiceTests
     [Fact]
     public async Task GetAllAsync_ClampsPaginationBeforeQueryingRepository()
     {
-        _repository.GetAllAsync(Arg.Any<PageRequest>(), Arg.Any<CancellationToken>())
+        _repository.SearchAsync(Arg.Any<ItemFilter>(), Arg.Any<PageRequest>(), Arg.Any<CancellationToken>())
             .Returns(new PagedResult<Item>([], 0, 1, PageRequest.MaxPageSize));
 
         // PaginationQuery itself is range-bound, but the service must still funnel through
         // PageRequest.Create. Use an oversized size to prove it is clamped to MaxPageSize.
-        await _service.GetAllAsync(new PaginationQuery { Page = 1, PageSize = PageRequest.MaxPageSize + 500 });
+        await _service.GetAllAsync(new ItemSearchQuery { Page = 1, PageSize = PageRequest.MaxPageSize + 500 });
 
-        await _repository.Received(1).GetAllAsync(
+        await _repository.Received(1).SearchAsync(
+            Arg.Any<ItemFilter>(),
             Arg.Is<PageRequest>(p => p.PageSize == PageRequest.MaxPageSize),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ExcludesSoftDeletedByDefault()
+    {
+        _repository.SearchAsync(Arg.Any<ItemFilter>(), Arg.Any<PageRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<Item>([], 0, 1, 20));
+
+        await _service.GetAllAsync(new ItemSearchQuery());
+
+        await _repository.Received(1).SearchAsync(
+            Arg.Is<ItemFilter>(f => !f.IncludeDeleted),
+            Arg.Any<PageRequest>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetAllAsync_PassesFiltersToRepository()
+    {
+        _repository.SearchAsync(Arg.Any<ItemFilter>(), Arg.Any<PageRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<Item>([], 0, 1, 20));
+
+        await _service.GetAllAsync(new ItemSearchQuery { RoomId = 5, OwnerId = 2, IsStored = true });
+
+        await _repository.Received(1).SearchAsync(
+            Arg.Is<ItemFilter>(f => f.RoomId == 5 && f.OwnerId == 2 && f.IsStored == true),
+            Arg.Any<PageRequest>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetAllAsync_WhenMinValueExceedsMaxValue_ThrowsValidationException()
+    {
+        var query = new ItemSearchQuery { MinValue = 200m, MaxValue = 50m };
+
+        await Should.ThrowAsync<ValidationException>(() => _service.GetAllAsync(query));
+
+        await _repository.DidNotReceive().SearchAsync(Arg.Any<ItemFilter>(), Arg.Any<PageRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

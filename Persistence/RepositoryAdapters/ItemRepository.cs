@@ -1,6 +1,8 @@
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Exceptions;
+using Domain.Pagination;
+using Domain.Querying;
 using Domain.RepositoryPorts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -16,6 +18,20 @@ public sealed class ItemRepository(ItemCatalogueDbContext dbContext, TimeProvide
     protected override IQueryable<Item> ReadQuery()
         => EntitySet.Include(i => i.Room).Include(i => i.Container).Include(i => i.Owner).AsNoTracking();
 
+
+    public async Task<Item?> GetWithLocationAsync(int id, CancellationToken cancellationToken = default)
+    {
+        // Each Include path covers a different route through the spatial hierarchy.
+        // Paths 3-4 handle 1 and 2 levels of container nesting respectively; deeper nesting
+        // is unsupported (an edge case not representable in the current seed data).
+        return await EntitySet
+            .AsNoTracking()
+            .Include(i => i.Room).ThenInclude(r => r!.Floor).ThenInclude(f => f!.Location)
+            .Include(i => i.Container).ThenInclude(c => c!.Room).ThenInclude(r => r!.Floor).ThenInclude(f => f!.Location)
+            .Include(i => i.Container).ThenInclude(c => c!.ParentContainer).ThenInclude(pc => pc!.Room).ThenInclude(r => r!.Floor).ThenInclude(f => f!.Location)
+            .Include(i => i.Container).ThenInclude(c => c!.ParentContainer).ThenInclude(pc => pc!.ParentContainer).ThenInclude(gpc => gpc!.Room).ThenInclude(r => r!.Floor).ThenInclude(f => f!.Location)
+            .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+    }
 
     public async Task<int> SoftDeleteItemByIdAsync(int id, DeletedReason reason, CancellationToken cancellationToken = default)
     {
@@ -36,6 +52,57 @@ public sealed class ItemRepository(ItemCatalogueDbContext dbContext, TimeProvide
         }
 
         return rowsAffected;
+    }
+
+    public async Task<PagedResult<Item>> SearchAsync(ItemFilter filter, PageRequest page, CancellationToken cancellationToken = default)
+    {
+        var query = ReadQuery();
+
+        // Soft-deleted items are hidden by default; callers opt in with IncludeDeleted.
+        if (!filter.IncludeDeleted)
+            query = query.Where(i => !i.IsDeleted);
+
+        if (filter.Query is { Length: > 0 } q)
+            query = query.Where(i => i.Name.Contains(q) || (i.Description != null && i.Description.Contains(q)));
+
+        if (filter.RoomId.HasValue)
+            query = query.Where(i => i.RoomId == filter.RoomId.Value);
+
+        if (filter.ContainerId.HasValue)
+            query = query.Where(i => i.ContainerId == filter.ContainerId.Value);
+
+        if (filter.TagId.HasValue)
+            query = query.Where(i => i.Tags.Any(t => t.Id == filter.TagId.Value));
+
+        if (filter.OwnerId.HasValue)
+            query = query.Where(i => i.OwnerId == filter.OwnerId.Value);
+
+        if (filter.MinValue.HasValue)
+            query = query.Where(i => (i.CurrentValue ?? i.PurchasePrice) >= filter.MinValue.Value);
+
+        if (filter.MaxValue.HasValue)
+            query = query.Where(i => (i.CurrentValue ?? i.PurchasePrice) <= filter.MaxValue.Value);
+
+        if (filter.Condition.HasValue)
+            query = query.Where(i => i.Condition == filter.Condition.Value);
+
+        if (filter.IsStored.HasValue)
+            query = query.Where(i => i.IsStored == filter.IsStored.Value);
+
+        // Floor/Location: match items directly in a room on the floor, or in a top-level
+        // container whose room is on the floor. Items in deeply nested containers (2+ levels)
+        // are not included — EF Core would need a recursive CTE for arbitrary depth.
+        if (filter.FloorId.HasValue)
+            query = query.Where(i =>
+                i.Room!.FloorId == filter.FloorId.Value ||
+                i.Container!.Room!.FloorId == filter.FloorId.Value);
+
+        if (filter.LocationId.HasValue)
+            query = query.Where(i =>
+                i.Room!.Floor!.LocationId == filter.LocationId.Value ||
+                i.Container!.Room!.Floor!.LocationId == filter.LocationId.Value);
+
+        return await PaginateAsync(query.OrderBy(i => i.Id), page, cancellationToken);
     }
 
     public async Task<IReadOnlyList<Tag>> GetTagsAsync(int itemId, CancellationToken cancellationToken = default)

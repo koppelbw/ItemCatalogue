@@ -6,6 +6,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.Exceptions;
 using Domain.Pagination;
+using Domain.Querying;
 using Domain.RepositoryPorts;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
@@ -19,6 +20,7 @@ public sealed class ItemService(
     IValidator<CreateItemRequest> createValidator,
     IValidator<UpdateItemRequest> updateValidator,
     IValidator<SetItemTagsRequest> setTagsValidator,
+    IValidator<ItemSearchQuery> searchQueryValidator,
     ILogger<ItemService> logger) : IItemService
 {
     public async Task<ItemResponse> GetByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -29,9 +31,37 @@ public sealed class ItemService(
         return item.ToResponse();
     }
 
-    public async Task<PagedResponse<ItemResponse>> GetAllAsync(PaginationQuery pagination, CancellationToken cancellationToken = default)
+    public async Task<PagedResponse<ItemResponse>> GetAllAsync(ItemSearchQuery query, CancellationToken cancellationToken = default)
     {
-        var page = await itemRepository.GetAllAsync(PageRequest.Create(pagination.Page, pagination.PageSize), cancellationToken);
+        await searchQueryValidator.ValidateAndThrowAsync(query, cancellationToken);
+
+        var filter = query.ToFilter();
+        var page = await itemRepository.SearchAsync(filter, PageRequest.Create(query.Page, query.PageSize), cancellationToken);
+        return page.ToResponse(i => i.ToResponse());
+    }
+
+    public async Task<ItemLocationPathResponse> GetLocationPathAsync(int itemId, CancellationToken cancellationToken = default)
+    {
+        var item = await itemRepository.GetWithLocationAsync(itemId, cancellationToken)
+            ?? throw NotFoundException.For("Item", itemId);
+        return item.ToLocationPathResponse();
+    }
+
+    public Task<PagedResponse<ItemResponse>> GetItemsByRoomAsync(int roomId, PaginationQuery pagination, CancellationToken cancellationToken = default)
+        => ScopedSearch(new ItemFilter(RoomId: roomId), pagination, cancellationToken);
+
+    public Task<PagedResponse<ItemResponse>> GetItemsByContainerAsync(int containerId, PaginationQuery pagination, CancellationToken cancellationToken = default)
+        => ScopedSearch(new ItemFilter(ContainerId: containerId), pagination, cancellationToken);
+
+    public Task<PagedResponse<ItemResponse>> GetItemsByFloorAsync(int floorId, PaginationQuery pagination, CancellationToken cancellationToken = default)
+        => ScopedSearch(new ItemFilter(FloorId: floorId), pagination, cancellationToken);
+
+    public Task<PagedResponse<ItemResponse>> GetItemsByLocationAsync(int locationId, PaginationQuery pagination, CancellationToken cancellationToken = default)
+        => ScopedSearch(new ItemFilter(LocationId: locationId), pagination, cancellationToken);
+
+    private async Task<PagedResponse<ItemResponse>> ScopedSearch(ItemFilter filter, PaginationQuery pagination, CancellationToken cancellationToken)
+    {
+        var page = await itemRepository.SearchAsync(filter, PageRequest.Create(pagination.Page, pagination.PageSize), cancellationToken);
         return page.ToResponse(i => i.ToResponse());
     }
 

@@ -12,15 +12,26 @@ namespace ItemCatalogueAPI.Controllers;
 [Produces("application/json")]
 public sealed class ItemController(IItemService itemService) : ControllerBase
 {
-    // GET api/items?page=2&pageSize=50
-    // Paginated list. PaginationQuery is bound from the query string; its [Range] guards
-    // reject obviously-bad input as 400, and the service clamps to safe bounds server-side.
+    // GET api/items?query=lamp&roomId=3&minValue=50&maxValue=500&isStored=false&page=2&pageSize=50
+    // Filtered, paginated list. All filter fields are optional; soft-deleted items are hidden
+    // by default — pass includeDeleted=true to include them.
     [HttpGet(Name = "GetItems")]
     [ProducesResponseType(typeof(PagedResponse<ItemResponse>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResponse<ItemResponse>>> GetAll([FromQuery] PaginationQuery pagination, CancellationToken cancellationToken)
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PagedResponse<ItemResponse>>> GetAll([FromQuery] ItemSearchQuery search, CancellationToken cancellationToken)
     {
-        var page = await itemService.GetAllAsync(pagination, cancellationToken);
+        var page = await itemService.GetAllAsync(search, cancellationToken);
         return Ok(page);
+    }
+
+    // GET api/items/5/location-path
+    [HttpGet("{id:int}/location-path", Name = "GetItemLocationPath")]
+    [ProducesResponseType(typeof(ItemLocationPathResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ItemLocationPathResponse>> GetLocationPath(int id, CancellationToken cancellationToken)
+    {
+        var path = await itemService.GetLocationPathAsync(id, cancellationToken);
+        return Ok(path);
     }
 
     // GET api/items/5
