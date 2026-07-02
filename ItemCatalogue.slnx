@@ -11,12 +11,16 @@
     </Project>
     <Project Path="Persistence/Persistence.csproj" Id="a99e094b-1f63-43b1-81cd-be3937f14b4e" />
   </Folder>
+  <Folder Name="/External/Infrastructure/">
+    <Project Path="Infrastructure/Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/External/Presentation/">
     <Project Path="ItemCatalogueAPI/ItemCatalogueAPI.csproj" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Application.Tests/Application.Tests.csproj" />
     <Project Path="Domain.Tests/Domain.Tests.csproj" />
+    <Project Path="Infrastructure.Tests/Infrastructure.Tests.csproj" />
     <Project Path="ItemCatalogueAPI.Tests/ItemCatalogueAPI.Tests.csproj" />
     <Project Path="Persistence.Tests/Persistence.Tests.csproj" />
   </Folder>

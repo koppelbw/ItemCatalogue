@@ -1,4 +1,5 @@
 using System.Reflection;
+using Application.StoragePorts;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
 
@@ -9,9 +10,11 @@ namespace ItemCatalogueAPI.ScheduledReset;
 // (Database/PostDeploymentScripts) — one source of truth for "what the baseline looks like".
 // Used by ScheduledResetBackgroundService to keep a public demo environment from accumulating
 // vandalism or junk data from anonymous visitors between resets.
-public sealed class DatabaseResetService(ItemCatalogueDbContext dbContext, ILogger<DatabaseResetService> logger)
+public sealed class DatabaseResetService(
+    ItemCatalogueDbContext dbContext, IImageStorage imageStorage, ILogger<DatabaseResetService> logger)
 {
     private static readonly string ClearDataSql = """
+        DELETE FROM dbo.Picture;
         DELETE FROM dbo.ItemTag;
         DELETE FROM dbo.CollectionItem;
         DELETE FROM dbo.ItemEvent;
@@ -61,6 +64,9 @@ public sealed class DatabaseResetService(ItemCatalogueDbContext dbContext, ILogg
         }
 
         await transaction.CommitAsync(cancellationToken);
+
+        // Cleanup orphaned blob images after DB is wiped
+        await imageStorage.DeleteAllAsync(cancellationToken);
 
         logger.DatabaseResetCompleted();
     }

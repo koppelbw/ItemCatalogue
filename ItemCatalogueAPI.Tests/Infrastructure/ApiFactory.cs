@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Testcontainers.Azurite;
 using Testcontainers.MsSql;
 
 namespace ItemCatalogueAPI.Tests.Infrastructure;
@@ -19,17 +20,24 @@ namespace ItemCatalogueAPI.Tests.Infrastructure;
 public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private const string SqlServerImage = "mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04";
+    private const string AzuriteImage = "mcr.microsoft.com/azure-storage/azurite:3.28.0";
 
     // The dacpac publishes into a named database; the API then connects to this same database.
     private const string TargetDatabase = "ItemCatalogue";
 
     private readonly MsSqlContainer _container = new MsSqlBuilder(SqlServerImage).Build();
+    // The pinned image predates the API version the current Azure.Storage.Blobs SDK sends;
+    // --skipApiVersionCheck tells Azurite to serve the request anyway instead of rejecting it.
+    private readonly AzuriteContainer _azurite = new AzuriteBuilder(AzuriteImage)
+        .WithCommand("--skipApiVersionCheck")
+        .Build();
 
     private string _connectionString = string.Empty;
 
     public async ValueTask InitializeAsync()
     {
         await _container.StartAsync();
+        await _azurite.StartAsync();
 
         // The container's connection string targets master; use it to publish the dacpac, which
         // creates the ItemCatalogue database and all of its schema objects.
@@ -53,13 +61,15 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
         builder.UseEnvironment("Testing");
 
-        // Override the "local" connection string the Persistence layer reads, so AddPersistence wires
-        // the DbContext to the test container's ItemCatalogue database.
+        // Override the "local" connection string the Persistence layer reads, and the BlobStorage
+        // connection string Infrastructure reads, so the test host talks to the containers started
+        // above instead of a real SQL Server / Azure Storage account.
         builder.ConfigureAppConfiguration((_, config) =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:local"] = _connectionString,
+                ["BlobStorage:ConnectionString"] = _azurite.GetConnectionString(),
             });
         });
 
@@ -74,6 +84,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public override async ValueTask DisposeAsync()
     {
         await _container.DisposeAsync();
+        await _azurite.DisposeAsync();
         await base.DisposeAsync();
     }
 }
