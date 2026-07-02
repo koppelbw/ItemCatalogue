@@ -1,0 +1,79 @@
+name: HouseView (Static Web Apps)
+
+# Builds the houseview 3D UI and deploys it to its own Azure Static Web App.
+# Independent of the API and catalogue-ui pipelines — only runs when houseview (or
+# this file) changes, so it never redeploys the API or catalogue-ui and vice-versa.
+#
+# PRs get an automatic SWA preview environment; merging/closing the PR tears it down.
+#
+# ── One-time setup (Settings ▸ Secrets and variables ▸ Actions) ──────────────────
+#   Secret:
+#     AZURE_STATIC_WEB_APPS_HOUSEVIEW_API_TOKEN – SWA deployment token
+#       (az staticwebapp secrets list -n stapp-houseview -g rg-itemcatalogue)
+#   The deployed app calls the API cross-origin, so the API's CORS must allow this
+#   SWA's origin: set Cors__AllowedOrigins__<n>=https://<swa-host> in the API's App
+#   Settings (itemcatalogue-api-ufocqt).
+# ─────────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'houseview/**'
+      - '.github/workflows/houseview.yml'
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened, closed]
+    paths:
+      - 'houseview/**'
+      - '.github/workflows/houseview.yml'
+
+jobs:
+  build-and-deploy:
+    name: Build & deploy
+    # Skip the build on the "closed" event — that run only tears down the preview env.
+    if: github.event_name == 'push' || github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: houseview/package-lock.json
+
+      # Build ourselves (rather than letting the SWA action's Oryx build) so we
+      # control the Node version and inject the API base URL.
+      - name: Build houseview
+        working-directory: houseview
+        env:
+          # Cross-origin: the deployed app calls the API by absolute URL. Read in
+          # code as import.meta.env.VITE_API_BASE_URL (unset locally → dev proxy).
+          VITE_API_BASE_URL: https://itemcatalogue-api-ufocqt.azurewebsites.net
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_HOUSEVIEW_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }} # lets the action post the preview URL on PRs
+          action: upload
+          app_location: houseview/dist # pre-built output
+          skip_app_build: true
+          output_location: ''
+
+  close-preview:
+    name: Close PR preview
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close preview environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_HOUSEVIEW_API_TOKEN }}
+          action: close

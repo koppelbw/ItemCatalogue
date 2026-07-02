@@ -16,6 +16,10 @@ import type {
 const PAGE_SIZE = 100;
 const REQUEST_TIMEOUT_MS = 4000;
 
+// Empty in dev so the Vite proxy serves /api; set to the API's absolute origin at
+// build time (VITE_API_BASE_URL) for the deployed Static Web App, which is cross-origin.
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
+
 // ---------------------------------------------------------------------------
 // Request core — shared by reads and the CRUD mutations. Surfaces the API's RFC
 // 9457 ProblemDetails so callers can map 400/404/409 precisely.
@@ -51,7 +55,7 @@ async function parseProblem(res: Response): Promise<ProblemDetails | null> {
 }
 
 async function request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(`/api/${path}`, {
+  const res = await fetch(`${API_BASE}/api/${path}`, {
     method,
     signal,
     headers: body !== undefined ? { 'Content-Type': 'application/json', Accept: 'application/json' } : { Accept: 'application/json' },
