@@ -3,14 +3,21 @@ import { useCatalogue } from '../api';
 import { formatPrice, itemValue } from '../model';
 import { mapApiError, useCollections, useRemove, useTags } from '../mutations';
 import {
-  DELETED_REASON_NAMES,
+  CONTAINER_TYPE_NAMES,
+  DOOR_KIND_NAMES,
   ITEM_TYPE_NAMES,
+  ROOM_TYPE_NAMES,
+  STAIR_SHAPE_NAMES,
+  WALL_NAMES,
   type CollectionResponse,
   type ContainerResponse,
+  type DoorResponse,
+  type FloorResponse,
   type ItemResponse,
   type LocationResponse,
   type PersonResponse,
   type RoomResponse,
+  type StairResponse,
   type TagResponse,
 } from '../types';
 import { CollectionMembers } from './CollectionMembers';
@@ -18,22 +25,28 @@ import {
   CollectionForm,
   ContainerForm,
   DeleteItemDialog,
+  DoorForm,
+  FloorForm,
   ItemForm,
   LocationForm,
   PersonForm,
   RoomForm,
+  StairForm,
   TagForm,
   type RefData,
 } from './forms/EntityForms';
 import './manage.css';
 
-type Tab = 'items' | 'rooms' | 'locations' | 'containers' | 'persons' | 'tags' | 'collections';
+type Tab = 'items' | 'locations' | 'floors' | 'rooms' | 'containers' | 'doors' | 'stairs' | 'persons' | 'tags' | 'collections';
 
 const TABS: [Tab, string][] = [
   ['items', 'Items'],
-  ['rooms', 'Rooms'],
   ['locations', 'Locations'],
+  ['floors', 'Floors'],
+  ['rooms', 'Rooms'],
   ['containers', 'Containers'],
+  ['doors', 'Doors'],
+  ['stairs', 'Stairs'],
   ['persons', 'People'],
   ['tags', 'Tags'],
   ['collections', 'Collections'],
@@ -41,9 +54,12 @@ const TABS: [Tab, string][] = [
 
 type FormState =
   | { kind: 'item'; initial?: ItemResponse }
-  | { kind: 'room'; initial?: RoomResponse }
   | { kind: 'location'; initial?: LocationResponse }
+  | { kind: 'floor'; initial?: FloorResponse }
+  | { kind: 'room'; initial?: RoomResponse }
   | { kind: 'container'; initial?: ContainerResponse }
+  | { kind: 'door'; initial?: DoorResponse }
+  | { kind: 'stair'; initial?: StairResponse }
   | { kind: 'person'; initial?: PersonResponse }
   | { kind: 'tag'; initial?: TagResponse }
   | { kind: 'collection'; initial?: CollectionResponse }
@@ -51,6 +67,12 @@ type FormState =
 
 interface ManagePageProps {
   onBack: () => void;
+}
+
+/** "12 × 10 in" style label, or an em dash when unmeasured */
+function sizeCell(w: number | null, d: number | null): string {
+  if (w == null || d == null) return '—';
+  return `${w}″ × ${d}″`;
 }
 
 export function ManagePage({ onBack }: ManagePageProps) {
@@ -64,11 +86,15 @@ export function ManagePage({ onBack }: ManagePageProps) {
   const [members, setMembers] = useState<CollectionResponse | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
 
-  const removeRoom = useRemove('rooms');
   const removeLocation = useRemove('locations');
+  const removeFloor = useRemove('floors');
+  const removeRoom = useRemove('rooms');
   const removeContainer = useRemove('containers');
+  const removeDoor = useRemove('doors');
+  const removeStair = useRemove('stairs');
   const removePerson = useRemove('persons');
-  const removeTag = useRemove('tags', [['tags']]);
+  // deleting the "Furniture" tag changes which items the scene renders
+  const removeTag = useRemove('tags', [['tags'], ['catalogue']]);
   const removeCollection = useRemove('collections', [['collections']]);
 
   const live = data?.live ?? false;
@@ -76,6 +102,7 @@ export function ManagePage({ onBack }: ManagePageProps) {
   const lookups = useMemo<RefData>(
     () => ({
       locations: data?.locations ?? [],
+      floors: data?.floors ?? [],
       rooms: data?.rooms ?? [],
       containers: data?.containers ?? [],
       persons: data?.persons ?? [],
@@ -83,6 +110,7 @@ export function ManagePage({ onBack }: ManagePageProps) {
     [data],
   );
 
+  const floorsById = useMemo(() => new Map((data?.floors ?? []).map((f) => [f.id, f])), [data]);
   const roomsById = useMemo(() => new Map((data?.rooms ?? []).map((r) => [r.id, r])), [data]);
   const containersById = useMemo(() => new Map((data?.containers ?? []).map((c) => [c.id, c])), [data]);
   const locationsById = useMemo(() => new Map((data?.locations ?? []).map((l) => [l.id, l])), [data]);
@@ -116,6 +144,18 @@ export function ManagePage({ onBack }: ManagePageProps) {
     if (it.roomId != null) return roomsById.get(it.roomId)?.name ?? `room ${it.roomId}`;
     if (it.containerId != null) return containersById.get(it.containerId)?.name ?? `container ${it.containerId}`;
     return '—';
+  };
+
+  const roomWhere = (r: RoomResponse): string => {
+    const floor = floorsById.get(r.floorId);
+    if (!floor) return `floor ${r.floorId}`;
+    const loc = locationsById.get(floor.locationId);
+    return loc ? `${loc.name} › ${floor.name}` : floor.name;
+  };
+
+  const roomCell = (roomId: number | null): string => {
+    if (roomId == null) return 'Outside';
+    return roomsById.get(roomId)?.name ?? `room ${roomId}`;
   };
 
   return (
@@ -172,19 +212,47 @@ export function ManagePage({ onBack }: ManagePageProps) {
           </Section>
         )}
 
-        {tab === 'rooms' && (
-          <Section title="Rooms" onAdd={live ? () => setForm({ kind: 'room' }) : undefined}>
+        {tab === 'locations' && (
+          <Section title="Locations" onAdd={live ? () => setForm({ kind: 'location' }) : undefined}>
             <table className="manage-table">
-              <thead><tr><th>#</th><th>Name</th><th>Location</th><th>Description</th><th></th></tr></thead>
+              <thead><tr><th>#</th><th>Name</th><th>Description</th><th>Floors</th><th>Rooms</th><th></th></tr></thead>
               <tbody>
-                {data.rooms.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.id}</td>
-                    <td>{r.name}</td>
-                    <td>{locationsById.get(r.locationId)?.name ?? r.locationId}</td>
-                    <td>{r.description ?? '—'}</td>
+                {data.locations.map((l) => {
+                  const floorIds = new Set(l.floors.map((f) => f.id));
+                  const roomCount = data.rooms.filter((r) => floorIds.has(r.floorId)).length;
+                  return (
+                    <tr key={l.id}>
+                      <td>{l.id}</td>
+                      <td>{l.name}</td>
+                      <td>{l.description ?? '—'}</td>
+                      <td>{l.floors.length}</td>
+                      <td>{roomCount}</td>
+                      <td className="row-actions">
+                        <RowActions live={live} onEdit={() => setForm({ kind: 'location', initial: l })} onDelete={() => confirmDelete(`location "${l.name}"`, () => removeLocation.mutateAsync({ id: l.id }))} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Section>
+        )}
+
+        {tab === 'floors' && (
+          <Section title="Floors" onAdd={live ? () => setForm({ kind: 'floor' }) : undefined}>
+            <table className="manage-table">
+              <thead><tr><th>#</th><th>Name</th><th>Location</th><th>Level</th><th>Ceiling</th><th>Rooms</th><th></th></tr></thead>
+              <tbody>
+                {data.floors.map((f) => (
+                  <tr key={f.id}>
+                    <td>{f.id}</td>
+                    <td>{f.name}</td>
+                    <td>{locationsById.get(f.locationId)?.name ?? f.locationId}</td>
+                    <td>{f.levelIndex}</td>
+                    <td>{f.ceilingHeightInches != null ? `${f.ceilingHeightInches}″` : '—'}</td>
+                    <td>{data.rooms.filter((r) => r.floorId === f.id).length}</td>
                     <td className="row-actions">
-                      <RowActions live={live} onEdit={() => setForm({ kind: 'room', initial: r })} onDelete={() => confirmDelete(`room "${r.name}"`, () => removeRoom.mutateAsync({ id: r.id }))} />
+                      <RowActions live={live} onEdit={() => setForm({ kind: 'floor', initial: f })} onDelete={() => confirmDelete(`floor "${f.name}"`, () => removeFloor.mutateAsync({ id: f.id }))} />
                     </td>
                   </tr>
                 ))}
@@ -193,19 +261,20 @@ export function ManagePage({ onBack }: ManagePageProps) {
           </Section>
         )}
 
-        {tab === 'locations' && (
-          <Section title="Locations" onAdd={live ? () => setForm({ kind: 'location' }) : undefined}>
+        {tab === 'rooms' && (
+          <Section title="Rooms" onAdd={live ? () => setForm({ kind: 'room' }) : undefined}>
             <table className="manage-table">
-              <thead><tr><th>#</th><th>Name</th><th>Description</th><th>Rooms</th><th></th></tr></thead>
+              <thead><tr><th>#</th><th>Name</th><th>Floor</th><th>Type</th><th>Footprint</th><th></th></tr></thead>
               <tbody>
-                {data.locations.map((l) => (
-                  <tr key={l.id}>
-                    <td>{l.id}</td>
-                    <td>{l.name}</td>
-                    <td>{l.description ?? '—'}</td>
-                    <td>{data.rooms.filter((r) => r.locationId === l.id).length}</td>
+                {data.rooms.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.id}</td>
+                    <td>{r.name}</td>
+                    <td>{roomWhere(r)}</td>
+                    <td>{r.roomType != null ? (ROOM_TYPE_NAMES[r.roomType] ?? r.roomType) : '—'}</td>
+                    <td>{sizeCell(r.widthInches, r.depthInches)}</td>
                     <td className="row-actions">
-                      <RowActions live={live} onEdit={() => setForm({ kind: 'location', initial: l })} onDelete={() => confirmDelete(`location "${l.name}"`, () => removeLocation.mutateAsync({ id: l.id }))} />
+                      <RowActions live={live} onEdit={() => setForm({ kind: 'room', initial: r })} onDelete={() => confirmDelete(`room "${r.name}"`, () => removeRoom.mutateAsync({ id: r.id }))} />
                     </td>
                   </tr>
                 ))}
@@ -217,12 +286,13 @@ export function ManagePage({ onBack }: ManagePageProps) {
         {tab === 'containers' && (
           <Section title="Containers" onAdd={live ? () => setForm({ kind: 'container' }) : undefined}>
             <table className="manage-table">
-              <thead><tr><th>#</th><th>Name</th><th>Sits in</th><th>Description</th><th></th></tr></thead>
+              <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Sits in</th><th>Size</th><th></th></tr></thead>
               <tbody>
                 {data.containers.map((c) => (
                   <tr key={c.id}>
                     <td>{c.id}</td>
                     <td>{c.name}</td>
+                    <td>{c.containerType != null ? (CONTAINER_TYPE_NAMES[c.containerType] ?? c.containerType) : '—'}</td>
                     <td>
                       {c.roomId != null
                         ? `Room · ${roomsById.get(c.roomId)?.name ?? c.roomId}`
@@ -230,9 +300,56 @@ export function ManagePage({ onBack }: ManagePageProps) {
                           ? `Container · ${containersById.get(c.parentContainerId)?.name ?? c.parentContainerId}`
                           : '—'}
                     </td>
-                    <td>{c.description ?? '—'}</td>
+                    <td>{sizeCell(c.widthInches, c.depthInches)}</td>
                     <td className="row-actions">
                       <RowActions live={live} onEdit={() => setForm({ kind: 'container', initial: c })} onDelete={() => confirmDelete(`container "${c.name}"`, () => removeContainer.mutateAsync({ id: c.id }))} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Section>
+        )}
+
+        {tab === 'doors' && (
+          <Section title="Doors" onAdd={live ? () => setForm({ kind: 'door' }) : undefined}>
+            <table className="manage-table">
+              <thead><tr><th>#</th><th>Name</th><th>Kind</th><th>From</th><th>To</th><th>Wall</th><th>Opening</th><th></th></tr></thead>
+              <tbody>
+                {data.doors.map((d) => (
+                  <tr key={d.id}>
+                    <td>{d.id}</td>
+                    <td>{d.name ?? '—'}</td>
+                    <td>{DOOR_KIND_NAMES[d.kind] ?? d.kind}</td>
+                    <td>{roomCell(d.fromRoomId)}</td>
+                    <td>{roomCell(d.toRoomId)}</td>
+                    <td>{WALL_NAMES[d.wall] ?? d.wall}</td>
+                    <td>{`${d.widthInches}″ × ${d.heightInches}″`}</td>
+                    <td className="row-actions">
+                      <RowActions live={live} onEdit={() => setForm({ kind: 'door', initial: d })} onDelete={() => confirmDelete(`door "${d.name ?? d.id}"`, () => removeDoor.mutateAsync({ id: d.id }))} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Section>
+        )}
+
+        {tab === 'stairs' && (
+          <Section title="Stairs" onAdd={live ? () => setForm({ kind: 'stair' }) : undefined}>
+            <table className="manage-table">
+              <thead><tr><th>#</th><th>Name</th><th>Shape</th><th>From (lower)</th><th>To (upper)</th><th>Steps</th><th></th></tr></thead>
+              <tbody>
+                {data.stairs.map((s) => (
+                  <tr key={s.id}>
+                    <td>{s.id}</td>
+                    <td>{s.name ?? '—'}</td>
+                    <td>{STAIR_SHAPE_NAMES[s.shape] ?? s.shape}</td>
+                    <td>{roomCell(s.fromRoomId)}</td>
+                    <td>{roomCell(s.toRoomId)}</td>
+                    <td>{s.stepCount ?? '—'}</td>
+                    <td className="row-actions">
+                      <RowActions live={live} onEdit={() => setForm({ kind: 'stair', initial: s })} onDelete={() => confirmDelete(`stair "${s.name ?? s.id}"`, () => removeStair.mutateAsync({ id: s.id }))} />
                     </td>
                   </tr>
                 ))}
@@ -304,9 +421,12 @@ export function ManagePage({ onBack }: ManagePageProps) {
 
       {/* forms */}
       {form?.kind === 'item' && <ItemForm initial={form.initial} lookups={lookups} onClose={() => setForm(null)} />}
-      {form?.kind === 'room' && <RoomForm initial={form.initial} lookups={lookups} onClose={() => setForm(null)} />}
       {form?.kind === 'location' && <LocationForm initial={form.initial} onClose={() => setForm(null)} />}
+      {form?.kind === 'floor' && <FloorForm initial={form.initial} lookups={lookups} onClose={() => setForm(null)} />}
+      {form?.kind === 'room' && <RoomForm initial={form.initial} lookups={lookups} onClose={() => setForm(null)} />}
       {form?.kind === 'container' && <ContainerForm initial={form.initial} lookups={lookups} onClose={() => setForm(null)} />}
+      {form?.kind === 'door' && <DoorForm initial={form.initial} lookups={lookups} onClose={() => setForm(null)} />}
+      {form?.kind === 'stair' && <StairForm initial={form.initial} lookups={lookups} onClose={() => setForm(null)} />}
       {form?.kind === 'person' && <PersonForm initial={form.initial} onClose={() => setForm(null)} />}
       {form?.kind === 'tag' && <TagForm initial={form.initial} onClose={() => setForm(null)} />}
       {form?.kind === 'collection' && <CollectionForm initial={form.initial} onClose={() => setForm(null)} />}

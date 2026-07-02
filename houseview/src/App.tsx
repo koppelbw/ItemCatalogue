@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useCatalogue } from './api';
-import { FLOOR_ORDER, LEVEL_HEIGHT, levelY, type FloorLevel } from './layout';
-import { buildSceneModel, placeRooms, roomCenter, type PlacedRoom, type Site } from './model';
+import { HOUSE_BASE, levelY } from './layout';
+import { buildSceneModel, placeRooms, type PlacedRoom, type Site } from './model';
 import { OVERVIEW_FOCUS, Scene, type Focus } from './scene/Scene';
 import { AboutPage } from './ui/AboutPage';
 import { DetailPanel } from './ui/DetailPanel';
@@ -23,11 +23,18 @@ const viewFromHash = (): View =>
         ? 'manage'
         : 'house';
 
+/** the storey shown first for a location: the ground floor when there is one */
+function defaultLevel(site: Site | null): number {
+  if (!site || site.floors.length === 0) return 0;
+  const levels = site.floors.map((f) => f.levelIndex);
+  return levels.includes(0) ? 0 : levels.reduce((best, l) => (Math.abs(l) < Math.abs(best) ? l : best), levels[0]);
+}
+
 export default function App() {
   const { data } = useCatalogue();
   const model = useMemo(() => (data ? buildSceneModel(data) : null), [data]);
 
-  const [floor, setFloor] = useState<FloorLevel>(0);
+  const [floor, setFloor] = useState<number>(0);
   const [selection, setSelection] = useState<Selection>(null);
   const [focus, setFocus] = useState<Focus>({ ...OVERVIEW_FOCUS, seq: 0 });
   const [view, setView] = useState<View>(viewFromHash);
@@ -39,19 +46,25 @@ export default function App() {
   const [deleteTarget, setDeleteTarget] = useState<ItemResponse | null>(null);
   const seqRef = useRef(0);
 
-  // The Location whose rooms fill the central dollhouse. Falls back to the first
+  // The Location whose floors fill the central dollhouse. Falls back to the first
   // location until one is explicitly chosen, so the stage is never empty.
   const activeKey = model ? (model.sitesByKey.has(activeSite) ? activeSite : (model.sites[0]?.key ?? '')) : '';
   const activeSiteObj = model?.sitesByKey.get(activeKey) ?? null;
   const placedRooms = useMemo(
-    () => (model && activeSiteObj ? placeRooms(activeSiteObj.rooms, model.itemsByRoom) : []),
-    [model, activeSiteObj],
+    () => (model && data && activeSiteObj ? placeRooms(activeSiteObj, model, data) : []),
+    [model, data, activeSiteObj],
+  );
+  // storeys of the active location, top-down for the switcher
+  const levels = useMemo(
+    () => (activeSiteObj ? [...activeSiteObj.floors].sort((a, b) => b.levelIndex - a.levelIndex) : []),
+    [activeSiteObj],
   );
 
-  // reference lists for the item form's room/container/owner pickers
+  // reference lists for the entity forms' pickers
   const lookups = useMemo<RefData>(
     () => ({
       locations: data?.locations ?? [],
+      floors: data?.floors ?? [],
       rooms: data?.rooms ?? [],
       containers: data?.containers ?? [],
       persons: data?.persons ?? [],
@@ -79,19 +92,20 @@ export default function App() {
 
   // Switching floors glides the camera up/down to the storey being shown.
   const changeFloor = useCallback(
-    (level: FloorLevel) => {
+    (level: number) => {
       setFloor(level);
       const [x, , z] = OVERVIEW_FOCUS.target;
-      const targetY = level === 2 ? 4.2 : level <= 0 ? 1.2 : levelY(level) + 1.2;
-      flyTo([x, targetY, z], level === 2 ? 0.92 : 1);
+      const targetY = level <= 0 ? 1.2 : levelY(level) + 1.2;
+      flyTo([x, targetY, z], 1);
     },
     [flyTo],
   );
 
-  // Fly to a Location: make it active (its rooms fill the dollhouse) and frame the stage.
+  // Fly to a Location: make it active (its floors fill the dollhouse) and frame the stage.
   const goToSite = useCallback(
     (site: Site) => {
       setActiveSite(site.key);
+      setFloor(defaultLevel(site));
       flyTo(OVERVIEW_FOCUS.target, 1.05);
     },
     [flyTo],
@@ -110,8 +124,9 @@ export default function App() {
     if (view !== 'house') return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        const idx = FLOOR_ORDER.indexOf(floor); // FLOOR_ORDER is top-down
-        const next = e.key === 'ArrowUp' ? FLOOR_ORDER[idx - 1] : FLOOR_ORDER[idx + 1];
+        const order = levels.map((f) => f.levelIndex); // top-down
+        const idx = order.indexOf(floor);
+        const next = e.key === 'ArrowUp' ? order[idx - 1] : order[idx + 1];
         if (next === undefined) return;
         e.preventDefault();
         changeFloor(next);
@@ -129,26 +144,27 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [floor, changeFloor, view, activeKey, model, goToSite]);
+  }, [floor, changeFloor, view, activeKey, model, goToSite, levels]);
 
-  // Selecting a room/item never changes the active floor (locked to the switcher).
-  // Rooms on buried floors can't be seen, so only the panel opens.
+  // Fly to a placed room, switching the floor focus to its storey so it is
+  // actually visible (a focused basement rises to the surface).
   const flyToPlaced = (placed: PlacedRoom, zoom: number) => {
-    if (placed.def.level === -1 && floor !== -1) return;
-    const [x, y, z] = roomCenter(placed);
-    const lift = floor === -1 && placed.def.level >= 0 ? LEVEL_HEIGHT : 0;
-    flyTo([x, y + lift, z], zoom);
+    setFloor(placed.level);
+    const { rect, level } = placed;
+    const y = (level < 0 ? HOUSE_BASE : levelY(level)) + 1.0;
+    flyTo([rect.x + rect.w / 2, y, rect.z + rect.d / 2], zoom);
   };
 
   // Bring the Location that owns `roomId` onto the stage, then fly to the room.
   const flyToRoomInLocation = (roomId: number, zoom: number) => {
-    if (!model) return;
+    if (!model || !data) return;
     const room = model.roomsById.get(roomId);
     if (!room) return;
-    const site = model.sites.find((s) => s.location.id === room.locationId);
+    const floorEntity = model.floorsById.get(room.floorId);
+    const site = floorEntity ? model.sites.find((s) => s.location.id === floorEntity.locationId) : undefined;
     if (!site) return;
     setActiveSite(site.key);
-    const placed = placeRooms(site.rooms, model.itemsByRoom).find((p) => p.room.id === roomId);
+    const placed = placeRooms(site, model, data).find((p) => p.room.id === roomId);
     if (placed) flyToPlaced(placed, zoom);
     else flyTo(OVERVIEW_FOCUS.target, 1.05);
   };
@@ -157,6 +173,15 @@ export default function App() {
     if (!model) return;
     setSelection({ kind: 'room', roomId });
     flyToRoomInLocation(roomId, 2.2);
+  };
+
+  // Same as selectSite but keyed by location id (used by the detail panel's breadcrumb).
+  const selectLocation = (locationId: number) => {
+    if (!model) return;
+    const site = model.sites.find((s) => s.location.id === locationId);
+    if (!site) return;
+    setSelection({ kind: 'location', id: site.location.id });
+    goToSite(site);
   };
 
   // A container ultimately sits in a room; resolve that and fly to it.
@@ -215,6 +240,7 @@ export default function App() {
             activeSite={activeKey}
             onSelectItem={selectItem}
             onSelectRoom={selectRoom}
+            onSelectContainer={selectContainer}
             onSelectSite={selectSite}
             onClear={clearSelection}
           />
@@ -223,6 +249,7 @@ export default function App() {
               <Hud
                 model={model}
                 placedRooms={placedRooms}
+                floors={levels}
                 live={data.live}
                 floor={floor}
                 activeSite={activeKey}
@@ -239,6 +266,10 @@ export default function App() {
                 selection={selection}
                 live={data.live}
                 onSelectItem={selectItem}
+                onSelectContainer={selectContainer}
+                onSelectRoom={selectRoom}
+                onSelectLocation={selectLocation}
+                onSelectFloor={changeFloor}
                 onEditItem={onEditItem}
                 onDeleteItem={onDeleteItem}
                 onAddToRoom={onAddToRoom}

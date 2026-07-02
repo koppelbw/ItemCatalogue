@@ -70,3 +70,22 @@ export function Group({ p, rotY = 0, children }: { p: [number, number, number]; 
     </group>
   );
 }
+
+/** Shifts a "#RRGGBB" hex colour's channels by `by` (positive lightens, negative darkens). */
+export function shift(hex: string, by: number): string {
+  const n = parseInt(hex.slice(1, 7), 16);
+  if (Number.isNaN(n)) return hex;
+  const clamp = (v: number) => Math.min(255, Math.max(0, v));
+  const r = clamp(((n >> 16) & 0xff) + by);
+  const g = clamp(((n >> 8) & 0xff) + by);
+  const b = clamp((n & 0xff) + by);
+  return `rgb(${r},${g},${b})`;
+}
+
+export function lighten(hex: string, by = 24): string {
+  return shift(hex, by);
+}
+
+export function darken(hex: string, by = 28): string {
+  return shift(hex, -by);
+}

@@ -22,6 +22,7 @@
     <None Include="PostDeploymentScripts\Seed_Item.sql" />
     <None Include="PostDeploymentScripts\Seed_Tag.sql" />
     <None Include="PostDeploymentScripts\Seed_Collection.sql" />
+    <None Include="PostDeploymentScripts\Seed_Cleanup.sql" />
     <!-- Table schema objects (dbo\tables\*.sql) are picked up by the SDK's default *.sql
          build glob; they are intentionally not re-listed here to avoid duplicate Build items. -->
   </ItemGroup>

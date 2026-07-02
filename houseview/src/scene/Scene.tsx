@@ -10,8 +10,9 @@ import {
   type OrthographicCamera as ThreeOrthographicCamera,
 } from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { FLOOR_ORDER, HOUSE_BASE, LEVEL_HEIGHT, levelY, itemSpots, type FloorLevel } from '../layout';
-import type { PlacedRoom, SceneModel } from '../model';
+import { HEADLESS } from '../headless';
+import { HOUSE_BASE, LEVEL_HEIGHT, levelY, itemSpots, type Rect } from '../layout';
+import { placedBounds, type PlacedRoom, type SceneModel } from '../model';
 import { ItemMarker } from './ItemMarker';
 import { RoomBox } from './RoomBox';
 import { SiteBuilding } from './Sites';
@@ -24,18 +25,20 @@ export interface Focus {
   seq: number;
 }
 
-export const OVERVIEW_FOCUS: Omit<Focus, 'seq'> = { target: [6.5, 1.2, 5.5], zoomFactor: 1 };
+export const OVERVIEW_FOCUS: Omit<Focus, 'seq'> = { target: [6.5, 1.2, 4.5], zoomFactor: 1 };
 
 interface SceneProps {
   model: SceneModel;
-  /** rooms of the active Location, laid onto the central dollhouse footprints */
+  /** rooms of the active Location, laid onto the central dollhouse stage */
   placedRooms: PlacedRoom[];
-  floor: FloorLevel;
+  /** levelIndex of the storey in focus */
+  floor: number;
   selection: Selection;
   focus: Focus;
   activeSite: string;
   onSelectItem: (id: number) => void;
   onSelectRoom: (roomId: number) => void;
+  onSelectContainer: (id: number) => void;
   onSelectSite: (key: string) => void;
   onClear: () => void;
 }
@@ -106,7 +109,11 @@ function Tree({ p, h = 1.4, r = 0.9 }: { p: [number, number, number]; h?: number
   );
 }
 
-function Lawn() {
+/** Grass, the foundation plinth sized to the active building, and lawn dressing. */
+function Lawn({ bounds, house }: { bounds: Rect | null; house: boolean }) {
+  const b = bounds ?? { x: 1.5, z: 0.5, w: 10, d: 8 };
+  const cx = b.x + b.w / 2;
+  const southZ = b.z + b.d;
   return (
     <group>
       {/* grass disc - big enough for the whole neighbourhood */}
@@ -114,63 +121,56 @@ function Lawn() {
         <cylinderGeometry args={[31, 32, 0.32, 64]} />
         <meshStandardMaterial color="#9cc480" roughness={1} />
       </mesh>
-      {/* concrete foundation plinth the house sits on; its top stays below the
-          floor slab tops so no two surfaces ever share a plane */}
-      <mesh position={[5, HOUSE_BASE / 2 - 0.06, 4]} castShadow receiveShadow>
-        <boxGeometry args={[10.5, HOUSE_BASE, 8.5]} />
+      {/* concrete foundation plinth the active building sits on; its top stays
+          below the floor slab tops so no two surfaces ever share a plane */}
+      <mesh position={[cx, HOUSE_BASE / 2 - 0.06, b.z + b.d / 2]} castShadow receiveShadow>
+        <boxGeometry args={[b.w + 0.6, HOUSE_BASE, b.d + 0.6]} />
         <meshStandardMaterial color="#b3aa99" roughness={1} />
       </mesh>
-      <mesh position={[12.3, HOUSE_BASE / 2 - 0.06, 2.6]} castShadow receiveShadow>
-        <boxGeometry args={[4.9, HOUSE_BASE, 5.7]} />
-        <meshStandardMaterial color="#b3aa99" roughness={1} />
-      </mesh>
-      {/* driveway in front of the garage */}
-      <B p={[12.4, -0.045, 9.2]} s={[4.4, 0.24, 8.0]} c="#c2bcb0" r={1} />
-      {/* path to the porch */}
-      <B p={[4.5, -0.045, 10]} s={[1.3, 0.24, 4.2]} c="#d4cabb" r={1} />
-      {/* porch slab at the south entry gap */}
-      <B p={[4.5, -0.02, 8.6]} s={[2.6, 0.28, 1.4]} c="#cfc5b6" r={1} />
-      {/* mailbox at the end of the path */}
-      <Group p={[3.6, 0, 12.0]}>
-        <Cyl p={[0, 0.5, 0]} rTop={0.05} rBottom={0.05} h={1.0} c="#7a5f40" />
-        <B p={[0, 1.08, 0]} s={[0.3, 0.26, 0.5]} c="#d04f3a" r={0.5} />
-      </Group>
-      <Tree p={[-3.5, 0, -2.5]} h={1.6} r={1.1} />
-      <Tree p={[16.6, 0, 4.6]} h={1.3} r={0.85} />
-      <Tree p={[19, 0, 12.5]} h={1.7} r={1.05} />
-      <Tree p={[-6.5, 0, 13.5]} h={1.2} r={0.8} />
-      <Tree p={[-7.2, 0, -0.5]} h={1.4} r={0.95} />
+      {/* walk-up path and mailbox, only when the active building is a home */}
+      {house && (
+        <>
+          <B p={[cx - 1.2, -0.045, southZ + 2.2]} s={[1.3, 0.24, 4.2]} c="#d4cabb" r={1} />
+          <Group p={[cx - 2.1, 0, southZ + 4.1]}>
+            <Cyl p={[0, 0.5, 0]} rTop={0.05} rBottom={0.05} h={1.0} c="#7a5f40" />
+            <B p={[0, 1.08, 0]} s={[0.3, 0.26, 0.5]} c="#d04f3a" r={0.5} />
+          </Group>
+        </>
+      )}
+      <Tree p={[-6.5, 0, -4.5]} h={1.6} r={1.1} />
+      <Tree p={[19.6, 0, 2.6]} h={1.3} r={0.85} />
+      <Tree p={[21, 0, 12.5]} h={1.7} r={1.05} />
+      <Tree p={[-7.5, 0, 14.5]} h={1.2} r={0.8} />
+      <Tree p={[-9.2, 0, 2.5]} h={1.4} r={0.95} />
       <Tree p={[27, 0, 6]} h={1.5} r={1.0} />
-      <Blob p={[1.2, 0.25, 9.6]} r={0.45} c="#6fae72" scale={[1.3, 0.7, 1]} />
-      <Blob p={[7.6, 0.25, 9.4]} r={0.4} c="#549058" scale={[1.2, 0.65, 1]} />
-      <Blob p={[-2.2, 0.3, 3.0]} r={0.5} c="#6fae72" scale={[1.25, 0.7, 1.1]} />
+      <Blob p={[cx - 3.4, 0.25, southZ + 1.1]} r={0.45} c="#6fae72" scale={[1.3, 0.7, 1]} />
+      <Blob p={[cx + 2.6, 0.25, southZ + 0.9]} r={0.4} c="#549058" scale={[1.2, 0.65, 1]} />
     </group>
   );
 }
 
-/** Gabled roof that crowns the attic level. The south-facing panel is glassy so attic items stay visible. */
-function Roof() {
-  const halfDepth = 4.0; // attic footprint is 10 x 8, ridge runs along x at z = 4
-  const rise = 2.0;
+/** Gabled roof crowning the top storey. The south-facing panel is glassy so top-floor items stay visible. */
+function Roof({ bounds, wallTop }: { bounds: Rect; wallTop: number }) {
+  const halfDepth = bounds.d / 2;
+  const rise = Math.min(2.2, halfDepth * 0.55);
   const panelLen = Math.sqrt(halfDepth * halfDepth + rise * rise) + 0.5;
   const angle = Math.atan2(rise, halfDepth);
-  const wallTop = 1.45; // attic uses short knee walls
   return (
-    <group position={[5, wallTop, 4]}>
+    <group position={[bounds.x + bounds.w / 2, wallTop, bounds.z + halfDepth]}>
       {/* north panel (solid) */}
       <mesh position={[0, rise / 2, -halfDepth / 2]} rotation={[-angle, 0, 0]} castShadow>
-        <boxGeometry args={[11, 0.14, panelLen]} />
+        <boxGeometry args={[bounds.w + 1, 0.14, panelLen]} />
         <meshStandardMaterial color="#b86b4b" roughness={0.85} />
       </mesh>
       {/* south panel (glassy, see-through) */}
       <mesh position={[0, rise / 2, halfDepth / 2]} rotation={[angle, 0, 0]}>
-        <boxGeometry args={[11, 0.1, panelLen]} />
+        <boxGeometry args={[bounds.w + 1, 0.1, panelLen]} />
         <meshStandardMaterial color="#e8f4fa" roughness={0.2} transparent opacity={0.22} depthWrite={false} />
       </mesh>
       {/* ridge beam */}
-      <B p={[0, rise + 0.05, 0]} s={[11.2, 0.18, 0.3]} c="#9c5639" />
+      <B p={[0, rise + 0.05, 0]} s={[bounds.w + 1.2, 0.18, 0.3]} c="#9c5639" />
       {/* chimney */}
-      <Group p={[3.2, rise - 0.4, -1.6]}>
+      <Group p={[bounds.w * 0.28, rise - 0.4, -halfDepth * 0.4]}>
         <B p={[0, 0.6, 0]} s={[0.7, 1.6, 0.7]} c="#b08a8a" />
         <B p={[0, 1.45, 0]} s={[0.85, 0.14, 0.85]} c="#8d6d6d" />
       </Group>
@@ -180,17 +180,15 @@ function Roof() {
 
 interface HouseLevelsProps {
   placedRooms: PlacedRoom[];
-  floor: FloorLevel;
+  floor: number;
   selection: Selection;
   onSelectItem: (id: number) => void;
   onSelectRoom: (roomId: number) => void;
+  onSelectContainer: (id: number) => void;
 }
 
-/** How far a floor rises off the house while fading away. */
-const FLOOR_LIFT = 2.4;
-
 interface FadeEntry {
-  mat: Material;
+  mat: Material & { userData: Record<string, unknown> };
   baseOpacity: number;
   baseTransparent: boolean;
   baseDepthWrite: boolean;
@@ -199,43 +197,64 @@ interface FadeEntry {
 /** Opacity of inactive floors - present but see-through. */
 const GHOST_OPACITY = 0.16;
 
-function HouseLevels({ placedRooms, floor, selection, onSelectItem, onSelectRoom }: HouseLevelsProps) {
-  const groupRefs = useRef(new Map<FloorLevel, ThreeGroup>());
-  const fadeMats = useRef(new Map<FloorLevel, FadeEntry[]>());
-  const fadeProxies = useRef(new Map<FloorLevel, { f: number }>());
+function HouseLevels({ placedRooms, floor, selection, onSelectItem, onSelectRoom, onSelectContainer }: HouseLevelsProps) {
+  const groupRefs = useRef(new Map<number, ThreeGroup>());
+  // one stable fade proxy per storey so a floor change can kill the previous
+  // opacity tween; a throwaway proxy would leave the old tween running, and
+  // its onComplete would snap a freshly ghosted floor back to full opacity
+  const fadeProxies = useRef(new Map<number, { f: number }>());
   const firstRun = useRef(true);
 
+  // storeys present in the active location, top-down
   const byLevel = useMemo(() => {
-    const map = new Map<FloorLevel, PlacedRoom[]>();
+    const map = new Map<number, PlacedRoom[]>();
     for (const placed of placedRooms) {
-      const list = map.get(placed.def.level) ?? [];
+      const list = map.get(placed.level) ?? [];
       list.push(placed);
-      map.set(placed.def.level, list);
+      map.set(placed.level, list);
     }
     return map;
   }, [placedRooms]);
+  const levels = useMemo(() => [...byLevel.keys()].sort((a, b) => b - a), [byLevel]);
+  const topLevel = levels[0] ?? 0;
+  const topBounds = useMemo(() => placedBounds(byLevel.get(topLevel) ?? []), [byLevel, topLevel]);
+  const topWallTop = useMemo(
+    () => (byLevel.get(topLevel) ?? []).reduce((max, p) => Math.max(max, p.wallHeight), 0),
+    [byLevel, topLevel],
+  );
 
-  // Floor focus, dollhouse style: the active floor (and the ones below it) are
-  // solid; floors above stay in place as translucent ghosts so the whole house
-  // silhouette is always readable. The basement rises out of the ground when
+  // Floor focus, dollhouse style: the storey in focus (and the ones below it)
+  // are solid; storeys above stay in place as translucent ghosts so the whole
+  // silhouette is always readable. A basement rises out of the ground when
   // active, and the rest of the house lifts a storey (as ghosts) to make room.
   useEffect(() => {
     const first = firstRun.current;
     firstRun.current = false;
 
-    const materialsFor = (level: FloorLevel, g: ThreeGroup): FadeEntry[] => {
-      const cached = fadeMats.current.get(level);
-      if (cached) return cached;
+    // materials are recreated whenever the active location's rooms change, so
+    // walk the group fresh each time and stash each material's true base
+    // opacity in userData the first time we meet it
+    const materialsFor = (g: ThreeGroup): FadeEntry[] => {
       const entries: FadeEntry[] = [];
       g.traverse((obj) => {
         const mesh = obj as Mesh;
         if (!mesh.isMesh) return;
         const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-        for (const mat of mats) {
-          entries.push({ mat, baseOpacity: mat.opacity, baseTransparent: mat.transparent, baseDepthWrite: mat.depthWrite });
+        for (const raw of mats) {
+          const mat = raw as FadeEntry['mat'];
+          if (mat.userData.baseOpacity === undefined) {
+            mat.userData.baseOpacity = mat.opacity;
+            mat.userData.baseTransparent = mat.transparent;
+            mat.userData.baseDepthWrite = mat.depthWrite;
+          }
+          entries.push({
+            mat,
+            baseOpacity: mat.userData.baseOpacity as number,
+            baseTransparent: mat.userData.baseTransparent as boolean,
+            baseDepthWrite: mat.userData.baseDepthWrite as boolean,
+          });
         }
       });
-      fadeMats.current.set(level, entries);
       return entries;
     };
 
@@ -243,38 +262,39 @@ function HouseLevels({ placedRooms, floor, selection, onSelectItem, onSelectRoom
       for (const e of entries) e.mat.opacity = e.baseOpacity * f;
     };
 
-    FLOOR_ORDER.forEach((level, i) => {
+    const basementView = floor < 0;
+    levels.forEach((level, i) => {
       const g = groupRefs.current.get(level);
       if (!g) return;
-      const entries = materialsFor(level, g);
-      const proxy = fadeProxies.current.get(level) ?? { f: 1 };
-      fadeProxies.current.set(level, proxy);
-
-      const targetF =
-        floor === -1
-          ? level === -1
-            ? 1
-            : GHOST_OPACITY
-          : level === -1
-            ? 0
-            : level <= floor
-              ? 1
-              : GHOST_OPACITY;
-      const targetY =
-        level === -1
-          ? floor === -1
-            ? HOUSE_BASE
-            : levelY(-1)
-          : floor === -1
-            ? levelY(level) + LEVEL_HEIGHT
-            : levelY(level);
-
+      const entries = materialsFor(g);
+      let proxy = fadeProxies.current.get(level);
+      if (!proxy) {
+        proxy = { f: 1 };
+        fadeProxies.current.set(level, proxy);
+      }
+      // stop any in-flight fade before reading state: a stale tween would keep
+      // fighting this one per-frame and fire its onComplete restore later
       gsap.killTweensOf(proxy);
+      // re-sync from the actual material state — materials are recreated (at
+      // full base opacity) whenever the active location's room tree changes
+      proxy.f = entries[0] ? entries[0].mat.opacity / (entries[0].baseOpacity || 1) : 1;
+
+      let targetF: number;
+      let targetY: number;
+      if (level < 0) {
+        // buried storeys are invisible until focused, then rise to the surface
+        targetF = level === floor ? 1 : 0;
+        targetY = level === floor ? HOUSE_BASE : levelY(level);
+      } else {
+        targetF = basementView ? GHOST_OPACITY : level <= floor ? 1 : GHOST_OPACITY;
+        targetY = basementView ? levelY(level) + LEVEL_HEIGHT : levelY(level);
+      }
+
       gsap.killTweensOf(g.position);
 
       if (first) {
         // intro: every floor drops in from above while fading up
-        g.position.y = level === -1 ? levelY(-1) : levelY(level) + FLOOR_LIFT;
+        g.position.y = level < 0 ? levelY(level) : levelY(level) + 2.4;
         proxy.f = 0;
         applyFade(entries, 0);
       }
@@ -284,7 +304,7 @@ function HouseLevels({ placedRooms, floor, selection, onSelectItem, onSelectRoom
         e.mat.depthWrite = targetF === 1 ? e.baseDepthWrite : false;
       }
 
-      const delay = first ? 0.35 + (FLOOR_ORDER.length - 1 - i) * 0.09 : 0; // bottom-up on intro
+      const delay = first ? 0.35 + (levels.length - 1 - i) * 0.09 : 0; // bottom-up on intro
       const duration = first ? 0.85 : 0.6;
       gsap.to(g.position, { y: targetY, duration, delay, ease: 'power3.out' });
       gsap.to(proxy, {
@@ -306,11 +326,11 @@ function HouseLevels({ placedRooms, floor, selection, onSelectItem, onSelectRoom
         },
       });
     });
-  }, [floor]);
+  }, [floor, levels, byLevel]);
 
   return (
     <group>
-      {FLOOR_ORDER.map((level) => (
+      {levels.map((level) => (
         <group
           key={level}
           position={[0, levelY(level), 0]}
@@ -325,11 +345,12 @@ function HouseLevels({ placedRooms, floor, selection, onSelectItem, onSelectRoom
               selection={selection}
               onSelectItem={onSelectItem}
               onSelectRoom={onSelectRoom}
-              showTag={placed.def.level === floor}
-              interactive={floor === -1 ? placed.def.level === -1 : placed.def.level <= floor}
+              onSelectContainer={onSelectContainer}
+              showTag={placed.level === floor}
+              interactive={floor < 0 ? placed.level === floor : placed.level >= 0 && placed.level <= floor}
             />
           ))}
-          {level === 2 && <Roof />}
+          {level === topLevel && topLevel >= 1 && topBounds && <Roof bounds={topBounds} wallTop={topWallTop} />}
         </group>
       ))}
     </group>
@@ -341,7 +362,7 @@ function UnassignedPallet({ model, selection, onSelectItem }: Pick<SceneProps, '
   if (model.unassigned.length === 0) return null;
   const spots = itemSpots({ x: 0, z: 0, w: 3, d: 2 }, model.unassigned.length);
   return (
-    <group position={[-4.5, 0, 9.5]}>
+    <group position={[-8, 0, 15]}>
       <B p={[1.5, 0.08, 1]} s={[3.4, 0.16, 2.4]} c="#c0a884" r={1} />
       {model.unassigned.map((resolved, i) => (
         <ItemMarker
@@ -356,15 +377,34 @@ function UnassignedPallet({ model, selection, onSelectItem }: Pick<SceneProps, '
   );
 }
 
-export function Scene({ model, placedRooms, floor, selection, focus, activeSite, onSelectItem, onSelectRoom, onSelectSite, onClear }: SceneProps) {
+export function Scene({
+  model,
+  placedRooms,
+  floor,
+  selection,
+  focus,
+  activeSite,
+  onSelectItem,
+  onSelectRoom,
+  onSelectContainer,
+  onSelectSite,
+  onClear,
+}: SceneProps) {
   // every Location except the active one is a satellite building; the active one
   // is drawn as the central cutaway dollhouse from `placedRooms`.
   const satellites = model.sites.filter((s) => s.key !== activeSite);
+  const groundBounds = placedBounds(placedRooms.filter((p) => p.level >= 0));
+  // homes get the walk-up path + mailbox; apartments, storage units and cars don't
+  const activeKind = model.sitesByKey.get(activeSite)?.def.kind;
+  const activeIsHouse = activeKind === 'cabin' || activeKind === 'cottage';
   return (
     <Canvas
       shadows
       dpr={[1, 2]}
-      gl={{ antialias: true, alpha: true }}
+      gl={{ antialias: true, alpha: true, preserveDrawingBuffer: HEADLESS }}
+      onCreated={(state) => {
+        if (HEADLESS) (window as unknown as { __r3f?: unknown }).__r3f = state;
+      }}
       onPointerMissed={onClear}
       style={{ position: 'absolute', inset: 0 }}
     >
@@ -386,16 +426,21 @@ export function Scene({ model, placedRooms, floor, selection, focus, activeSite,
         shadow-camera-far={90}
         shadow-bias={-0.0004}
       />
-      <Lawn />
-      <HouseLevels placedRooms={placedRooms} floor={floor} selection={selection} onSelectItem={onSelectItem} onSelectRoom={onSelectRoom} />
+      <Lawn bounds={groundBounds} house={activeIsHouse} />
+      <HouseLevels
+        placedRooms={placedRooms}
+        floor={floor}
+        selection={selection}
+        onSelectItem={onSelectItem}
+        onSelectRoom={onSelectRoom}
+        onSelectContainer={onSelectContainer}
+      />
       {satellites.map((site, i) => (
         <SiteBuilding
           key={site.key}
           site={site}
           index={i}
           active={selection?.kind === 'location' && selection.id === site.location.id}
-          selection={selection}
-          onSelectItem={onSelectItem}
           onSelectSite={onSelectSite}
         />
       ))}

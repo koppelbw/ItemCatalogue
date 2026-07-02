@@ -1,6 +1,12 @@
 /* Management views: tabs, tables, modal forms. Sits on top of the frosted
    index-page sheet, so it inherits that page's typography and background. */
 
+/* .index-page starts visibility:hidden for the GSAP entrances of the Index and
+   About pages; the manage page has no entrance animation, so show it outright. */
+.index-page.manage-page {
+  visibility: visible;
+}
+
 .manage-page .index-inner {
   max-width: 1040px;
 }

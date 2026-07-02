@@ -87,6 +87,8 @@ export function useSetItemTags() {
     mutationFn: ({ itemId, tagIds }) => apiPut<ItemTagsResponse>(`items/${itemId}/tags`, { tagIds }),
     onSuccess: (_res, vars) => {
       qc.invalidateQueries({ queryKey: ['itemTags', vars.itemId] });
+      // the catalogue carries furnitureItemIds, so (un)tagging can change what renders
+      qc.invalidateQueries({ queryKey: ['catalogue'] });
     },
   });
 }
