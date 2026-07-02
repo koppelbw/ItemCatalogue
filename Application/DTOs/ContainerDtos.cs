@@ -15,7 +15,8 @@ public sealed record CreateContainerRequest(
     decimal? WidthInches = null,
     decimal? DepthInches = null,
     decimal? HeightInches = null,
-    string? Color = null);
+    string? Color = null,
+    bool IsShownInUI = true);
 
 public sealed record UpdateContainerRequest(
     int Id,
@@ -32,7 +33,8 @@ public sealed record UpdateContainerRequest(
     decimal? WidthInches = null,
     decimal? DepthInches = null,
     decimal? HeightInches = null,
-    string? Color = null);
+    string? Color = null,
+    bool IsShownInUI = true);
 
 public sealed record ContainerResponse(
     int Id,
@@ -49,4 +51,5 @@ public sealed record ContainerResponse(
     decimal? DepthInches,
     decimal? HeightInches,
     string? Color,
+    bool IsShownInUI,
     byte[] RowVersion);

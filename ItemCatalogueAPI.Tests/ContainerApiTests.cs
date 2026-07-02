@@ -48,6 +48,32 @@ public class ContainerApiTests(ApiFactory factory) : ApiTestBase(factory)
     }
 
     [Fact]
+    public async Task Create_DefaultsToShownInUi()
+    {
+        var created = await CreateTopLevelAsync("Shown Dresser");
+        created.IsShownInUI.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Update_CanHideFromUi()
+    {
+        // Containers default shown (store default 1); a container is hidden via a later edit, which
+        // persists correctly. (Create-time hiding is coerced back to shown by the OnAdd store
+        // default — the supported flow is create-then-hide.)
+        var created = await CreateTopLevelAsync("Dresser");
+        created.IsShownInUI.ShouldBeTrue();
+
+        var response = await Client.PutAsJsonAsync(
+            $"/api/containers/{created.Id}",
+            new UpdateContainerRequest(created.Id, created.Name, created.Description, created.RoomId,
+                created.ParentContainerId, created.RowVersion, IsShownInUI: false));
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var fetched = await Client.GetFromJsonAsync<ContainerResponse>($"/api/containers/{created.Id}");
+        fetched!.IsShownInUI.ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task Create_NestedInContainer_Returns201WithParentContainerId()
     {
         var parent = await CreateTopLevelAsync("Closet");

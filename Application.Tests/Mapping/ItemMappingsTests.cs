@@ -27,6 +27,7 @@ public class ItemMappingsTests
             PurchaseDate: new DateTime(2025, 5, 1),
             WarrantyExpiryDate: new DateTime(2027, 5, 1),
             IsStored: true,
+            IsShownInUI: false,
             RoomId: 7,
             ContainerId: null,
             OwnerId: 3,
@@ -51,6 +52,7 @@ public class ItemMappingsTests
         item.PurchaseDate.ShouldBe(new DateTime(2025, 5, 1));
         item.WarrantyExpiryDate.ShouldBe(new DateTime(2027, 5, 1));
         item.IsStored.ShouldBeTrue();
+        item.IsShownInUI.ShouldBeFalse();
         item.RoomId.ShouldBe(7);
         item.OwnerId.ShouldBe(3);
         item.ReleaseDate.ShouldBe(new DateTime(2025, 1, 1));
@@ -61,7 +63,7 @@ public class ItemMappingsTests
     [Fact]
     public void ToEntity_DoesNotSetServerOwnedFields()
     {
-        var item = new CreateItemRequest("Lamp", null, [ItemType.Electronics], null, null, null, null, null, null, 1, null, null, null, null, false, null, null, null, null, null, null).ToEntity();
+        var item = new CreateItemRequest("Lamp", null, [ItemType.Electronics], null, null, null, null, null, null, 1, null, null, null, null, false, true, null, null, null, null, null, null).ToEntity();
 
         item.Id.ShouldBe(0);
         item.IsDeleted.ShouldBeFalse();
@@ -100,6 +102,7 @@ public class ItemMappingsTests
             PurchaseDate: new DateTime(2025, 6, 1),
             WarrantyExpiryDate: new DateTime(2026, 6, 1),
             IsStored: true,
+            IsShownInUI: false,
             RoomId: 2,
             ContainerId: null,
             OwnerId: 4,
@@ -125,6 +128,7 @@ public class ItemMappingsTests
         existing.PurchaseDate.ShouldBe(new DateTime(2025, 6, 1));
         existing.WarrantyExpiryDate.ShouldBe(new DateTime(2026, 6, 1));
         existing.IsStored.ShouldBeTrue();
+        existing.IsShownInUI.ShouldBeFalse();
         existing.RoomId.ShouldBe(2);
         existing.OwnerId.ShouldBe(4);
         existing.ReleaseDate.ShouldBe(new DateTime(2025, 1, 1));
@@ -138,7 +142,7 @@ public class ItemMappingsTests
     {
         var existing = new Item { Id = 5, Name = "Old", ItemTypes = [ItemType.Books] };
 
-        new UpdateItemRequest(5, "New", null, [ItemType.Books], null, null, null, null, null, null, 1, null, null, null, null, false, null, null, null, null, null, null, [1])
+        new UpdateItemRequest(5, "New", null, [ItemType.Books], null, null, null, null, null, null, 1, null, null, null, null, false, true, null, null, null, null, null, null, [1])
             .ApplyTo(existing);
 
         existing.Id.ShouldBe(5);
@@ -168,6 +172,7 @@ public class ItemMappingsTests
             ValuationDate = new DateTime(2026, 1, 1),
             AcquisitionReference = "INV-300",
             IsStored = true,
+            IsShownInUI = false,
             IsDeleted = true,
             ReasonForDeletion = DeletedReason.Broken,
             ContainerId = 3,
@@ -196,6 +201,7 @@ public class ItemMappingsTests
         response.ValuationDate.ShouldBe(new DateTime(2026, 1, 1));
         response.AcquisitionReference.ShouldBe("INV-300");
         response.ContainerId.ShouldBe(3);
+        response.IsShownInUI.ShouldBeFalse();
         response.IsDeleted.ShouldBeTrue();
         response.ReasonForDeletion.ShouldBe(DeletedReason.Broken);
         response.CreatedDate.ShouldBe(new DateTime(2026, 1, 1));

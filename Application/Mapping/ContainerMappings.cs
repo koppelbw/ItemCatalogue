@@ -20,6 +20,7 @@ public static class ContainerMappings
         DepthInches = request.DepthInches,
         HeightInches = request.HeightInches,
         Color = request.Color,
+        IsShownInUI = request.IsShownInUI,
     };
 
     public static void ApplyTo(this UpdateContainerRequest request, Container container)
@@ -37,6 +38,7 @@ public static class ContainerMappings
         container.DepthInches = request.DepthInches;
         container.HeightInches = request.HeightInches;
         container.Color = request.Color;
+        container.IsShownInUI = request.IsShownInUI;
         container.RowVersion = request.RowVersion;
     }
 
@@ -55,5 +57,6 @@ public static class ContainerMappings
         container.DepthInches,
         container.HeightInches,
         container.Color,
+        container.IsShownInUI,
         container.RowVersion);
 }

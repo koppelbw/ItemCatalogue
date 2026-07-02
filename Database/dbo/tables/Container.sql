@@ -18,7 +18,8 @@ CREATE TABLE [Container] (
     [WidthInches] DECIMAL(9, 2) NULL,
     [DepthInches] DECIMAL(9, 2) NULL,
     [HeightInches] DECIMAL(9, 2) NULL,
-    [Color] NVARCHAR(9) NULL,
+    [Color] NVARCHAR(9) NULL,        
+    [IsShownInUI] BIT NOT NULL DEFAULT 1,
 
     [CreatedDate] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
     [LastModifiedDate] DATETIME2 NULL,

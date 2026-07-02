@@ -178,6 +178,7 @@ export function ItemForm({
           valuationDate: initial.valuationDate,
           acquisitionReference: initial.acquisitionReference,
           isStored: initial.isStored,
+          isShownInUI: initial.isShownInUI ?? false,
           roomId: initial.roomId,
           containerId: initial.containerId,
           ownerId: initial.ownerId,
@@ -201,6 +202,7 @@ export function ItemForm({
           valuationDate: null,
           acquisitionReference: null,
           isStored: false,
+          isShownInUI: false,
           roomId: presetRoomId,
           containerId: presetContainerId,
           ownerId: null,
@@ -261,7 +263,10 @@ export function ItemForm({
           <DateField control={control} errors={errors} name="valuationDate" label="Valuation date" />
         </div>
         <TextField control={control} errors={errors} name="acquisitionReference" label="Acquisition reference" nullable />
-        <CheckboxField control={control} name="isStored" label="In storage" />
+        <div className="form-row">
+          <CheckboxField control={control} name="isStored" label="In storage" />
+          <CheckboxField control={control} name="isShownInUI" label="Show in 3D view" />
+        </div>
       </form>
       {initial && <ItemExtras itemId={initial.id} />}
     </Modal>
@@ -472,6 +477,7 @@ export function ContainerForm({ initial, lookups, onClose }: { initial?: Contain
           depthInches: initial.depthInches,
           heightInches: initial.heightInches,
           color: initial.color,
+          isShownInUI: initial.isShownInUI ?? true,
         }
       : {
           name: '',
@@ -487,6 +493,7 @@ export function ContainerForm({ initial, lookups, onClose }: { initial?: Contain
           depthInches: null,
           heightInches: null,
           color: null,
+          isShownInUI: true,
         },
   });
   const { roomOptions } = useLookupOptions(lookups);
@@ -533,6 +540,7 @@ export function ContainerForm({ initial, lookups, onClose }: { initial?: Contain
           <NumberField control={control} errors={errors} name="heightInches" label="Height (in)" />
           <TextField control={control} errors={errors} name="color" label="Colour" nullable placeholder="#RRGGBB" />
         </div>
+        <CheckboxField control={control} name="isShownInUI" label="Show in 3D view" />
       </form>
     </Modal>
   );

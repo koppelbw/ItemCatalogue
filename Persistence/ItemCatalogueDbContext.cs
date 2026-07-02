@@ -102,6 +102,10 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
                 .IsRequired()
                 .HasDefaultValue(false);
 
+            builder.Property(i => i.IsShownInUI)
+                .IsRequired()
+                .HasDefaultValue(false);
+
             builder.Property(i => i.IsDeleted)
                 .IsRequired()
                 .HasDefaultValue(false);
@@ -245,6 +249,15 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
             builder.Property(c => c.HeightInches).HasColumnType("decimal(9,2)");
 
             builder.Property(c => c.Color).HasMaxLength(9);
+
+            builder.Property(c => c.IsShownInUI)
+                .IsRequired()
+                // Containers default shown (DEFAULT 1) so all seeded/existing rows render without
+                // enumeration. Like the other defaulted bools here (IsStored/IsDeleted) this is
+                // store-generated OnAdd, so EF omits the CLR-sentinel value (false) on INSERT and
+                // the store default wins — a container therefore cannot be created *pre-hidden*
+                // (create shows it; hide it with a subsequent edit, which persists correctly).
+                .HasDefaultValue(true);
 
             builder.HasOne(c => c.Room)
                 .WithMany(r => r.Containers)

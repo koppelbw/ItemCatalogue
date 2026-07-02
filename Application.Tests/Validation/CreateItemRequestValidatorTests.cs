@@ -26,6 +26,7 @@ public class CreateItemRequestValidatorTests
             PurchaseDate: null,
             WarrantyExpiryDate: null,
             IsStored: false,
+            IsShownInUI: true,
             RoomId: null,
             ContainerId: null,
             OwnerId: null,

@@ -37,6 +37,30 @@
       "port": 5173
     },
     {
+      "name": "portfolio",
+      "runtimeExecutable": "C:\\Users\\koppe\\AppData\\Local\\node-portable\\node-v22.17.0-win-x64\\node.exe",
+      "runtimeArgs": [
+        ".claude/worktrees/portfolio/portfolio/node_modules/vite/bin/vite.js",
+        ".claude/worktrees/portfolio/portfolio",
+        "--port",
+        "5176",
+        "--strictPort"
+      ],
+      "port": 5176
+    },
+    {
+      "name": "portfolio-site",
+      "runtimeExecutable": "C:\\Users\\koppe\\AppData\\Local\\node-portable\\node-v22.17.0-win-x64\\node.exe",
+      "runtimeArgs": [
+        ".claude/worktrees/portfolio-site/portfolio/node_modules/vite/bin/vite.js",
+        ".claude/worktrees/portfolio-site/portfolio",
+        "--port",
+        "5177",
+        "--strictPort"
+      ],
+      "port": 5177
+    },
+    {
       "name": "catalogue-ui",
       "runtimeExecutable": "C:\\Users\\koppe\\AppData\\Local\\node-portable\\node-v22.17.0-win-x64\\node.exe",
       "runtimeArgs": [

@@ -87,7 +87,7 @@ export interface PlacedRoom {
   hasGeometry: boolean;
   /** every item that ultimately lives in this room (including inside containers) — used for counts */
   items: ResolvedItem[];
-  /** room-level items tagged "Furniture" — the only item markers drawn inside the room */
+  /** room-level items with IsShownInUI set — the only item markers drawn inside the room */
   furnishings: ResolvedItem[];
   containers: PlacedContainer[];
   doors: PlacedDoor[];
@@ -125,8 +125,6 @@ export interface SceneModel {
   itemsByRoom: Map<number, ResolvedItem[]>;
   /** items that resolve to no room at all */
   unassigned: ResolvedItem[];
-  /** ids of items carrying the "Furniture" tag */
-  furnitureItemIds: Set<number>;
   typeCounts: Map<number, number>;
   totalItems: number;
 }
@@ -268,7 +266,6 @@ export function buildSceneModel(data: CatalogueData): SceneModel {
     containersById,
     itemsByRoom,
     unassigned,
-    furnitureItemIds: new Set(data.furnitureItemIds),
     typeCounts,
     totalItems: resolved.length,
   };
@@ -299,6 +296,8 @@ function placeContainers(
   for (const c of containers) {
     if (c.roomId !== room.id) continue;
     if (c.positionXInches == null || c.positionYInches == null || c.widthInches == null || c.depthInches == null) continue;
+    // declutter toggle: hidden containers are not drawn (their items still count via room totals)
+    if (c.isShownInUI === false) continue;
     // count items in this container or anything nested inside it
     let itemCount = 0;
     for (const r of itemsById.values()) {
@@ -506,7 +505,8 @@ function makePlacedRoom(
     colors: paletteFor(room, furniture),
     hasGeometry,
     items,
-    furnishings: items.filter((r) => r.item.roomId === room.id && model.furnitureItemIds.has(r.item.id)),
+    // items default hidden: only those explicitly shown render as markers (still in `items` for counts)
+    furnishings: items.filter((r) => r.item.roomId === room.id && r.item.isShownInUI === true),
     containers: placeContainers(room, data.containers, model.itemsById, wallHeight),
     doors: placeDoors(room, rect, data.doors, wallHeight),
     stairs: placeStairs(room, rect, data.stairs),

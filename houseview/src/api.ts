@@ -10,7 +10,6 @@ import type {
   PersonResponse,
   RoomResponse,
   StairResponse,
-  TagResponse,
 } from './types';
 
 const PAGE_SIZE = 100;
@@ -112,7 +111,7 @@ export async function loadCatalogue(): Promise<CatalogueData> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const [locations, rooms, containers, doors, stairs, items, persons, tags] = await Promise.all([
+    const [locations, rooms, containers, doors, stairs, items, persons] = await Promise.all([
       fetchAll<LocationResponse>('locations', controller.signal),
       fetchAll<RoomResponse>('rooms', controller.signal),
       fetchAll<ContainerResponse>('containers', controller.signal),
@@ -122,14 +121,7 @@ export async function loadCatalogue(): Promise<CatalogueData> {
       // manage table can show (and the index can exclude) them explicitly
       fetchAll<ItemResponse>('items?includeDeleted=true', controller.signal),
       fetchAll<PersonResponse>('persons', controller.signal),
-      fetchAll<TagResponse>('tags', controller.signal),
     ]);
-    // Only items tagged "Furniture" are drawn inside rooms. Tag assignments have
-    // no bulk endpoint, so resolve the tag by name and use the items?tagId filter.
-    const furnitureTag = tags.find((t) => t.name.trim().toLowerCase() === 'furniture');
-    const furnitureItems = furnitureTag
-      ? await fetchAll<ItemResponse>(`items?tagId=${furnitureTag.id}`, controller.signal)
-      : [];
     const floors = locations.flatMap((l) => l.floors);
     return {
       locations,
@@ -140,7 +132,6 @@ export async function loadCatalogue(): Promise<CatalogueData> {
       stairs,
       items,
       persons,
-      furnitureItemIds: furnitureItems.map((i) => i.id),
       live: true,
     };
   } catch {

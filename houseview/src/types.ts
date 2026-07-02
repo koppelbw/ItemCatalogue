@@ -72,6 +72,8 @@ export interface ContainerResponse {
   depthInches: number | null;
   heightInches: number | null;
   color: string | null;
+  /** declutter toggle for the 3D scene; optional so bundled demo data can omit it (undefined = shown) */
+  isShownInUI?: boolean;
   rowVersion: RowVersion;
 }
 
@@ -132,6 +134,8 @@ export interface ItemResponse {
   purchaseDate: string | null;
   warrantyExpiryDate: string | null;
   isStored: boolean;
+  /** declutter toggle for the 3D scene; optional so bundled demo data can omit it (undefined = shown) */
+  isShownInUI?: boolean;
   isDeleted: boolean;
   reasonForDeletion: number | null;
   // An item lives in a Room xor a Container (never both, never a Location directly).
@@ -219,6 +223,7 @@ export interface CreateItemRequest {
   purchaseDate: string | null;
   warrantyExpiryDate: string | null;
   isStored: boolean;
+  isShownInUI: boolean;
   roomId: number | null;
   containerId: number | null;
   ownerId: number | null;
@@ -290,6 +295,7 @@ export interface CreateContainerRequest {
   depthInches: number | null;
   heightInches: number | null;
   color: string | null;
+  isShownInUI: boolean;
 }
 
 export interface UpdateContainerRequest extends CreateContainerRequest {
@@ -458,8 +464,6 @@ export interface CatalogueData {
   stairs: StairResponse[];
   items: ItemResponse[];
   persons: PersonResponse[];
-  /** ids of items carrying the "Furniture" tag — the only items drawn inside rooms */
-  furnitureItemIds: number[];
   /** true when the data came from the live API, false when bundled demo data is shown */
   live: boolean;
 }
