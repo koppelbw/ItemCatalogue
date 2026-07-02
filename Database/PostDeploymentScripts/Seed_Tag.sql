@@ -7,7 +7,8 @@ MERGE INTO dbo.Tag AS target
 USING (VALUES
     (1, 'Fragile',     'Handle with care'),
     (2, 'Camping',     'Outdoor and camping gear'),
-    (3, 'Electronics', 'Powered electronic devices')
+    (3, 'Electronics', 'Powered electronic devices'),
+    (4, 'Furniture',   'Room-level items rendered in the 3D house view')
 ) AS source (Id, Name, Description)
 ON target.Id = source.Id
 WHEN MATCHED THEN UPDATE SET
@@ -24,7 +25,13 @@ MERGE INTO dbo.ItemTag AS target
 USING (VALUES
     (1, 3),   -- Laptop -> Electronics
     (5, 3),   -- Mechanical Keyboard -> Electronics
-    (5, 1)    -- Mechanical Keyboard -> Fragile
+    (5, 1),   -- Mechanical Keyboard -> Fragile
+    -- Room-level appliances tagged Furniture so the 3D view draws them
+    (18, 4),  -- Washer (apartment laundry) -> Furniture
+    (19, 4),  -- Dryer (apartment laundry) -> Furniture
+    (35, 4),  -- Water Heater (apartment laundry) -> Furniture
+    (49, 4),  -- House Washer -> Furniture
+    (50, 4)   -- House Dryer -> Furniture
 ) AS source (ItemId, TagId)
 ON target.ItemId = source.ItemId AND target.TagId = source.TagId
 WHEN NOT MATCHED THEN

@@ -4,10 +4,14 @@ import { useRef, useState } from 'react';
 import type { Group as ThreeGroup } from 'three';
 import { primaryType } from '../model';
 import { ITEM_TYPE_COLORS, ITEM_TYPE_NAMES, type ResolvedItem } from '../types';
+import { ITEM_SHAPE_HEIGHTS, ItemShape, itemShapeFor } from './ItemShapes';
 import { B, Cyl } from './primitives';
 
-// A database item rendered as a small holographic exhibit: a glowing pedestal
-// ring, a light beam, and a floating glyph shaped by the item's primary type.
+// A database item rendered inside its room. Items whose name matches a custom
+// asset (washer, dryer, water heater — see ItemShapes) are drawn as full-size
+// props standing on the floor; everything else falls back to a small
+// holographic exhibit: a glowing pedestal ring, a light beam, and a floating
+// glyph shaped by the item's primary type.
 
 function Glyph({ type, color }: { type: number; color: string }) {
   switch (type) {
@@ -72,6 +76,7 @@ export function ItemMarker({ resolved, position, selected, onSelect, interactive
   const floatRef = useRef<ThreeGroup>(null);
   const [hovered, setHovered] = useState(false);
   const phase = (item.id % 17) * 0.7;
+  const shape = itemShapeFor(item.name);
 
   useFrame(({ clock }) => {
     const g = floatRef.current;
@@ -83,6 +88,50 @@ export function ItemMarker({ resolved, position, selected, onSelect, interactive
     const s = g.scale.x + (target - g.scale.x) * 0.12;
     g.scale.setScalar(s);
   });
+
+  const active = hovered || selected;
+
+  if (shape) {
+    const height = ITEM_SHAPE_HEIGHTS[shape];
+    return (
+      <group
+        position={position}
+        onClick={(e) => {
+          if (!interactive) return;
+          e.stopPropagation();
+          onSelect(item.id);
+        }}
+        onPointerOver={(e) => {
+          if (!interactive) return;
+          e.stopPropagation();
+          setHovered(true);
+          document.body.style.cursor = 'pointer';
+        }}
+        onPointerOut={() => {
+          setHovered(false);
+          document.body.style.cursor = 'auto';
+        }}
+      >
+        <ItemShape kind={shape} active={active} />
+        {/* accent ring on the floor when active, echoing the pedestal look */}
+        {active && (
+          <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.62, 0.7, 32]} />
+            <meshBasicMaterial color={color} transparent opacity={0.55} depthWrite={false} />
+          </mesh>
+        )}
+        {active && (
+          <Html position={[0, height + 0.45, 0]} center zIndexRange={[15, 0]} style={{ pointerEvents: 'none' }}>
+            <div className="marker-tip">
+              <span className="marker-tip-dot" style={{ background: color }} />
+              <span className="marker-tip-name">{item.name}</span>
+              <span className="marker-tip-type">{ITEM_TYPE_NAMES[type % ITEM_TYPE_NAMES.length]}</span>
+            </div>
+          </Html>
+        )}
+      </group>
+    );
+  }
 
   return (
     <group
@@ -118,7 +167,7 @@ export function ItemMarker({ resolved, position, selected, onSelect, interactive
         <Glyph type={type} color={color} />
       </group>
       {(hovered || selected) && (
-        <Html position={[0, 1.7, 0]} center zIndexRange={[40, 0]} style={{ pointerEvents: 'none' }}>
+        <Html position={[0, 1.7, 0]} center zIndexRange={[15, 0]} style={{ pointerEvents: 'none' }}>
           <div className="marker-tip">
             <span className="marker-tip-dot" style={{ background: color }} />
             <span className="marker-tip-name">{item.name}</span>

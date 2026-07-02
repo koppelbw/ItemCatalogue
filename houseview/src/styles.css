@@ -278,22 +278,52 @@ body {
 
 /* ---------- room dock ---------- */
 
+/* A dock is a centred row: a pinned caption chip, a scrollable pill strip, and
+   (for places) a pinned hint. Only the strip scrolls. The row spans the window
+   (so centring tracks resizes) but stays click-transparent outside its children.
+   Note: NOT the left:50% + translateX trick — an absolutely-positioned box only
+   gets the space right of its `left` edge, which squeezed wide docks off-centre. */
 .room-dock {
   position: absolute;
-  left: 50%;
+  left: 16px;
+  right: 16px;
   bottom: 78px;
-  transform: translateX(-50%);
   display: flex;
+  justify-content: center;
+  align-items: center;
   gap: 8px;
-  max-width: min(92vw, 1100px);
-  overflow-x: auto;
-  padding: 6px;
-  pointer-events: auto;
-  scrollbar-width: none;
+  padding: 6px 0;
+  pointer-events: none;
 }
 
-.room-dock::-webkit-scrollbar {
-  display: none;
+.room-dock > * {
+  pointer-events: auto;
+}
+
+.dock-scroll {
+  display: flex;
+  gap: 8px;
+  flex: 0 1 auto;
+  min-width: 0; /* let the strip shrink inside the flex row so it can scroll */
+  max-width: 1100px;
+  overflow-x: auto;
+  padding: 6px 2px;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(43, 38, 32, 0.35) transparent;
+}
+
+.dock-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.dock-scroll::-webkit-scrollbar-thumb {
+  background: rgba(43, 38, 32, 0.3);
+  border-radius: 999px;
+}
+
+.dock-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .room-dock button {
@@ -336,25 +366,77 @@ body {
   justify-content: center;
 }
 
-/* the locations dock sits below the room dock and marks the active place */
+/* caption chip that names each dock row */
+.dock-label {
+  flex: none;
+  align-self: center;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 7px 12px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  pointer-events: none;
+}
+
+/* the locations dock sits below the room dock; where the room dock is light
+   glass, places are dark ink pills so the two rows read as different things */
 .site-dock {
   bottom: 24px;
 }
 
-.site-dock button.on {
-  background: var(--ink);
+.site-dock .dock-label {
+  background: rgba(43, 38, 32, 0.82);
+  border-color: rgba(43, 38, 32, 0.6);
+  color: #cfc5b6;
+}
+
+.site-dock button {
+  background: rgba(43, 38, 32, 0.72);
+  border-color: rgba(43, 38, 32, 0.55);
   color: #f8f2e7;
-  border-color: var(--ink);
+}
+
+.site-dock button:hover {
+  background: rgba(43, 38, 32, 0.92);
+}
+
+.site-dock button em {
+  background: rgba(248, 242, 231, 0.2);
+  color: #f8f2e7;
+}
+
+.site-dock button.on {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }
 
 .site-dock button.on em {
-  background: var(--accent);
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .dock-hint {
   align-self: center;
   margin-left: 6px;
   white-space: nowrap;
+}
+
+/* on narrow windows, drop the keyboard hint and caption chips so the pills get the room */
+@media (max-width: 720px) {
+  .dock-hint {
+    display: none;
+  }
+
+  .dock-label {
+    display: none;
+  }
 }
 
 /* nameplates over the site buildings read slightly larger than room tags */
@@ -476,6 +558,56 @@ body {
   background: rgba(43, 38, 32, 0.16);
 }
 
+/* clickable trail at the top of the panel: Location › Floor › Room › Container › … */
+.panel-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  margin-bottom: 12px;
+  padding-right: 30px; /* keep clear of the close button */
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+}
+
+.panel-breadcrumb .crumb-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.panel-breadcrumb .crumb {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--ink-soft);
+}
+
+.panel-breadcrumb button.crumb {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.panel-breadcrumb button.crumb:hover {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+
+.panel-breadcrumb .crumb-here {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.panel-breadcrumb .crumb-sep {
+  opacity: 0.45;
+}
+
 .panel-kicker {
   font-size: 0.68rem;
   font-weight: 700;
@@ -526,6 +658,21 @@ body {
   color: #b13c28;
 }
 
+/* clickable chip (containers listed on room/container cards) */
+.chip-btn {
+  background: rgba(43, 38, 32, 0.07);
+  color: var(--ink-soft);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.chip-btn:hover {
+  background: rgba(43, 38, 32, 0.16);
+  color: var(--ink, #2b2620);
+}
+
 .panel-facts {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -554,6 +701,25 @@ body {
   letter-spacing: 0.14em;
   color: var(--ink-soft);
   margin: 6px 0 10px;
+}
+
+/* clickable section label (floors on the location card): flies the house to that storey */
+.panel-section-btn {
+  display: block;
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.panel-section-btn:hover {
+  color: var(--ink);
+  text-decoration-color: currentColor;
 }
 
 .panel-items {

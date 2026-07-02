@@ -19,3 +19,5 @@
 :r .\Seed_Item.sql
 :r .\Seed_Tag.sql
 :r .\Seed_Collection.sql
+-- Cleanup runs last: deletes retired seed rows after the seeds above have re-pointed all FKs.
+:r .\Seed_Cleanup.sql

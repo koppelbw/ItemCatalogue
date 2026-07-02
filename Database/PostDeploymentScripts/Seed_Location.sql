@@ -5,7 +5,7 @@ SET IDENTITY_INSERT dbo.Location ON;
 MERGE INTO dbo.[Location] AS target
 USING (
     VALUES
-        (1, 'Apartment',    'My Apartment'),
+        (1, 'Apartment',    'My apartment - 2 bed / 1 bath, ~1,000 sq ft'),
         (2, 'Grandmas',     'Grandmas house'),
         (3, 'House',        'My house'),
         (4, 'Storage Unit', '#223'),
