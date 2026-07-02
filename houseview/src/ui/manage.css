@@ -1,0 +1,309 @@
+/* Management views: tabs, tables, modal forms. Sits on top of the frosted
+   index-page sheet, so it inherits that page's typography and background. */
+
+.manage-page .index-inner {
+  max-width: 1040px;
+}
+
+.manage-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1.2rem 0 1.6rem;
+}
+.manage-tabs button {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.86rem;
+  transition: background 0.15s ease;
+}
+.manage-tabs button:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.manage-tabs button.on {
+  background: #5b8def;
+  border-color: #5b8def;
+  color: #fff;
+}
+
+.manage-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+.manage-section-head h2 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.manage-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+.manage-table th,
+.manage-table td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  vertical-align: top;
+}
+.manage-table th {
+  font-weight: 600;
+  opacity: 0.7;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.manage-table tr.row-deleted td {
+  opacity: 0.5;
+}
+.row-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+.row-actions-muted {
+  opacity: 0.4;
+}
+.manage-add-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+/* buttons */
+.btn {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  font-size: 0.86rem;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn-small {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.78rem;
+  margin-left: 0.3rem;
+}
+.btn-primary {
+  background: #5b8def;
+  border-color: #5b8def;
+  color: #fff;
+}
+.btn-primary:hover {
+  background: #4a7ce0;
+}
+.btn-danger {
+  background: rgba(239, 111, 108, 0.16);
+  border-color: rgba(239, 111, 108, 0.5);
+  color: #ff9b98;
+}
+.btn-danger:hover {
+  background: rgba(239, 111, 108, 0.28);
+}
+.btn-ghost {
+  background: transparent;
+}
+
+/* modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 20, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 4vh 1rem;
+  z-index: 200;
+  overflow-y: auto;
+}
+.modal {
+  width: min(640px, 100%);
+  background: #1c2230;
+  color: #eef1f6;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.modal-close:hover {
+  opacity: 1;
+}
+.modal-body {
+  padding: 1.2rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0.9rem 1.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* forms */
+.entity-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.84rem;
+}
+.form-field > span {
+  opacity: 0.78;
+  font-size: 0.78rem;
+}
+.form-field-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+.form-field input[type='text'],
+.form-field input[type='number'],
+.form-field input[type='date'],
+.form-field textarea,
+.form-field select,
+.manage-add-row input,
+.manage-add-row select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: inherit;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  font-size: 0.86rem;
+}
+.form-field input:focus,
+.form-field textarea:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: #5b8def;
+}
+.form-error {
+  color: #ff9b98;
+  font-size: 0.76rem;
+  font-style: normal;
+}
+.form-hint {
+  font-size: 0.78rem;
+  opacity: 0.65;
+  margin: 0;
+}
+.form-banner {
+  background: rgba(239, 111, 108, 0.16);
+  border: 1px solid rgba(239, 111, 108, 0.5);
+  color: #ffb4b1;
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.84rem;
+  margin: 0.4rem 0;
+}
+.form-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.form-chip {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.form-chip.on {
+  background: #5b8def;
+  border-color: #5b8def;
+  color: #fff;
+}
+
+/* 3D detail-panel edit affordances */
+.panel-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* item edit extras: tags + history inside the item modal */
+.item-extras {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.event-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.event-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.82rem;
+  border-left: 2px solid rgba(91, 141, 239, 0.6);
+  padding-left: 0.6rem;
+}
+.event-list time {
+  opacity: 0.6;
+  font-size: 0.74rem;
+}
+.event-change,
+.event-notes {
+  opacity: 0.85;
+}

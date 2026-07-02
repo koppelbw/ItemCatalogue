@@ -1,18 +1,26 @@
 import {
-  CAR_ROOM_MATCHES,
   ROOM_DEFS,
   SITE_DEFS,
-  cabinSiteDef,
   extraRoomDef,
   levelY,
-  type CarSlot,
+  satelliteSlot,
   type FurnitureKind,
   type RoomDef,
   type SiteDef,
+  type SiteKind,
 } from './layout';
-import type { CatalogueData, ItemResponse, LocationResponse, PersonResponse, ResolvedItem, RoomResponse, Selection } from './types';
+import type {
+  CatalogueData,
+  ContainerResponse,
+  ItemResponse,
+  LocationResponse,
+  PersonResponse,
+  ResolvedItem,
+  RoomResponse,
+  Selection,
+} from './types';
 
-/** A database room placed somewhere inside the main house. */
+/** A database room placed onto a footprint inside the active dollhouse. */
 export interface PlacedRoom {
   room: RoomResponse;
   def: RoomDef;
@@ -22,49 +30,105 @@ export interface PlacedRoom {
   westInterior: boolean;
 }
 
-export interface CarRoom {
-  slot: CarSlot;
-  room: RoomResponse;
-  items: ResolvedItem[];
-}
-
 /** A database Location rendered as its own building in the neighbourhood. */
 export interface Site {
-  /** lowercased location name; 'house' and 'car' are special */
+  /** stable unique key, `loc-<id>` */
   key: string;
   label: string;
   def: SiteDef;
-  location: LocationResponse | null;
-  /** the room this location references - decides the interior furnishing */
+  location: LocationResponse;
+  /** the rooms that belong to this location */
+  rooms: RoomResponse[];
+  /** representative room used to furnish the satellite interior preview */
   featuredRoom: RoomResponse | null;
   items: ResolvedItem[];
 }
 
 export interface SceneModel {
-  /** all sites in dock order: house first, then locations by id, car last */
+  /** one building per Location, in id order */
   sites: Site[];
-  placedRooms: PlacedRoom[];
-  carRooms: CarRoom[];
-  /** items with no location at all */
-  unassigned: ResolvedItem[];
+  sitesByKey: Map<string, Site>;
   itemsById: Map<number, ResolvedItem>;
   roomsById: Map<number, RoomResponse>;
+  containersById: Map<number, ContainerResponse>;
+  /** resolved items grouped by the id of the room they ultimately live in */
+  itemsByRoom: Map<number, ResolvedItem[]>;
+  /** items that resolve to no room at all */
+  unassigned: ResolvedItem[];
   typeCounts: Map<number, number>;
   totalItems: number;
 }
 
-export function siteKeyForLocation(location: LocationResponse): string {
-  return location.name.trim().toLowerCase();
-}
-
-/** Furniture set for a room name, shared by house rooms and site interiors. */
+/** Furniture set for a room name, shared by dollhouse rooms and satellite interiors. */
 export function furnitureForRoom(room: RoomResponse | null): FurnitureKind {
   if (!room) return 'generic';
   return ROOM_DEFS.find((d) => d.match === room.name.trim().toLowerCase())?.furniture ?? 'generic';
 }
 
+/** Shell style for a Location: matched by name, otherwise a generic cabin. */
+function siteKindFor(name: string): SiteKind {
+  const known = SITE_DEFS[name.trim().toLowerCase()];
+  return known && known.kind !== 'house' ? known.kind : 'cabin';
+}
+
+/**
+ * Resolve the room an item ultimately lives in. An item sits either directly in
+ * a Room (roomId) or inside a Container (containerId); a container is owned by a
+ * Room or nests inside another container, so we walk parents until we reach the
+ * container that sits in a room. Returns the immediate container too (for the
+ * detail breadcrumb).
+ */
+function resolvePlacement(
+  item: ItemResponse,
+  roomsById: Map<number, RoomResponse>,
+  containersById: Map<number, ContainerResponse>,
+): { room: RoomResponse | null; container: ContainerResponse | null } {
+  if (item.roomId != null) {
+    return { room: roomsById.get(item.roomId) ?? null, container: null };
+  }
+  if (item.containerId != null) {
+    const container = containersById.get(item.containerId) ?? null;
+    let c: ContainerResponse | null = container;
+    const seen = new Set<number>();
+    while (c && c.roomId == null && c.parentContainerId != null && !seen.has(c.id)) {
+      seen.add(c.id);
+      c = containersById.get(c.parentContainerId) ?? null;
+    }
+    const room = c && c.roomId != null ? (roomsById.get(c.roomId) ?? null) : null;
+    return { room, container };
+  }
+  return { room: null, container: null };
+}
+
+/** Ordered trail of names from the location down to the item's immediate parent. */
+function buildBreadcrumb(
+  item: ItemResponse,
+  room: RoomResponse | null,
+  location: LocationResponse | null,
+  containersById: Map<number, ContainerResponse>,
+): string[] {
+  const parts: string[] = [];
+  if (location) parts.push(location.name);
+  if (room) parts.push(room.name);
+  if (item.containerId != null) {
+    const chain: string[] = [];
+    let c: ContainerResponse | null = containersById.get(item.containerId) ?? null;
+    const seen = new Set<number>();
+    while (c && !seen.has(c.id)) {
+      seen.add(c.id);
+      chain.push(c.name);
+      if (c.parentContainerId == null) break;
+      c = containersById.get(c.parentContainerId) ?? null;
+    }
+    chain.reverse();
+    parts.push(...chain);
+  }
+  return parts;
+}
+
 export function buildSceneModel(data: CatalogueData): SceneModel {
   const roomsById = new Map<number, RoomResponse>(data.rooms.map((r) => [r.id, r]));
+  const containersById = new Map<number, ContainerResponse>(data.containers.map((c) => [c.id, c]));
   const locationsById = new Map<number, LocationResponse>(data.locations.map((l) => [l.id, l]));
   const personsById = new Map<number, PersonResponse>(data.persons.map((p) => [p.id, p]));
 
@@ -72,96 +136,84 @@ export function buildSceneModel(data: CatalogueData): SceneModel {
     .filter((i) => !i.isDeleted)
     .sort((a, b) => a.id - b.id)
     .map((item) => {
-      const location = item.locationId != null ? (locationsById.get(item.locationId) ?? null) : null;
-      const room = location ? (roomsById.get(location.roomId) ?? null) : null;
+      const { room, container } = resolvePlacement(item, roomsById, containersById);
+      const location = room ? (locationsById.get(room.locationId) ?? null) : null;
       const owner = item.ownerId != null ? (personsById.get(item.ownerId) ?? null) : null;
-      return { item, location, room, owner };
+      const breadcrumb = buildBreadcrumb(item, room, location, containersById);
+      return { item, container, room, location, owner, breadcrumb };
     });
 
-  // --- sites: one per distinct location name; house and car are anchored ---
-  const houseSite: Site = { key: 'house', label: 'House', def: SITE_DEFS.house, location: null, featuredRoom: null, items: [] };
-  const sitesByKey = new Map<string, Site>([['house', houseSite]]);
-  const orderedSites: Site[] = [houseSite];
-  let carSite: Site | null = null;
-  let cabinIndex = 0;
-
-  for (const location of [...data.locations].sort((a, b) => a.id - b.id)) {
-    const key = siteKeyForLocation(location);
-    const featuredRoom = roomsById.get(location.roomId) ?? null;
-    if (key === 'house') {
-      if (!houseSite.location) {
-        houseSite.location = location;
-        houseSite.label = location.name;
-        houseSite.featuredRoom = featuredRoom;
-      }
-      continue;
-    }
-    if (key === 'car') {
-      if (!carSite) {
-        carSite = { key, label: location.name, def: SITE_DEFS.car, location, featuredRoom, items: [] };
-        sitesByKey.set(key, carSite);
-      }
-      continue;
-    }
-    if (!sitesByKey.has(key)) {
-      const def = SITE_DEFS[key] ?? cabinSiteDef(cabinIndex++);
-      const site: Site = { key, label: location.name, def, location, featuredRoom, items: [] };
-      sitesByKey.set(key, site);
-      orderedSites.push(site);
-    }
-  }
-
-  // the car renders whenever the database has car rooms, location or not
-  const hasCarRooms = data.rooms.some((r) => CAR_ROOM_MATCHES.some((m) => m === r.name.trim().toLowerCase()));
-  if (!carSite && hasCarRooms) {
-    carSite = { key: 'car', label: 'Car', def: SITE_DEFS.car, location: null, featuredRoom: null, items: [] };
-    sitesByKey.set('car', carSite);
-  }
-  if (carSite) orderedSites.push(carSite);
-
-  // --- route every item to its location's site ---
-  const houseItemsByRoom = new Map<number, ResolvedItem[]>();
-  const carItemsByRoom = new Map<number, ResolvedItem[]>();
+  // group items by the room they ultimately live in; the rest go on the pallet
+  const itemsByRoom = new Map<number, ResolvedItem[]>();
   const unassigned: ResolvedItem[] = [];
   for (const r of resolved) {
-    if (!r.location) {
+    if (r.room) {
+      const list = itemsByRoom.get(r.room.id) ?? [];
+      list.push(r);
+      itemsByRoom.set(r.room.id, list);
+    } else {
       unassigned.push(r);
-      continue;
-    }
-    const key = siteKeyForLocation(r.location);
-    const site = sitesByKey.get(key);
-    site?.items.push(r);
-    if (key === 'house') {
-      const list = houseItemsByRoom.get(r.location.roomId) ?? [];
-      list.push(r);
-      houseItemsByRoom.set(r.location.roomId, list);
-    } else if (key === 'car') {
-      const list = carItemsByRoom.get(r.location.roomId) ?? [];
-      list.push(r);
-      carItemsByRoom.set(r.location.roomId, list);
     }
   }
 
-  // --- the main house still models every non-car room ---
-  const placedRooms: PlacedRoom[] = [];
-  const carRooms: CarRoom[] = [];
+  // one building per Location, on a stable ring around the central dollhouse
+  const ordered = [...data.locations].sort((a, b) => a.id - b.id);
+  const sites: Site[] = [];
+  const sitesByKey = new Map<string, Site>();
+  ordered.forEach((location, index) => {
+    const rooms = data.rooms.filter((r) => r.locationId === location.id).sort((a, b) => a.id - b.id);
+    const def: SiteDef = { ...satelliteSlot(index, ordered.length), kind: siteKindFor(location.name) };
+    const items = resolved.filter((r) => r.location?.id === location.id);
+    const site: Site = {
+      key: `loc-${location.id}`,
+      label: location.name,
+      def,
+      location,
+      rooms,
+      featuredRoom: rooms[0] ?? null,
+      items,
+    };
+    sites.push(site);
+    sitesByKey.set(site.key, site);
+  });
+
+  const itemsById = new Map<number, ResolvedItem>(resolved.map((r) => [r.item.id, r]));
+  const typeCounts = new Map<number, number>();
+  for (const r of resolved) {
+    for (const t of r.item.itemTypes) {
+      typeCounts.set(t, (typeCounts.get(t) ?? 0) + 1);
+    }
+  }
+
+  return {
+    sites,
+    sitesByKey,
+    itemsById,
+    roomsById,
+    containersById,
+    itemsByRoom,
+    unassigned,
+    typeCounts,
+    totalItems: resolved.length,
+  };
+}
+
+/**
+ * Lay a Location's rooms onto the central dollhouse footprints: matched by name
+ * to a known footprint, otherwise auto-placed as an extra cabin. Walls that back
+ * onto another room on the same level become half walls so the camera sees in.
+ */
+export function placeRooms(rooms: RoomResponse[], itemsByRoom: Map<number, ResolvedItem[]>): PlacedRoom[] {
+  const placed: PlacedRoom[] = [];
   let extraIndex = 0;
-  for (const room of [...data.rooms].sort((a, b) => a.id - b.id)) {
+  for (const room of [...rooms].sort((a, b) => a.id - b.id)) {
     const key = room.name.trim().toLowerCase();
-    const carSlot = CAR_ROOM_MATCHES.find((m) => m === key);
-    if (carSlot) {
-      carRooms.push({ slot: carSlot, room, items: carItemsByRoom.get(room.id) ?? [] });
-      continue;
-    }
     const def = ROOM_DEFS.find((d) => d.match === key) ?? extraRoomDef(extraIndex++);
-    placedRooms.push({ room, def, items: houseItemsByRoom.get(room.id) ?? [], northInterior: false, westInterior: false });
+    placed.push({ room, def, items: itemsByRoom.get(room.id) ?? [], northInterior: false, westInterior: false });
   }
-
-  // Walls with another room directly behind them become half walls so every
-  // room stays visible from the default south-east camera.
-  for (const p of placedRooms) {
+  for (const p of placed) {
     const r = p.def.rect;
-    const neighbours = placedRooms.filter((o) => o !== p && o.def.level === p.def.level);
+    const neighbours = placed.filter((o) => o !== p && o.def.level === p.def.level);
     p.northInterior = neighbours.some(
       (o) =>
         Math.abs(o.def.rect.z + o.def.rect.d - r.z) < 0.05 &&
@@ -175,16 +227,7 @@ export function buildSceneModel(data: CatalogueData): SceneModel {
         o.def.rect.z + o.def.rect.d > r.z + 0.05,
     );
   }
-
-  const itemsById = new Map<number, ResolvedItem>(resolved.map((r) => [r.item.id, r]));
-  const typeCounts = new Map<number, number>();
-  for (const r of resolved) {
-    for (const t of r.item.itemTypes) {
-      typeCounts.set(t, (typeCounts.get(t) ?? 0) + 1);
-    }
-  }
-
-  return { sites: orderedSites, placedRooms, carRooms, unassigned, itemsById, roomsById, typeCounts, totalItems: resolved.length };
+  return placed;
 }
 
 /** World-space centre of a placed room, used as a camera fly-to target. */
@@ -196,14 +239,20 @@ export function roomCenter(placed: PlacedRoom): [number, number, number] {
 export function selectionEquals(a: Selection, b: Selection): boolean {
   if (a === null || b === null) return a === b;
   if (a.kind === 'item' && b.kind === 'item') return a.id === b.id;
+  if (a.kind === 'container' && b.kind === 'container') return a.id === b.id;
   if (a.kind === 'room' && b.kind === 'room') return a.roomId === b.roomId;
   if (a.kind === 'location' && b.kind === 'location') return a.id === b.id;
   return false;
 }
 
-export function formatPrice(price: number | null): string {
-  if (price == null) return '—';
-  return price.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+export function formatPrice(value: number | null): string {
+  if (value == null) return '—';
+  return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+}
+
+/** The figure shown for an item: present-day worth, falling back to purchase price. */
+export function itemValue(item: ItemResponse): number | null {
+  return item.currentValue ?? item.purchasePrice ?? null;
 }
 
 export function primaryType(item: ItemResponse): number {
