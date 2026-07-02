@@ -28,6 +28,7 @@ public abstract class ApiTestBase : IAsyncLifetime
         // multiple-FK-to-Room checks at statement end.
         await db.Database.ExecuteSqlRawAsync(
             """
+            DELETE FROM [Picture];
             DELETE FROM [ItemTag];
             DELETE FROM [CollectionItem];
             DELETE FROM [Item];

@@ -24,6 +24,7 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
     public DbSet<Collection> Collections { get; set; }
     public DbSet<ItemTag> ItemTags { get; set; }
     public DbSet<CollectionItem> CollectionItems { get; set; }
+    public DbSet<Picture> Pictures { get; set; }
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -465,6 +466,64 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
                 .IsUnique();
 
             builder.Property(c => c.RowVersion)
+                .IsRowVersion();
+        });
+
+        modelBuilder.Entity<Picture>(builder =>
+        {
+            builder.ToTable("Picture");
+
+            builder.HasKey(p => p.Id);
+
+            builder.Property(p => p.Id)
+                .ValueGeneratedOnAdd();
+
+            builder.Property(p => p.BlobName)
+                .IsRequired()
+                .HasMaxLength(400);
+
+            builder.Property(p => p.ContentType)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(p => p.SizeBytes)
+                .IsRequired();
+
+            builder.Property(p => p.OriginalFileName)
+                .HasMaxLength(255);
+
+            builder.Property(p => p.Caption)
+                .HasMaxLength(500);
+
+            builder.Property(p => p.IsPrimary)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            builder.Property(p => p.SortOrder)
+                .IsRequired()
+                .HasDefaultValue(0);
+
+            builder.HasOne(p => p.Location)
+                .WithMany()
+                .HasForeignKey(p => p.LocationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(p => p.Room)
+                .WithMany()
+                .HasForeignKey(p => p.RoomId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(p => p.Container)
+                .WithMany()
+                .HasForeignKey(p => p.ContainerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(p => p.Item)
+                .WithMany()
+                .HasForeignKey(p => p.ItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Property(p => p.RowVersion)
                 .IsRowVersion();
         });
 
