@@ -252,12 +252,23 @@ export function siteKindFor(name: string): SiteKind {
  * never reshuffles when the active Location changes — the active one's slot is
  * simply left empty (it is drawn as the central dollhouse instead). `kind` is a
  * placeholder; the model overrides it with a per-Location shell style.
+ *
+ * The isometric camera looks from the south-east, so anything north-west of
+ * the stage hides directly behind the dollhouse and anything south-east sits
+ * in front of it. The usual five-location neighbourhood uses hand-tuned angles
+ * that keep every slot clear of both zones; other counts fall back to an even
+ * spread. 0° is east, 90° is south.
  */
+const SLOT_ANGLES_5 = [-55, 10, 80, 150, 215].map((deg) => (deg * Math.PI) / 180);
+
 export function satelliteSlot(index: number, count: number): SiteDef {
   const [cx, cz] = STAGE_CENTER;
   const rx = 22;
-  const rz = 16;
-  const angle = -Math.PI / 2 + (index / Math.max(1, count)) * Math.PI * 2;
+  const rz = 18.5;
+  const angle =
+    count === SLOT_ANGLES_5.length
+      ? SLOT_ANGLES_5[index]
+      : -Math.PI / 2 + ((index + 0.55) / Math.max(1, count)) * Math.PI * 2;
   const ox = cx + Math.cos(angle) * rx - SITE_INTERIOR.w / 2;
   const oz = cz + Math.sin(angle) * rz - SITE_INTERIOR.d / 2;
   return {

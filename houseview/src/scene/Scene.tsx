@@ -14,6 +14,7 @@ import { HEADLESS } from '../headless';
 import { HOUSE_BASE, LEVEL_HEIGHT, levelY, itemSpots, type Rect } from '../layout';
 import { placedBounds, type PlacedRoom, type SceneModel } from '../model';
 import { ItemMarker } from './ItemMarker';
+import { NeighborhoodLife, TREE_SPOTS } from './Neighborhood';
 import { RoomBox } from './RoomBox';
 import { SiteBuilding } from './Sites';
 import { B, Blob, Cyl, Group } from './primitives';
@@ -148,12 +149,9 @@ function Lawn({ bounds, plinths, house }: { bounds: Rect | null; plinths: Rect[]
           </Group>
         </>
       )}
-      <Tree p={[-6.5, 0, -4.5]} h={1.6} r={1.1} />
-      <Tree p={[19.6, 0, 2.6]} h={1.3} r={0.85} />
-      <Tree p={[21, 0, 12.5]} h={1.7} r={1.05} />
-      <Tree p={[-7.5, 0, 14.5]} h={1.2} r={0.8} />
-      <Tree p={[-9.2, 0, 2.5]} h={1.4} r={0.95} />
-      <Tree p={[27, 0, 6]} h={1.5} r={1.0} />
+      {TREE_SPOTS.map((t, i) => (
+        <Tree key={i} p={t.p} h={t.h} r={t.r} />
+      ))}
       <Blob p={[cx - 3.4, 0.25, frontZ + 0.7]} r={0.45} c="#6fae72" scale={[1.3, 0.7, 1]} />
       <Blob p={[cx + 2.6, 0.25, frontZ + 0.5]} r={0.4} c="#549058" scale={[1.2, 0.65, 1]} />
     </group>
@@ -444,6 +442,7 @@ export function Scene({
         shadow-bias={-0.0004}
       />
       <Lawn bounds={groundBounds} plinths={plinths} house={activeIsHouse} />
+      <NeighborhoodLife />
       <HouseLevels
         placedRooms={placedRooms}
         floor={floor}

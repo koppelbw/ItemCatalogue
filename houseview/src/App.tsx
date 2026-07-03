@@ -124,7 +124,7 @@ export default function App() {
     goToSite(site);
   };
 
-  // Keyboard: up/down steps floors of the active dollhouse; left/right hops Locations.
+  // Keyboard: up/down steps floors of the active dollhouse.
   useEffect(() => {
     if (view !== 'house') return;
     const onKey = (e: KeyboardEvent) => {
@@ -135,21 +135,11 @@ export default function App() {
         if (next === undefined) return;
         e.preventDefault();
         changeFloor(next);
-        return;
-      }
-      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && model && model.sites.length > 0) {
-        e.preventDefault();
-        const keys = model.sites.map((s) => s.key);
-        const idx = Math.max(0, keys.indexOf(activeKey));
-        const nextIdx = e.key === 'ArrowRight' ? (idx + 1) % keys.length : (idx - 1 + keys.length) % keys.length;
-        const site = model.sites[nextIdx];
-        setSelection({ kind: 'location', id: site.location.id });
-        goToSite(site);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [floor, changeFloor, view, activeKey, model, goToSite, levels]);
+  }, [floor, changeFloor, view, levels]);
 
   // Fly to a placed room, switching the floor focus to its storey so it is
   // actually visible (a focused basement rises to the surface).

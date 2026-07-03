@@ -187,7 +187,6 @@ export function Hud({
             </button>
           ))}
         </div>
-        <span className="floor-hint dock-hint">← → keys</span>
       </nav>
     </div>
   );

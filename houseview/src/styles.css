@@ -452,18 +452,8 @@ body {
   background: rgba(255, 255, 255, 0.28);
 }
 
-.dock-hint {
-  align-self: center;
-  margin-left: 6px;
-  white-space: nowrap;
-}
-
-/* on narrow windows, drop the keyboard hint and caption chips so the pills get the room */
+/* on narrow windows, drop the caption chips so the pills get the room */
 @media (max-width: 720px) {
-  .dock-hint {
-    display: none;
-  }
-
   .dock-label {
     display: none;
   }

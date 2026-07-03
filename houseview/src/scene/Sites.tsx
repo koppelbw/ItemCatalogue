@@ -26,7 +26,7 @@ interface ShellPalette {
 }
 
 const PALETTES: Record<string, ShellPalette> = {
-  apartment: { wall: '#dfe7ee', floor: '#d9c2a0', accent: '#3ec6b8' },
+  apartment: { wall: '#ece4d4', floor: '#d9c2a0', accent: '#d9705c' },
   cottage: { wall: '#f3e6cf', floor: '#d9c2a0', accent: '#ef6f6c' },
   townhouse: { wall: '#9d5f4c', floor: '#d9c2a0', accent: '#2e6f63' },
   storage: { wall: '#c9cdd2', floor: '#b6bac0', accent: '#e8893c' },
@@ -146,28 +146,29 @@ function SiteBase({ site, index, active, onSelectSite, palette, wallH, body, chi
 }
 
 /**
- * Small modern apartment block: two storeys of windows with railed balconies,
- * a teal stair tower over the entrance, and a set-back penthouse with a
- * glowing clerestory on the flat roof.
+ * Small modern apartment block in warm tones: two storeys of windows with
+ * mustard-fronted balconies, a coral stair tower over the entrance, and a
+ * set-back penthouse with a glowing clerestory on the flat roof.
  */
 function ApartmentShell({ wallH }: { wallH: number }) {
   const { w, d } = SITE_INTERIOR;
-  const teal = '#3ec6b8';
-  const trim = '#f4f7f9';
+  const coral = '#d9705c';
+  const mustard = '#e9b44c';
+  const trim = '#f7f4ee';
   return (
     <>
       {/* flat roof slab + parapet lip */}
-      <B p={[w / 2, wallH + 0.05, d / 2]} s={[w + 0.3, 0.12, d + 0.3]} c="#aebccb" />
-      <B p={[w / 2, wallH + 0.15, d / 2]} s={[w + 0.44, 0.1, d + 0.44]} c="#93a4b5" />
+      <B p={[w / 2, wallH + 0.05, d / 2]} s={[w + 0.3, 0.12, d + 0.3]} c="#b6afa2" />
+      <B p={[w / 2, wallH + 0.15, d / 2]} s={[w + 0.44, 0.1, d + 0.44]} c="#9d968a" />
       {/* set-back penthouse with a glowing clerestory + rooftop AC unit */}
-      <B p={[w / 2, wallH + 0.9, 1.0]} s={[w - 0.7, 1.4, 1.9]} c="#cdd9e4" r={0.8} />
+      <B p={[w / 2, wallH + 0.9, 1.0]} s={[w - 0.7, 1.4, 1.9]} c="#ded4c3" r={0.8} />
       <B p={[w / 2, wallH + 1.0, 1.97]} s={[w - 1.4, 0.55, 0.06]} c="#2e3338" emissive="#ffe9a3" emissiveIntensity={0.55} />
-      <B p={[w / 2, wallH + 1.66, 1.0]} s={[w - 0.5, 0.1, 2.1]} c="#93a4b5" />
+      <B p={[w / 2, wallH + 1.66, 1.0]} s={[w - 0.5, 0.1, 2.1]} c="#9d968a" />
       <B p={[w - 1.0, wallH + 1.95, 0.9]} s={[0.55, 0.4, 0.55]} c="#9aa1a8" r={0.5} />
-      {/* teal stair tower with the entrance, canopy and stacked landing windows */}
-      <B p={[0.9, wallH / 2 + 0.1, d + 0.07]} s={[1.15, wallH + 0.2, 0.14]} c={teal} />
+      {/* coral stair tower with the entrance, canopy and stacked landing windows */}
+      <B p={[0.9, wallH / 2 + 0.2, d + 0.07]} s={[1.15, wallH + 0.4, 0.14]} c={coral} />
       <B p={[0.9, 0.62, d + 0.16]} s={[0.8, 1.24, 0.08]} c="#37474f" r={0.6} />
-      <B p={[0.9, 1.52, d + 0.35]} s={[1.25, 0.07, 0.55]} c={trim} />
+      <B p={[0.9, 1.52, d + 0.35]} s={[1.25, 0.07, 0.55]} c={mustard} />
       <B p={[0.9, 2.05, d + 0.16]} s={[0.55, 0.38, 0.05]} c="#2e3338" emissive="#ffe9a3" emissiveIntensity={0.5} />
       <B p={[0.9, 2.85, d + 0.16]} s={[0.55, 0.38, 0.05]} c="#2e3338" emissive="#ffe9a3" emissiveIntensity={0.5} />
       {/* two storeys of south windows; the upper pair opens onto balconies */}
@@ -178,18 +179,21 @@ function ApartmentShell({ wallH }: { wallH: number }) {
       {[2.55, 3.75].map((x) => (
         <Group key={`balc${x}`} p={[x, 0, 0]}>
           <B p={[0, 2.02, d + 0.28]} s={[1.0, 0.08, 0.62]} c={trim} />
-          <B p={[0, 2.22, d + 0.56]} s={[1.0, 0.34, 0.06]} c={teal} />
+          <B p={[0, 2.22, d + 0.56]} s={[1.0, 0.34, 0.06]} c={mustard} />
           <B p={[-0.47, 2.22, d + 0.28]} s={[0.06, 0.34, 0.56]} c={trim} />
           <B p={[0.47, 2.22, d + 0.28]} s={[0.06, 0.34, 0.56]} c={trim} />
         </Group>
       ))}
+      {/* mustard awnings over the ground-floor windows */}
+      <B p={[2.55, 1.58, d + 0.2]} s={[0.98, 0.06, 0.44]} c={mustard} />
+      <B p={[3.75, 1.58, d + 0.2]} s={[0.98, 0.06, 0.44]} c={mustard} />
       {/* east face window grid */}
       <WindowPane p={[w, 1.15, 1.3]} facing="east" w={0.72} h={0.62} />
       <WindowPane p={[w, 1.15, 2.9]} facing="east" w={0.72} h={0.62} />
       <WindowPane p={[w, 2.45, 1.3]} facing="east" w={0.72} h={0.62} />
       <WindowPane p={[w, 2.45, 2.9]} facing="east" w={0.72} h={0.62} />
       {/* concrete plinth skirt */}
-      <B p={[w / 2, 0.19, d / 2]} s={[w + 0.12, 0.38, d + 0.12]} c="#a7b4c1" />
+      <B p={[w / 2, 0.19, d / 2]} s={[w + 0.12, 0.38, d + 0.12]} c="#a99f8f" />
     </>
   );
 }
