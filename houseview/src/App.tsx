@@ -6,13 +6,13 @@ import { OVERVIEW_FOCUS, Scene, type Focus } from './scene/Scene';
 import { AboutPage } from './ui/AboutPage';
 import { DetailPanel } from './ui/DetailPanel';
 import { DeleteItemDialog, ItemForm, type RefData } from './ui/forms/EntityForms';
+import { Grain } from './ui/Grain';
 import { Hud } from './ui/Hud';
 import { IndexPage } from './ui/IndexPage';
 import { ManagePage } from './ui/ManagePage';
 import { Splash } from './ui/Splash';
+import type { View } from './ui/TopNav';
 import type { ItemResponse, Selection } from './types';
-
-type View = 'house' | 'index' | 'about' | 'manage';
 
 const viewFromHash = (): View =>
   window.location.hash === '#/index'
@@ -205,7 +205,7 @@ export default function App() {
 
   const resetView = () => {
     setSelection(null);
-    flyTo(OVERVIEW_FOCUS.target, 0.7); // pull back to take in the whole neighbourhood
+    flyTo(OVERVIEW_FOCUS.target, 0.7); // pull back to take in the whole neighborhood
   };
 
   const clearSelection = () => setSelection(null);
@@ -252,9 +252,7 @@ export default function App() {
                 onFlyToRoom={selectRoom}
                 onSite={selectSite}
                 onResetView={resetView}
-                onBrowse={() => navigate('index')}
-                onAbout={() => navigate('about')}
-                onManage={() => navigate('manage')}
+                onNavigate={navigate}
               />
               <DetailPanel
                 model={model}
@@ -274,18 +272,10 @@ export default function App() {
             </>
           )}
           {view === 'index' && (
-            <IndexPage
-              model={model}
-              live={data.live}
-              onBack={() => navigate('house')}
-              onAbout={() => navigate('about')}
-              onViewItem={viewItemInHouse}
-            />
+            <IndexPage model={model} live={data.live} onNavigate={navigate} onViewItem={viewItemInHouse} />
           )}
-          {view === 'about' && (
-            <AboutPage model={model} live={data.live} onBack={() => navigate('house')} onIndex={() => navigate('index')} />
-          )}
-          {view === 'manage' && <ManagePage onBack={() => navigate('house')} />}
+          {view === 'about' && <AboutPage model={model} live={data.live} onNavigate={navigate} />}
+          {view === 'manage' && <ManagePage onNavigate={navigate} />}
           {itemForm && (
             <ItemForm
               initial={itemForm.mode === 'edit' ? itemForm.item : undefined}
@@ -299,6 +289,7 @@ export default function App() {
         </>
       )}
       <Splash ready={model !== null} />
+      <Grain />
     </div>
   );
 }

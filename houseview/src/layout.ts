@@ -215,7 +215,7 @@ export function fallbackRect(index: number): Rect {
 }
 
 // ---------------------------------------------------------------------------
-// Sites: every database Location is its own building in the neighbourhood.
+// Sites: every database Location is its own building in the neighborhood.
 // The active one is drawn as the central cutaway dollhouse from its measured
 // rooms; the rest stand as small satellite buildings around the stage.
 // ---------------------------------------------------------------------------
@@ -248,14 +248,14 @@ export function siteKindFor(name: string): SiteKind {
 /**
  * A stable satellite slot on the lawn for a non-active Location, placed on an
  * ellipse around the central dollhouse so buildings never overlap the stage or
- * each other. Position depends only on (index, count) so the neighbourhood
+ * each other. Position depends only on (index, count) so the neighborhood
  * never reshuffles when the active Location changes — the active one's slot is
  * simply left empty (it is drawn as the central dollhouse instead). `kind` is a
  * placeholder; the model overrides it with a per-Location shell style.
  *
  * The isometric camera looks from the south-east, so anything north-west of
  * the stage hides directly behind the dollhouse and anything south-east sits
- * in front of it. The usual five-location neighbourhood uses hand-tuned angles
+ * in front of it. The usual five-location neighborhood uses hand-tuned angles
  * that keep every slot clear of both zones; other counts fall back to an even
  * spread. 0° is east, 90° is south.
  */

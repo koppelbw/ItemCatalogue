@@ -6,7 +6,7 @@ import { SITE_INTERIOR } from '../layout';
 import type { Site } from '../model';
 import { B, Blob, Cyl, Group, lighten } from './primitives';
 
-// Every database Location is its own little diorama in the neighbourhood.
+// Every database Location is its own little diorama in the neighborhood.
 // Non-active locations stand as fully closed buildings - four walls, a roof,
 // a front door and lit windows - so only the central dollhouse ever shows its
 // interior. Each building shares the same bones (pad, body, nameplate) and

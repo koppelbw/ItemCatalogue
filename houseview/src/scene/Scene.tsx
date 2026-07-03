@@ -124,7 +124,7 @@ function Lawn({ bounds, plinths, house }: { bounds: Rect | null; plinths: Rect[]
   const frontZ = spanning.length ? Math.max(...spanning.map((r) => r.z + r.d + PLINTH_MARGIN)) : b.z + b.d;
   return (
     <group>
-      {/* grass disc - big enough for the whole neighbourhood */}
+      {/* grass disc - big enough for the whole neighborhood */}
       <mesh position={[5.5, -0.16, 5]} receiveShadow>
         <cylinderGeometry args={[31, 32, 0.32, 64]} />
         <meshStandardMaterial color="#9cc480" roughness={1} />

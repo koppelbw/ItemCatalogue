@@ -275,7 +275,17 @@ export function ItemForm({
 
 // ---------------------------------------------------------------------------
 
-export function FloorForm({ initial, lookups, onClose }: { initial?: FloorResponse; lookups: RefData; onClose: () => void }) {
+export function FloorForm({
+  initial,
+  lookups,
+  onClose,
+  presetLocationId = null,
+}: {
+  initial?: FloorResponse;
+  lookups: RefData;
+  onClose: () => void;
+  presetLocationId?: number | null;
+}) {
   const [banner, setBanner] = useState<string | null>(null);
   const create = useCreate<CreateFloorRequest, FloorResponse>('floors');
   const update = useUpdate<UpdateFloorRequest, FloorResponse>('floors');
@@ -294,7 +304,7 @@ export function FloorForm({ initial, lookups, onClose }: { initial?: FloorRespon
           elevationInches: initial.elevationInches,
           ceilingHeightInches: initial.ceilingHeightInches,
         }
-      : { name: '', locationId: 0, levelIndex: 0, elevationInches: null, ceilingHeightInches: null },
+      : { name: '', locationId: presetLocationId ?? 0, levelIndex: 0, elevationInches: null, ceilingHeightInches: null },
   });
   const { locationOptions } = useLookupOptions(lookups);
 
@@ -326,7 +336,17 @@ export function FloorForm({ initial, lookups, onClose }: { initial?: FloorRespon
 
 // ---------------------------------------------------------------------------
 
-export function RoomForm({ initial, lookups, onClose }: { initial?: RoomResponse; lookups: RefData; onClose: () => void }) {
+export function RoomForm({
+  initial,
+  lookups,
+  onClose,
+  presetFloorId = null,
+}: {
+  initial?: RoomResponse;
+  lookups: RefData;
+  onClose: () => void;
+  presetFloorId?: number | null;
+}) {
   const [banner, setBanner] = useState<string | null>(null);
   const create = useCreate<CreateRoomRequest, RoomResponse>('rooms');
   const update = useUpdate<UpdateRoomRequest, RoomResponse>('rooms');
@@ -356,7 +376,7 @@ export function RoomForm({ initial, lookups, onClose }: { initial?: RoomResponse
       : {
           name: '',
           description: null,
-          floorId: 0,
+          floorId: presetFloorId ?? 0,
           roomType: null,
           originXInches: null,
           originYInches: null,
@@ -451,7 +471,19 @@ export function LocationForm({ initial, onClose }: { initial?: LocationResponse;
 
 // ---------------------------------------------------------------------------
 
-export function ContainerForm({ initial, lookups, onClose }: { initial?: ContainerResponse; lookups: RefData; onClose: () => void }) {
+export function ContainerForm({
+  initial,
+  lookups,
+  onClose,
+  presetRoomId = null,
+  presetParentContainerId = null,
+}: {
+  initial?: ContainerResponse;
+  lookups: RefData;
+  onClose: () => void;
+  presetRoomId?: number | null;
+  presetParentContainerId?: number | null;
+}) {
   const [banner, setBanner] = useState<string | null>(null);
   const create = useCreate<CreateContainerRequest, ContainerResponse>('containers');
   const update = useUpdate<UpdateContainerRequest, ContainerResponse>('containers');
@@ -482,8 +514,8 @@ export function ContainerForm({ initial, lookups, onClose }: { initial?: Contain
       : {
           name: '',
           description: null,
-          roomId: null,
-          parentContainerId: null,
+          roomId: presetRoomId,
+          parentContainerId: presetParentContainerId,
           containerType: null,
           positionXInches: null,
           positionYInches: null,
@@ -548,7 +580,17 @@ export function ContainerForm({ initial, lookups, onClose }: { initial?: Contain
 
 // ---------------------------------------------------------------------------
 
-export function DoorForm({ initial, lookups, onClose }: { initial?: DoorResponse; lookups: RefData; onClose: () => void }) {
+export function DoorForm({
+  initial,
+  lookups,
+  onClose,
+  presetFromRoomId = null,
+}: {
+  initial?: DoorResponse;
+  lookups: RefData;
+  onClose: () => void;
+  presetFromRoomId?: number | null;
+}) {
   const [banner, setBanner] = useState<string | null>(null);
   const create = useCreate<CreateDoorRequest, DoorResponse>('doors');
   const update = useUpdate<UpdateDoorRequest, DoorResponse>('doors');
@@ -575,7 +617,7 @@ export function DoorForm({ initial, lookups, onClose }: { initial?: DoorResponse
       : {
           name: null,
           kind: 0,
-          fromRoomId: 0,
+          fromRoomId: presetFromRoomId ?? 0,
           toRoomId: null,
           wall: 0,
           offsetInches: 0,
@@ -626,7 +668,17 @@ export function DoorForm({ initial, lookups, onClose }: { initial?: DoorResponse
 
 // ---------------------------------------------------------------------------
 
-export function StairForm({ initial, lookups, onClose }: { initial?: StairResponse; lookups: RefData; onClose: () => void }) {
+export function StairForm({
+  initial,
+  lookups,
+  onClose,
+  presetFromRoomId = null,
+}: {
+  initial?: StairResponse;
+  lookups: RefData;
+  onClose: () => void;
+  presetFromRoomId?: number | null;
+}) {
   const [banner, setBanner] = useState<string | null>(null);
   const create = useCreate<CreateStairRequest, StairResponse>('stairs');
   const update = useUpdate<UpdateStairRequest, StairResponse>('stairs');
@@ -653,7 +705,7 @@ export function StairForm({ initial, lookups, onClose }: { initial?: StairRespon
         }
       : {
           name: null,
-          fromRoomId: 0,
+          fromRoomId: presetFromRoomId ?? 0,
           toRoomId: null,
           shape: 0,
           positionXInches: null,

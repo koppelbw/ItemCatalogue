@@ -97,7 +97,7 @@ export interface PlacedRoom {
   westInterior: boolean;
 }
 
-/** A database Location rendered as its own building in the neighbourhood. */
+/** A database Location rendered as its own building in the neighborhood. */
 export interface Site {
   /** stable unique key, `loc-<id>` */
   key: string;

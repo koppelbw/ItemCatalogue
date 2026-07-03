@@ -37,6 +37,16 @@
       "port": 5173
     },
     {
+      "name": "houseview-proxy",
+      "runtimeExecutable": "cmd.exe",
+      "runtimeArgs": [
+        "/c",
+        "set VITE_API_BASE_URL=&& C:\\Users\\koppe\\AppData\\Local\\node-portable\\node-v22.17.0-win-x64\\node.exe houseview/node_modules/vite/bin/vite.js houseview --strictPort"
+      ],
+      "autoPort": true,
+      "port": 5173
+    },
+    {
       "name": "portfolio",
       "runtimeExecutable": "C:\\Users\\koppe\\AppData\\Local\\node-portable\\node-v22.17.0-win-x64\\node.exe",
       "runtimeArgs": [

@@ -1,6 +1,7 @@
 import gsap from 'gsap';
 import { useEffect, useRef } from 'react';
 import type { SceneModel } from '../model';
+import { TopNav, type View } from './TopNav';
 
 // "About" - the story of the application: why it exists, how the backend is
 // built, and how this UI came to be. Content mirrors the solution README.
@@ -8,8 +9,7 @@ import type { SceneModel } from '../model';
 interface AboutPageProps {
   model: SceneModel;
   live: boolean;
-  onBack: () => void;
-  onIndex: () => void;
+  onNavigate: (view: View) => void;
 }
 
 const STACK = [
@@ -86,7 +86,7 @@ const DECISIONS: { title: string; body: string }[] = [
   },
 ];
 
-export function AboutPage({ model, live, onBack, onIndex }: AboutPageProps) {
+export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -102,23 +102,21 @@ export function AboutPage({ model, live, onBack, onIndex }: AboutPageProps) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onBack();
+      if (e.key === 'Escape') onNavigate('house');
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onBack]);
+  }, [onNavigate]);
 
   return (
     <div className="index-page about-page" ref={rootRef}>
       <div className="index-inner">
         <header className="index-header index-reveal">
-          <button className="index-back" onClick={onBack}>
-            ← Back to the neighbourhood
+          <button className="page-brand" onClick={() => onNavigate('house')}>
+            Habitat
           </button>
           <div className="about-header-right">
-            <button className="index-back" onClick={onIndex}>
-              The Index →
-            </button>
+            <TopNav current="about" onNavigate={onNavigate} />
             <span className={`data-badge ${live ? 'live' : 'demo'}`}>{live ? 'live data' : 'demo data'}</span>
           </div>
         </header>
@@ -226,7 +224,7 @@ export function AboutPage({ model, live, onBack, onIndex }: AboutPageProps) {
         <section className="about-section index-reveal">
           <h2>How this UI was made</h2>
           <p>
-            The front-end you are looking at — the isometric 3D neighbourhood, the searchable Index, and this page — was
+            The front-end you are looking at — the isometric 3D neighborhood, the searchable Index, and this page — was
             designed and built by <strong>Claude Fable&nbsp;5</strong>, Anthropic&rsquo;s frontier model, working inside{' '}
             <strong>Claude Code</strong>: from the first <code>npm install</code> through the camera choreography, the
             Sims-style cutaway dollhouse, half-wall sightline logic, ghost floors, and every GSAP transition, verified
@@ -234,7 +232,7 @@ export function AboutPage({ model, live, onBack, onIndex }: AboutPageProps) {
           </p>
           <p>
             It is a Vite + React + TypeScript app: <strong>Three.js</strong> via <code>@react-three/fiber</code> renders
-            the neighbourhood (every database Location is its own building, furnished from primitive boxes, cylinders and
+            the neighborhood (every database Location is its own building, furnished from primitive boxes, cylinders and
             spheres — no 3D asset files), <strong>GSAP</strong> drives the cinematics, and a dev-server proxy talks to the
             API — falling back to a bundled mirror of the seed data when the backend is asleep, which is why this page
             works either way.
@@ -249,10 +247,10 @@ export function AboutPage({ model, live, onBack, onIndex }: AboutPageProps) {
         </section>
 
         <footer className="index-footer about-footer">
-          <button className="index-back" onClick={onBack}>
-            ← Explore the neighbourhood
+          <button className="index-back" onClick={() => onNavigate('house')}>
+            ← Explore the neighborhood
           </button>
-          <button className="index-back" onClick={onIndex}>
+          <button className="index-back" onClick={() => onNavigate('index')}>
             Browse the Index →
           </button>
         </footer>

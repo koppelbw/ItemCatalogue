@@ -450,7 +450,7 @@ export const ITEM_EVENT_TYPE_LABELS: Record<string, string> = {
   SoftDeleted: 'Deleted',
 };
 
-export const ITEM_TYPE_COLORS = ['#5b8def', '#3ec6b8', '#f2a93b', '#a78bdb', '#ef6f6c'] as const;
+export const ITEM_TYPE_COLORS = ['#5b8def', '#3ec6b8', '#f2a93b', '#a78bdb', '#e56a44'] as const;
 
 // --- assembled client-side shapes ------------------------------------------
 

@@ -21,6 +21,9 @@ import {
   type TagResponse,
 } from '../types';
 import { CollectionMembers } from './CollectionMembers';
+import { Explorer } from './Explorer';
+import { Paginated } from './Paginated';
+import { TopNav, type View } from './TopNav';
 import {
   CollectionForm,
   ContainerForm,
@@ -37,9 +40,10 @@ import {
 } from './forms/EntityForms';
 import './manage.css';
 
-type Tab = 'items' | 'locations' | 'floors' | 'rooms' | 'containers' | 'doors' | 'stairs' | 'persons' | 'tags' | 'collections';
+type Tab = 'explore' | 'items' | 'locations' | 'floors' | 'rooms' | 'containers' | 'doors' | 'stairs' | 'persons' | 'tags' | 'collections';
 
 const TABS: [Tab, string][] = [
+  ['explore', 'Explore'],
   ['items', 'Items'],
   ['locations', 'Locations'],
   ['floors', 'Floors'],
@@ -52,21 +56,22 @@ const TABS: [Tab, string][] = [
   ['collections', 'Collections'],
 ];
 
-type FormState =
-  | { kind: 'item'; initial?: ItemResponse }
+// exported for the Explorer, whose "+ Add" buttons pre-fill the parent entity
+export type FormState =
+  | { kind: 'item'; initial?: ItemResponse; presetRoomId?: number; presetContainerId?: number }
   | { kind: 'location'; initial?: LocationResponse }
-  | { kind: 'floor'; initial?: FloorResponse }
-  | { kind: 'room'; initial?: RoomResponse }
-  | { kind: 'container'; initial?: ContainerResponse }
-  | { kind: 'door'; initial?: DoorResponse }
-  | { kind: 'stair'; initial?: StairResponse }
+  | { kind: 'floor'; initial?: FloorResponse; presetLocationId?: number }
+  | { kind: 'room'; initial?: RoomResponse; presetFloorId?: number }
+  | { kind: 'container'; initial?: ContainerResponse; presetRoomId?: number; presetParentContainerId?: number }
+  | { kind: 'door'; initial?: DoorResponse; presetFromRoomId?: number }
+  | { kind: 'stair'; initial?: StairResponse; presetFromRoomId?: number }
   | { kind: 'person'; initial?: PersonResponse }
   | { kind: 'tag'; initial?: TagResponse }
   | { kind: 'collection'; initial?: CollectionResponse }
   | null;
 
 interface ManagePageProps {
-  onBack: () => void;
+  onNavigate: (view: View) => void;
 }
 
 /** "12 × 10 in" style label, or an em dash when unmeasured */
@@ -75,12 +80,12 @@ function sizeCell(w: number | null, d: number | null): string {
   return `${w}″ × ${d}″`;
 }
 
-export function ManagePage({ onBack }: ManagePageProps) {
+export function ManagePage({ onNavigate }: ManagePageProps) {
   const { data } = useCatalogue();
   const tagsQuery = useTags();
   const collectionsQuery = useCollections();
 
-  const [tab, setTab] = useState<Tab>('items');
+  const [tab, setTab] = useState<Tab>('explore');
   const [form, setForm] = useState<FormState>(null);
   const [deleteItem, setDeleteItem] = useState<ItemResponse | null>(null);
   const [members, setMembers] = useState<CollectionResponse | null>(null);
@@ -162,10 +167,13 @@ export function ManagePage({ onBack }: ManagePageProps) {
     <div className="index-page manage-page">
       <div className="index-inner">
         <header className="index-header">
-          <button className="index-back" onClick={onBack}>
-            ← Back to the neighbourhood
+          <button className="page-brand" onClick={() => onNavigate('house')}>
+            Habitat
           </button>
-          <span className={`data-badge ${live ? 'live' : 'demo'}`}>{live ? 'live data' : 'demo data'}</span>
+          <div className="about-header-right">
+            <TopNav current="manage" onNavigate={onNavigate} />
+            <span className={`data-badge ${live ? 'live' : 'demo'}`}>{live ? 'live data' : 'demo data'}</span>
+          </div>
         </header>
 
         <h1 className="index-title">Manage</h1>
@@ -182,14 +190,18 @@ export function ManagePage({ onBack }: ManagePageProps) {
           ))}
         </nav>
 
+        {tab === 'explore' && <Explorer data={data} live={live} openForm={setForm} deleteItem={setDeleteItem} />}
+
         {tab === 'items' && (
           <Section title="Items" onAdd={live ? () => setForm({ kind: 'item' }) : undefined}>
+            <Paginated rows={data.items}>
+              {(rows) => (
             <table className="manage-table">
               <thead>
                 <tr><th>#</th><th>Name</th><th>Types</th><th>Value</th><th>Where</th><th>Owner</th><th></th></tr>
               </thead>
               <tbody>
-                {data.items.map((it) => (
+                {rows.map((it) => (
                   <tr key={it.id} className={it.isDeleted ? 'row-deleted' : ''}>
                     <td>{it.id}</td>
                     <td>{it.name}{it.isDeleted && <span className="chip chip-deleted">deleted</span>}</td>
@@ -209,15 +221,19 @@ export function ManagePage({ onBack }: ManagePageProps) {
                 ))}
               </tbody>
             </table>
+              )}
+            </Paginated>
           </Section>
         )}
 
         {tab === 'locations' && (
           <Section title="Locations" onAdd={live ? () => setForm({ kind: 'location' }) : undefined}>
+            <Paginated rows={data.locations}>
+              {(rows) => (
             <table className="manage-table">
               <thead><tr><th>#</th><th>Name</th><th>Description</th><th>Floors</th><th>Rooms</th><th></th></tr></thead>
               <tbody>
-                {data.locations.map((l) => {
+                {rows.map((l) => {
                   const floorIds = new Set(l.floors.map((f) => f.id));
                   const roomCount = data.rooms.filter((r) => floorIds.has(r.floorId)).length;
                   return (
@@ -235,15 +251,19 @@ export function ManagePage({ onBack }: ManagePageProps) {
                 })}
               </tbody>
             </table>
+              )}
+            </Paginated>
           </Section>
         )}
 
         {tab === 'floors' && (
           <Section title="Floors" onAdd={live ? () => setForm({ kind: 'floor' }) : undefined}>
+            <Paginated rows={data.floors}>
+              {(rows) => (
             <table className="manage-table">
               <thead><tr><th>#</th><th>Name</th><th>Location</th><th>Level</th><th>Ceiling</th><th>Rooms</th><th></th></tr></thead>
               <tbody>
-                {data.floors.map((f) => (
+                {rows.map((f) => (
                   <tr key={f.id}>
                     <td>{f.id}</td>
                     <td>{f.name}</td>
@@ -258,15 +278,19 @@ export function ManagePage({ onBack }: ManagePageProps) {
                 ))}
               </tbody>
             </table>
+              )}
+            </Paginated>
           </Section>
         )}
 
         {tab === 'rooms' && (
           <Section title="Rooms" onAdd={live ? () => setForm({ kind: 'room' }) : undefined}>
+            <Paginated rows={data.rooms}>
+              {(rows) => (
             <table className="manage-table">
               <thead><tr><th>#</th><th>Name</th><th>Floor</th><th>Type</th><th>Footprint</th><th></th></tr></thead>
               <tbody>
-                {data.rooms.map((r) => (
+                {rows.map((r) => (
                   <tr key={r.id}>
                     <td>{r.id}</td>
                     <td>{r.name}</td>
@@ -280,15 +304,19 @@ export function ManagePage({ onBack }: ManagePageProps) {
                 ))}
               </tbody>
             </table>
+              )}
+            </Paginated>
           </Section>
         )}
 
         {tab === 'containers' && (
           <Section title="Containers" onAdd={live ? () => setForm({ kind: 'container' }) : undefined}>
+            <Paginated rows={data.containers}>
+              {(rows) => (
             <table className="manage-table">
               <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Sits in</th><th>Size</th><th></th></tr></thead>
               <tbody>
-                {data.containers.map((c) => (
+                {rows.map((c) => (
                   <tr key={c.id}>
                     <td>{c.id}</td>
                     <td>{c.name}</td>
@@ -308,15 +336,19 @@ export function ManagePage({ onBack }: ManagePageProps) {
                 ))}
               </tbody>
             </table>
+              )}
+            </Paginated>
           </Section>
         )}
 
         {tab === 'doors' && (
           <Section title="Doors" onAdd={live ? () => setForm({ kind: 'door' }) : undefined}>
+            <Paginated rows={data.doors}>
+              {(rows) => (
             <table className="manage-table">
               <thead><tr><th>#</th><th>Name</th><th>Kind</th><th>From</th><th>To</th><th>Wall</th><th>Opening</th><th></th></tr></thead>
               <tbody>
-                {data.doors.map((d) => (
+                {rows.map((d) => (
                   <tr key={d.id}>
                     <td>{d.id}</td>
                     <td>{d.name ?? '—'}</td>
@@ -332,15 +364,19 @@ export function ManagePage({ onBack }: ManagePageProps) {
                 ))}
               </tbody>
             </table>
+              )}
+            </Paginated>
           </Section>
         )}
 
         {tab === 'stairs' && (
           <Section title="Stairs" onAdd={live ? () => setForm({ kind: 'stair' }) : undefined}>
+            <Paginated rows={data.stairs}>
+              {(rows) => (
             <table className="manage-table">
               <thead><tr><th>#</th><th>Name</th><th>Shape</th><th>From (lower)</th><th>To (upper)</th><th>Steps</th><th></th></tr></thead>
               <tbody>
-                {data.stairs.map((s) => (
+                {rows.map((s) => (
                   <tr key={s.id}>
                     <td>{s.id}</td>
                     <td>{s.name ?? '—'}</td>
@@ -355,15 +391,19 @@ export function ManagePage({ onBack }: ManagePageProps) {
                 ))}
               </tbody>
             </table>
+              )}
+            </Paginated>
           </Section>
         )}
 
         {tab === 'persons' && (
           <Section title="People" onAdd={live ? () => setForm({ kind: 'person' }) : undefined}>
+            <Paginated rows={data.persons}>
+              {(rows) => (
             <table className="manage-table">
               <thead><tr><th>#</th><th>Name</th><th></th></tr></thead>
               <tbody>
-                {data.persons.map((p) => (
+                {rows.map((p) => (
                   <tr key={p.id}>
                     <td>{p.id}</td>
                     <td>{p.name}</td>
@@ -374,15 +414,19 @@ export function ManagePage({ onBack }: ManagePageProps) {
                 ))}
               </tbody>
             </table>
+              )}
+            </Paginated>
           </Section>
         )}
 
         {tab === 'tags' && (
           <Section title="Tags" onAdd={live ? () => setForm({ kind: 'tag' }) : undefined}>
+            <Paginated rows={tagsQuery.data ?? []}>
+              {(rows) => (
             <table className="manage-table">
               <thead><tr><th>#</th><th>Name</th><th>Description</th><th></th></tr></thead>
               <tbody>
-                {(tagsQuery.data ?? []).map((t) => (
+                {rows.map((t) => (
                   <tr key={t.id}>
                     <td>{t.id}</td>
                     <td>{t.name}</td>
@@ -394,15 +438,19 @@ export function ManagePage({ onBack }: ManagePageProps) {
                 ))}
               </tbody>
             </table>
+              )}
+            </Paginated>
           </Section>
         )}
 
         {tab === 'collections' && (
           <Section title="Collections" onAdd={live ? () => setForm({ kind: 'collection' }) : undefined}>
+            <Paginated rows={collectionsQuery.data ?? []}>
+              {(rows) => (
             <table className="manage-table">
               <thead><tr><th>#</th><th>Name</th><th>Items</th><th></th></tr></thead>
               <tbody>
-                {(collectionsQuery.data ?? []).map((c) => (
+                {rows.map((c) => (
                   <tr key={c.id}>
                     <td>{c.id}</td>
                     <td>{c.name}</td>
@@ -415,18 +463,44 @@ export function ManagePage({ onBack }: ManagePageProps) {
                 ))}
               </tbody>
             </table>
+              )}
+            </Paginated>
           </Section>
         )}
       </div>
 
       {/* forms */}
-      {form?.kind === 'item' && <ItemForm initial={form.initial} lookups={lookups} onClose={() => setForm(null)} />}
+      {form?.kind === 'item' && (
+        <ItemForm
+          initial={form.initial}
+          lookups={lookups}
+          presetRoomId={form.presetRoomId ?? null}
+          presetContainerId={form.presetContainerId ?? null}
+          onClose={() => setForm(null)}
+        />
+      )}
       {form?.kind === 'location' && <LocationForm initial={form.initial} onClose={() => setForm(null)} />}
-      {form?.kind === 'floor' && <FloorForm initial={form.initial} lookups={lookups} onClose={() => setForm(null)} />}
-      {form?.kind === 'room' && <RoomForm initial={form.initial} lookups={lookups} onClose={() => setForm(null)} />}
-      {form?.kind === 'container' && <ContainerForm initial={form.initial} lookups={lookups} onClose={() => setForm(null)} />}
-      {form?.kind === 'door' && <DoorForm initial={form.initial} lookups={lookups} onClose={() => setForm(null)} />}
-      {form?.kind === 'stair' && <StairForm initial={form.initial} lookups={lookups} onClose={() => setForm(null)} />}
+      {form?.kind === 'floor' && (
+        <FloorForm initial={form.initial} lookups={lookups} presetLocationId={form.presetLocationId ?? null} onClose={() => setForm(null)} />
+      )}
+      {form?.kind === 'room' && (
+        <RoomForm initial={form.initial} lookups={lookups} presetFloorId={form.presetFloorId ?? null} onClose={() => setForm(null)} />
+      )}
+      {form?.kind === 'container' && (
+        <ContainerForm
+          initial={form.initial}
+          lookups={lookups}
+          presetRoomId={form.presetRoomId ?? null}
+          presetParentContainerId={form.presetParentContainerId ?? null}
+          onClose={() => setForm(null)}
+        />
+      )}
+      {form?.kind === 'door' && (
+        <DoorForm initial={form.initial} lookups={lookups} presetFromRoomId={form.presetFromRoomId ?? null} onClose={() => setForm(null)} />
+      )}
+      {form?.kind === 'stair' && (
+        <StairForm initial={form.initial} lookups={lookups} presetFromRoomId={form.presetFromRoomId ?? null} onClose={() => setForm(null)} />
+      )}
       {form?.kind === 'person' && <PersonForm initial={form.initial} onClose={() => setForm(null)} />}
       {form?.kind === 'tag' && <TagForm initial={form.initial} onClose={() => setForm(null)} />}
       {form?.kind === 'collection' && <CollectionForm initial={form.initial} onClose={() => setForm(null)} />}
