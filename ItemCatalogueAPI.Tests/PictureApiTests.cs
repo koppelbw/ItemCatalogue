@@ -33,7 +33,7 @@ public class PictureApiTests(ApiFactory factory) : ApiTestBase(factory)
 
         var item = await Client.PostAsJsonAsync("/api/items", new CreateItemRequest(
             "Lamp", null, [ItemType.Electronics], null, null, null, null, null, null, 1, null, null,
-            null, null, false, roomId, null, null, null, null, null));
+            null, null, false, true, roomId, null, null, null, null, null));
         item.StatusCode.ShouldBe(HttpStatusCode.Created);
         return (await item.Content.ReadFromJsonAsync<ItemResponse>())!.Id;
     }

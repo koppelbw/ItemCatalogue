@@ -4,7 +4,7 @@ import { B, Cyl, shift } from './primitives';
 // appliances: a washer reads as a washer, not as a holographic glyph. Items
 // carry no dimensions in the database, so each shape is built at typical
 // real-world size using the shared scales (plan 24 in/unit, vertical 40
-// in/unit). Shapes stand on the floor centred on the item's display spot and
+// in/unit). Shapes stand on the floor centered on the item's display spot and
 // face south (+z), matching the container-shape convention. Anything without
 // a custom shape here keeps the default pedestal marker.
 
@@ -56,7 +56,7 @@ export function ItemShape({ kind, active }: ItemShapeProps) {
   }
 }
 
-/** part tone helper: channel shift from a base colour, hover-aware */
+/** part tone helper: channel shift from a base color, hover-aware */
 const toner = (base: string, active: boolean) => (by: number) => shift(base, by + (active ? 22 : 0));
 
 /** shared laundry-machine cabinet: 27w × 28d × 38h inches */

@@ -9,13 +9,13 @@ namespace ItemCatalogueAPI.Tests;
 
 public class ItemEventApiTests(ApiFactory factory) : ApiTestBase(factory)
 {
-    // 21 params matching CreateItemRequest: Name,Desc,ItemTypes,PurchasePrice,CurrentValue,
+    // 22 params matching CreateItemRequest: Name,Desc,ItemTypes,PurchasePrice,CurrentValue,
     // Brand,Model,Serial,PurchasedFrom,Quantity,Condition,AcquisitionType,PurchaseDate,
-    // WarrantyExpiry,IsStored,RoomId,ContainerId,OwnerId,ReleaseDate,ValuationDate,AcquisitionRef
+    // WarrantyExpiry,IsStored,IsShownInUI,RoomId,ContainerId,OwnerId,ReleaseDate,ValuationDate,AcquisitionRef
     private static CreateItemRequest BaseItem() =>
         new("Bookshelf", null, [ItemType.Books], 80m, 60m,
             null, null, null, null, 1, Condition.Good, null,
-            null, null, false, null, null, null, null, null, null);
+            null, null, false, true, null, null, null, null, null, null);
 
     private async Task<ItemResponse> CreateItemAsync()
     {
@@ -36,7 +36,7 @@ public class ItemEventApiTests(ApiFactory factory) : ApiTestBase(factory)
             item.PurchasePrice, currentValue ?? item.CurrentValue,
             item.Brand, item.Model, item.SerialNumber, item.PurchasedFrom,
             item.Quantity, item.Condition, item.AcquisitionType,
-            item.PurchaseDate, item.WarrantyExpiryDate, item.IsStored,
+            item.PurchaseDate, item.WarrantyExpiryDate, item.IsStored, item.IsShownInUI,
             item.RoomId, item.ContainerId, item.OwnerId,
             item.ReleaseDate, item.ValuationDate, item.AcquisitionReference,
             item.RowVersion);

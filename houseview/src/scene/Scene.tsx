@@ -14,6 +14,7 @@ import { HEADLESS } from '../headless';
 import { HOUSE_BASE, LEVEL_HEIGHT, levelY, itemSpots, type Rect } from '../layout';
 import { placedBounds, type PlacedRoom, type SceneModel } from '../model';
 import { ItemMarker } from './ItemMarker';
+import { NeighborhoodLife, TREE_SPOTS } from './Neighborhood';
 import { RoomBox } from './RoomBox';
 import { SiteBuilding } from './Sites';
 import { B, Blob, Cyl, Group } from './primitives';
@@ -31,7 +32,7 @@ interface SceneProps {
   model: SceneModel;
   /** rooms of the active Location, laid onto the central dollhouse stage */
   placedRooms: PlacedRoom[];
-  /** levelIndex of the storey in focus */
+  /** levelIndex of the story in focus */
   floor: number;
   selection: Selection;
   focus: Focus;
@@ -109,47 +110,55 @@ function Tree({ p, h = 1.4, r = 0.9 }: { p: [number, number, number]; h?: number
   );
 }
 
-/** Grass, the foundation plinth sized to the active building, and lawn dressing. */
-function Lawn({ bounds, house }: { bounds: Rect | null; house: boolean }) {
+/** Foundation lip around each room footprint, in scene units. Overlaps across
+    the ~0.25u gaps between adjacent rooms so the plinths read as one slab. */
+const PLINTH_MARGIN = 0.28;
+
+/** Grass, a foundation plinth that follows the building footprint, and lawn dressing. */
+function Lawn({ bounds, plinths, house }: { bounds: Rect | null; plinths: Rect[]; house: boolean }) {
   const b = bounds ?? { x: 1.5, z: 0.5, w: 10, d: 8 };
   const cx = b.x + b.w / 2;
-  const southZ = b.z + b.d;
+  // front (south) edge of the building along its center line, so the walk-up
+  // meets the actual front rooms instead of the far corner of the bounding box
+  const spanning = plinths.filter((r) => r.x - PLINTH_MARGIN <= cx && r.x + r.w + PLINTH_MARGIN >= cx);
+  const frontZ = spanning.length ? Math.max(...spanning.map((r) => r.z + r.d + PLINTH_MARGIN)) : b.z + b.d;
   return (
     <group>
-      {/* grass disc - big enough for the whole neighbourhood */}
+      {/* grass disc - big enough for the whole neighborhood */}
       <mesh position={[5.5, -0.16, 5]} receiveShadow>
         <cylinderGeometry args={[31, 32, 0.32, 64]} />
         <meshStandardMaterial color="#9cc480" roughness={1} />
       </mesh>
-      {/* concrete foundation plinth the active building sits on; its top stays
-          below the floor slab tops so no two surfaces ever share a plane */}
-      <mesh position={[cx, HOUSE_BASE / 2 - 0.06, b.z + b.d / 2]} castShadow receiveShadow>
-        <boxGeometry args={[b.w + 0.6, HOUSE_BASE, b.d + 0.6]} />
-        <meshStandardMaterial color="#b3aa99" roughness={1} />
-      </mesh>
+      {/* concrete foundation: one plinth per ground-floor room, sized to the room
+          plus a lip. The lips overlap on shared walls so the slabs merge, while
+          concave notches in the plan stay lawn instead of paved dead space. Tops
+          are coplanar and one flat color, so overlaps never read as z-fighting. */}
+      {plinths.map((r, i) => (
+        <mesh key={i} position={[r.x + r.w / 2, HOUSE_BASE / 2 - 0.06, r.z + r.d / 2]} castShadow receiveShadow>
+          <boxGeometry args={[r.w + PLINTH_MARGIN * 2, HOUSE_BASE, r.d + PLINTH_MARGIN * 2]} />
+          <meshStandardMaterial color="#b3aa99" roughness={1} />
+        </mesh>
+      ))}
       {/* walk-up path and mailbox, only when the active building is a home */}
       {house && (
         <>
-          <B p={[cx - 1.2, -0.045, southZ + 2.2]} s={[1.3, 0.24, 4.2]} c="#d4cabb" r={1} />
-          <Group p={[cx - 2.1, 0, southZ + 4.1]}>
+          <B p={[cx - 0.6, -0.045, frontZ + 1.05]} s={[1.3, 0.24, 2.1]} c="#d4cabb" r={1} />
+          <Group p={[cx - 1.7, 0, frontZ + 1.9]}>
             <Cyl p={[0, 0.5, 0]} rTop={0.05} rBottom={0.05} h={1.0} c="#7a5f40" />
             <B p={[0, 1.08, 0]} s={[0.3, 0.26, 0.5]} c="#d04f3a" r={0.5} />
           </Group>
         </>
       )}
-      <Tree p={[-6.5, 0, -4.5]} h={1.6} r={1.1} />
-      <Tree p={[19.6, 0, 2.6]} h={1.3} r={0.85} />
-      <Tree p={[21, 0, 12.5]} h={1.7} r={1.05} />
-      <Tree p={[-7.5, 0, 14.5]} h={1.2} r={0.8} />
-      <Tree p={[-9.2, 0, 2.5]} h={1.4} r={0.95} />
-      <Tree p={[27, 0, 6]} h={1.5} r={1.0} />
-      <Blob p={[cx - 3.4, 0.25, southZ + 1.1]} r={0.45} c="#6fae72" scale={[1.3, 0.7, 1]} />
-      <Blob p={[cx + 2.6, 0.25, southZ + 0.9]} r={0.4} c="#549058" scale={[1.2, 0.65, 1]} />
+      {TREE_SPOTS.map((t, i) => (
+        <Tree key={i} p={t.p} h={t.h} r={t.r} />
+      ))}
+      <Blob p={[cx - 3.4, 0.25, frontZ + 0.7]} r={0.45} c="#6fae72" scale={[1.3, 0.7, 1]} />
+      <Blob p={[cx + 2.6, 0.25, frontZ + 0.5]} r={0.4} c="#549058" scale={[1.2, 0.65, 1]} />
     </group>
   );
 }
 
-/** Gabled roof crowning the top storey. The south-facing panel is glassy so top-floor items stay visible. */
+/** Gabled roof crowning the top story. The south-facing panel is glassy so top-floor items stay visible. */
 function Roof({ bounds, wallTop }: { bounds: Rect; wallTop: number }) {
   const halfDepth = bounds.d / 2;
   const rise = Math.min(2.2, halfDepth * 0.55);
@@ -199,13 +208,13 @@ const GHOST_OPACITY = 0.16;
 
 function HouseLevels({ placedRooms, floor, selection, onSelectItem, onSelectRoom, onSelectContainer }: HouseLevelsProps) {
   const groupRefs = useRef(new Map<number, ThreeGroup>());
-  // one stable fade proxy per storey so a floor change can kill the previous
+  // one stable fade proxy per story so a floor change can kill the previous
   // opacity tween; a throwaway proxy would leave the old tween running, and
   // its onComplete would snap a freshly ghosted floor back to full opacity
   const fadeProxies = useRef(new Map<number, { f: number }>());
   const firstRun = useRef(true);
 
-  // storeys present in the active location, top-down
+  // stories present in the active location, top-down
   const byLevel = useMemo(() => {
     const map = new Map<number, PlacedRoom[]>();
     for (const placed of placedRooms) {
@@ -223,10 +232,10 @@ function HouseLevels({ placedRooms, floor, selection, onSelectItem, onSelectRoom
     [byLevel, topLevel],
   );
 
-  // Floor focus, dollhouse style: the storey in focus (and the ones below it)
-  // are solid; storeys above stay in place as translucent ghosts so the whole
+  // Floor focus, dollhouse style: the story in focus (and the ones below it)
+  // are solid; stories above stay in place as translucent ghosts so the whole
   // silhouette is always readable. A basement rises out of the ground when
-  // active, and the rest of the house lifts a storey (as ghosts) to make room.
+  // active, and the rest of the house lifts a story (as ghosts) to make room.
   useEffect(() => {
     const first = firstRun.current;
     firstRun.current = false;
@@ -282,7 +291,7 @@ function HouseLevels({ placedRooms, floor, selection, onSelectItem, onSelectRoom
       let targetF: number;
       let targetY: number;
       if (level < 0) {
-        // buried storeys are invisible until focused, then rise to the surface
+        // buried stories are invisible until focused, then rise to the surface
         targetF = level === floor ? 1 : 0;
         targetY = level === floor ? HOUSE_BASE : levelY(level);
       } else {
@@ -393,10 +402,16 @@ export function Scene({
   // every Location except the active one is a satellite building; the active one
   // is drawn as the central cutaway dollhouse from `placedRooms`.
   const satellites = model.sites.filter((s) => s.key !== activeSite);
-  const groundBounds = placedBounds(placedRooms.filter((p) => p.level >= 0));
+  // The foundation follows only the lowest story that sits on the ground; upper
+  // floors (a floating attic here) would otherwise pave notches with no room below.
+  const nonNeg = placedRooms.filter((p) => p.level >= 0);
+  const groundLevel = nonNeg.length ? Math.min(...nonNeg.map((p) => p.level)) : 0;
+  const groundPlaced = nonNeg.filter((p) => p.level === groundLevel);
+  const groundBounds = placedBounds(groundPlaced);
+  const plinths = groundPlaced.map((p) => p.rect);
   // homes get the walk-up path + mailbox; apartments, storage units and cars don't
   const activeKind = model.sitesByKey.get(activeSite)?.def.kind;
-  const activeIsHouse = activeKind === 'cabin' || activeKind === 'cottage';
+  const activeIsHouse = activeKind === 'cabin' || activeKind === 'cottage' || activeKind === 'townhouse';
   return (
     <Canvas
       shadows
@@ -426,7 +441,8 @@ export function Scene({
         shadow-camera-far={90}
         shadow-bias={-0.0004}
       />
-      <Lawn bounds={groundBounds} house={activeIsHouse} />
+      <Lawn bounds={groundBounds} plinths={plinths} house={activeIsHouse} />
+      <NeighborhoodLife />
       <HouseLevels
         placedRooms={placedRooms}
         floor={floor}

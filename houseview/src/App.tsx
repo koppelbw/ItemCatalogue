@@ -6,13 +6,13 @@ import { OVERVIEW_FOCUS, Scene, type Focus } from './scene/Scene';
 import { AboutPage } from './ui/AboutPage';
 import { DetailPanel } from './ui/DetailPanel';
 import { DeleteItemDialog, ItemForm, type RefData } from './ui/forms/EntityForms';
+import { Grain } from './ui/Grain';
 import { Hud } from './ui/Hud';
 import { IndexPage } from './ui/IndexPage';
 import { ManagePage } from './ui/ManagePage';
 import { Splash } from './ui/Splash';
+import type { View } from './ui/TopNav';
 import type { ItemResponse, Selection } from './types';
-
-type View = 'house' | 'index' | 'about' | 'manage';
 
 const viewFromHash = (): View =>
   window.location.hash === '#/index'
@@ -23,7 +23,7 @@ const viewFromHash = (): View =>
         ? 'manage'
         : 'house';
 
-/** the storey shown first for a location: the ground floor when there is one */
+/** the story shown first for a location: the ground floor when there is one */
 function defaultLevel(site: Site | null): number {
   if (!site || site.floors.length === 0) return 0;
   const levels = site.floors.map((f) => f.levelIndex);
@@ -46,15 +46,20 @@ export default function App() {
   const [deleteTarget, setDeleteTarget] = useState<ItemResponse | null>(null);
   const seqRef = useRef(0);
 
-  // The Location whose floors fill the central dollhouse. Falls back to the first
+  // The Location the site opens on: prefer the one named "House", else the first.
+  const defaultSiteKey = useMemo(
+    () => model?.sites.find((s) => s.label.toLowerCase() === 'house')?.key ?? model?.sites[0]?.key ?? '',
+    [model],
+  );
+  // The Location whose floors fill the central dollhouse. Falls back to the opening
   // location until one is explicitly chosen, so the stage is never empty.
-  const activeKey = model ? (model.sitesByKey.has(activeSite) ? activeSite : (model.sites[0]?.key ?? '')) : '';
+  const activeKey = model ? (model.sitesByKey.has(activeSite) ? activeSite : defaultSiteKey) : '';
   const activeSiteObj = model?.sitesByKey.get(activeKey) ?? null;
   const placedRooms = useMemo(
     () => (model && data && activeSiteObj ? placeRooms(activeSiteObj, model, data) : []),
     [model, data, activeSiteObj],
   );
-  // storeys of the active location, top-down for the switcher
+  // stories of the active location, top-down for the switcher
   const levels = useMemo(
     () => (activeSiteObj ? [...activeSiteObj.floors].sort((a, b) => b.levelIndex - a.levelIndex) : []),
     [activeSiteObj],
@@ -90,7 +95,7 @@ export default function App() {
     setFocus({ target, zoomFactor, seq: seqRef.current });
   }, []);
 
-  // Switching floors glides the camera up/down to the storey being shown.
+  // Switching floors glides the camera up/down to the story being shown.
   const changeFloor = useCallback(
     (level: number) => {
       setFloor(level);
@@ -119,7 +124,7 @@ export default function App() {
     goToSite(site);
   };
 
-  // Keyboard: up/down steps floors of the active dollhouse; left/right hops Locations.
+  // Keyboard: up/down steps floors of the active dollhouse.
   useEffect(() => {
     if (view !== 'house') return;
     const onKey = (e: KeyboardEvent) => {
@@ -130,23 +135,13 @@ export default function App() {
         if (next === undefined) return;
         e.preventDefault();
         changeFloor(next);
-        return;
-      }
-      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && model && model.sites.length > 0) {
-        e.preventDefault();
-        const keys = model.sites.map((s) => s.key);
-        const idx = Math.max(0, keys.indexOf(activeKey));
-        const nextIdx = e.key === 'ArrowRight' ? (idx + 1) % keys.length : (idx - 1 + keys.length) % keys.length;
-        const site = model.sites[nextIdx];
-        setSelection({ kind: 'location', id: site.location.id });
-        goToSite(site);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [floor, changeFloor, view, activeKey, model, goToSite, levels]);
+  }, [floor, changeFloor, view, levels]);
 
-  // Fly to a placed room, switching the floor focus to its storey so it is
+  // Fly to a placed room, switching the floor focus to its story so it is
   // actually visible (a focused basement rises to the surface).
   const flyToPlaced = (placed: PlacedRoom, zoom: number) => {
     setFloor(placed.level);
@@ -210,7 +205,7 @@ export default function App() {
 
   const resetView = () => {
     setSelection(null);
-    flyTo(OVERVIEW_FOCUS.target, 0.7); // pull back to take in the whole neighbourhood
+    flyTo(OVERVIEW_FOCUS.target, 0.7); // pull back to take in the whole neighborhood
   };
 
   const clearSelection = () => setSelection(null);
@@ -257,9 +252,7 @@ export default function App() {
                 onFlyToRoom={selectRoom}
                 onSite={selectSite}
                 onResetView={resetView}
-                onBrowse={() => navigate('index')}
-                onAbout={() => navigate('about')}
-                onManage={() => navigate('manage')}
+                onNavigate={navigate}
               />
               <DetailPanel
                 model={model}
@@ -279,18 +272,10 @@ export default function App() {
             </>
           )}
           {view === 'index' && (
-            <IndexPage
-              model={model}
-              live={data.live}
-              onBack={() => navigate('house')}
-              onAbout={() => navigate('about')}
-              onViewItem={viewItemInHouse}
-            />
+            <IndexPage model={model} live={data.live} onNavigate={navigate} onViewItem={viewItemInHouse} />
           )}
-          {view === 'about' && (
-            <AboutPage model={model} live={data.live} onBack={() => navigate('house')} onIndex={() => navigate('index')} />
-          )}
-          {view === 'manage' && <ManagePage onBack={() => navigate('house')} />}
+          {view === 'about' && <AboutPage model={model} live={data.live} onNavigate={navigate} />}
+          {view === 'manage' && <ManagePage onNavigate={navigate} />}
           {itemForm && (
             <ItemForm
               initial={itemForm.mode === 'edit' ? itemForm.item : undefined}
@@ -304,6 +289,7 @@ export default function App() {
         </>
       )}
       <Splash ready={model !== null} />
+      <Grain />
     </div>
   );
 }

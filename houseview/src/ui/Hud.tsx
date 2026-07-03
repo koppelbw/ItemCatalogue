@@ -2,27 +2,26 @@ import gsap from 'gsap';
 import { useEffect, useRef } from 'react';
 import type { PlacedRoom, SceneModel } from '../model';
 import { ITEM_TYPE_COLORS, ITEM_TYPE_NAMES, type FloorResponse } from '../types';
+import { TopNav, type View } from './TopNav';
 
 interface HudProps {
   model: SceneModel;
   /** rooms of the active Location, shown in the room dock */
   placedRooms: PlacedRoom[];
-  /** storeys of the active Location, sorted top-down */
+  /** stories of the active Location, sorted top-down */
   floors: FloorResponse[];
   live: boolean;
-  /** levelIndex of the storey in focus */
+  /** levelIndex of the story in focus */
   floor: number;
   activeSite: string;
   onFloor: (level: number) => void;
   onFlyToRoom: (roomId: number) => void;
   onSite: (key: string) => void;
   onResetView: () => void;
-  onBrowse: () => void;
-  onAbout: () => void;
-  onManage: () => void;
+  onNavigate: (view: View) => void;
 }
 
-/** Chip label for a storey: B for basements, 1-based numbers above grade. */
+/** Chip label for a story: B for basements, 1-based numbers above grade. */
 function levelShort(levelIndex: number): string {
   return levelIndex < 0 ? (levelIndex === -1 ? 'B' : `B${-levelIndex}`) : String(levelIndex + 1);
 }
@@ -38,9 +37,7 @@ export function Hud({
   onFlyToRoom,
   onSite,
   onResetView,
-  onBrowse,
-  onAbout,
-  onManage,
+  onNavigate,
 }: HudProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -67,7 +64,7 @@ export function Hud({
     );
   }, [activeSite]);
 
-  // rooms of the storey in focus first, then the rest of the building
+  // rooms of the story in focus first, then the rest of the building
   const dockRooms = [...placedRooms].sort((a, b) => (a.level === floor ? -1 : 0) - (b.level === floor ? -1 : 0) || a.room.id - b.room.id);
 
   return (
@@ -81,6 +78,7 @@ export function Hud({
           </p>
         </div>
         <div className="header-right">
+          <TopNav current="house" onNavigate={onNavigate} />
           <div className="stats">
             <div>
               <strong>{model.totalItems}</strong>
@@ -91,21 +89,10 @@ export function Hud({
               <span>places</span>
             </div>
           </div>
-          <div className="nav-btn-row">
-            <button className="nav-btn" onClick={onBrowse}>
-              Browse the index ↗
-            </button>
-            <button className="nav-btn nav-btn-ghost" onClick={onManage}>
-              Manage
-            </button>
-            <button className="nav-btn nav-btn-ghost" onClick={onAbout}>
-              About
-            </button>
-          </div>
         </div>
       </header>
 
-      {/* the active location's storeys, from the database (top-down) */}
+      {/* the active location's stories, from the database (top-down) */}
       {floors.length > 1 && (
         <nav className="floor-switch hud-pop" aria-label="Floor">
           {floors.map((f) => (
@@ -160,7 +147,7 @@ export function Hud({
         </div>
       </nav>
 
-      {/* the neighbourhood: one pill per database Location */}
+      {/* the neighborhood: one pill per database Location */}
       <nav className="room-dock site-dock hud-animate" aria-label="Locations">
         <span className="dock-label">Places</span>
         <div className="dock-scroll">
@@ -171,7 +158,6 @@ export function Hud({
             </button>
           ))}
         </div>
-        <span className="floor-hint dock-hint">← → keys</span>
       </nav>
     </div>
   );

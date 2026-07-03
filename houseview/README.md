@@ -2,10 +2,10 @@
 
 An isometric 3D "dollhouse" view of the ItemCatalogue database, in the spirit of
 The Sims' cutaway camera. Every `dbo.Location` is a building in the
-neighbourhood; the active one opens up as a cutaway dollhouse built from its
+neighborhood; the active one opens up as a cutaway dollhouse built from its
 **Floors → Rooms → Containers**, laid out from the real plan geometry stored in
-the database (origins, footprints, wall colours — all in inches). Doors become
-openings cut into the walls, stairs climb between storeys, measured containers
+the database (origins, footprints, wall colors — all in inches). Doors become
+openings cut into the walls, stairs climb between stories, measured containers
 stand where they were measured, and every non-deleted `dbo.Item` floats as a
 holographic marker in the room it ultimately lives in (walking nested container
 chains up to their room).
@@ -42,7 +42,7 @@ Set `VITE_API_TARGET` to point the proxy at a different API origin.
 - **Location dock** (bottom): click any Location to bring it onto the central
   stage; the others wait as satellite buildings around the lawn. ← → keys hop
   between them.
-- **Floor switcher** (right): the active location's storeys, straight from
+- **Floor switcher** (right): the active location's stories, straight from
   `dbo.Floor` (basements rise out of the lawn when selected; upper floors ghost).
   ↑ ↓ keys step floors.
 - **Click a room floor**, a **container box**, or a glowing **item marker** for
@@ -68,8 +68,8 @@ Set `VITE_API_TARGET` to point the proxy at a different API origin.
 - Doors (`dbo.Door`) on the two cutaway walls (north/west) are cut out of the
   wall meshes with a header above; doors on the open south/east sides render as
   thresholds with jambs.
-- Stairs (`dbo.Stair`) rise from their `FromRoom` position one storey.
+- Stairs (`dbo.Stair`) rise from their `FromRoom` position one story.
 - Top-level containers with positions render as clickable boxes; nested ones
   are reachable through the detail panel.
 - Items with no resolvable room appear on a pallet by the curb. Markers are
-  shaped and coloured by the item's first `ItemType`.
+  shaped and colored by the item's first `ItemType`.

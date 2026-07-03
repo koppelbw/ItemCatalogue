@@ -1,5 +1,6 @@
 /* Management views: tabs, tables, modal forms. Sits on top of the frosted
-   index-page sheet, so it inherits that page's typography and background. */
+   index-page sheet (warm paper), so everything uses the site palette from
+   styles.css — ink text, coral accent, paper surfaces. */
 
 /* .index-page starts visibility:hidden for the GSAP entrances of the Index and
    About pages; the manage page has no entrance animation, so show it outright. */
@@ -19,21 +20,21 @@
 }
 .manage-tabs button {
   padding: 0.45rem 0.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(59, 42, 32, 0.22);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  color: inherit;
+  background: var(--glass);
+  color: var(--ink);
   cursor: pointer;
   font-size: 0.86rem;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 .manage-tabs button:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(59, 42, 32, 0.08);
 }
 .manage-tabs button.on {
-  background: #5b8def;
-  border-color: #5b8def;
-  color: #fff;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fffdf1;
 }
 
 .manage-section-head {
@@ -56,12 +57,12 @@
 .manage-table td {
   text-align: left;
   padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(59, 42, 32, 0.12);
   vertical-align: top;
 }
 .manage-table th {
   font-weight: 600;
-  opacity: 0.7;
+  color: var(--ink-soft);
   font-size: 0.76rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -84,11 +85,126 @@
   margin-top: 1rem;
 }
 
+/* table pagination */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+}
+.pager .btn-small {
+  margin-left: 0;
+}
+.pager-status {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* explore tab: breadcrumb drill-down through the location hierarchy */
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--ink);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: rgba(59, 42, 32, 0.28);
+  text-underline-offset: 3px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+.link-btn:hover {
+  color: var(--accent);
+  text-decoration-color: currentColor;
+}
+.manage-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+  margin-bottom: 1.1rem;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.manage-crumbs .crumb-sep {
+  opacity: 0.5;
+  padding: 0 0.15rem;
+}
+.manage-crumbs .crumb-here {
+  font-weight: 600;
+  color: var(--ink);
+}
+.explore-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+.explore-kicker {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+.explore-title {
+  margin: 0.15rem 0 0;
+  font-size: 1.35rem;
+}
+.explore-desc {
+  margin: 0.35rem 0 0;
+  color: var(--ink-soft);
+  max-width: 60ch;
+}
+.explore-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.explore-actions .btn-small {
+  margin-left: 0;
+}
+.explore-section {
+  margin-top: 1.5rem;
+}
+.explore-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+.explore-section h3 {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+.explore-empty {
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  font-style: italic;
+  margin: 0;
+}
+/* the shared .panel-facts grid is sized for the narrow 3D panel; let it breathe here */
+.explore-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 0.8rem 1.2rem;
+  margin: 1rem 0 0;
+}
+
 /* buttons */
 .btn {
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
-  color: inherit;
+  border: 1px solid rgba(59, 42, 32, 0.28);
+  background: rgba(255, 253, 241, 0.6);
+  color: var(--ink);
   border-radius: 8px;
   padding: 0.5rem 0.9rem;
   cursor: pointer;
@@ -96,10 +212,10 @@
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 .btn:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(59, 42, 32, 0.08);
 }
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: default;
 }
 .btn-small {
@@ -108,20 +224,21 @@
   margin-left: 0.3rem;
 }
 .btn-primary {
-  background: #5b8def;
-  border-color: #5b8def;
-  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fffdf1;
 }
 .btn-primary:hover {
-  background: #4a7ce0;
+  background: #d85c37;
+  border-color: #d85c37;
 }
 .btn-danger {
-  background: rgba(239, 111, 108, 0.16);
-  border-color: rgba(239, 111, 108, 0.5);
-  color: #ff9b98;
+  background: rgba(208, 79, 58, 0.1);
+  border-color: rgba(208, 79, 58, 0.45);
+  color: #b13c28;
 }
 .btn-danger:hover {
-  background: rgba(239, 111, 108, 0.28);
+  background: rgba(208, 79, 58, 0.2);
 }
 .btn-ghost {
   background: transparent;
@@ -131,7 +248,7 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 14, 20, 0.55);
+  background: rgba(64, 50, 32, 0.35);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: flex-start;
@@ -142,11 +259,11 @@
 }
 .modal {
   width: min(640px, 100%);
-  background: #1c2230;
-  color: #eef1f6;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #fffdf1;
+  color: var(--ink);
+  border: 1px solid rgba(59, 42, 32, 0.14);
   border-radius: 14px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow);
   overflow: hidden;
 }
 .modal-header {
@@ -154,7 +271,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(59, 42, 32, 0.1);
 }
 .modal-header h3 {
   margin: 0;
@@ -167,7 +284,7 @@
   font-size: 1.4rem;
   line-height: 1;
   cursor: pointer;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 .modal-close:hover {
   opacity: 1;
@@ -182,7 +299,7 @@
   justify-content: flex-end;
   gap: 0.6rem;
   padding: 0.9rem 1.2rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(59, 42, 32, 0.1);
 }
 
 /* forms */
@@ -203,7 +320,7 @@
   font-size: 0.84rem;
 }
 .form-field > span {
-  opacity: 0.78;
+  color: var(--ink-soft);
   font-size: 0.78rem;
 }
 .form-field-inline {
@@ -218,8 +335,8 @@
 .form-field select,
 .manage-add-row input,
 .manage-add-row select {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(59, 42, 32, 0.28);
   border-radius: 8px;
   color: inherit;
   padding: 0.45rem 0.6rem;
@@ -230,22 +347,22 @@
 .form-field textarea:focus,
 .form-field select:focus {
   outline: none;
-  border-color: #5b8def;
+  border-color: var(--accent);
 }
 .form-error {
-  color: #ff9b98;
+  color: #b13c28;
   font-size: 0.76rem;
   font-style: normal;
 }
 .form-hint {
   font-size: 0.78rem;
-  opacity: 0.65;
+  color: var(--ink-soft);
   margin: 0;
 }
 .form-banner {
-  background: rgba(239, 111, 108, 0.16);
-  border: 1px solid rgba(239, 111, 108, 0.5);
-  color: #ffb4b1;
+  background: rgba(208, 79, 58, 0.1);
+  border: 1px solid rgba(208, 79, 58, 0.4);
+  color: #b13c28;
   border-radius: 8px;
   padding: 0.6rem 0.85rem;
   font-size: 0.84rem;
@@ -259,16 +376,16 @@
 .form-chip {
   padding: 0.35rem 0.7rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.06);
-  color: inherit;
+  border: 1px solid rgba(59, 42, 32, 0.25);
+  background: rgba(255, 253, 241, 0.6);
+  color: var(--ink);
   cursor: pointer;
   font-size: 0.8rem;
 }
 .form-chip.on {
-  background: #5b8def;
-  border-color: #5b8def;
-  color: #fff;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fffdf1;
 }
 
 /* 3D detail-panel edit affordances */
@@ -282,7 +399,7 @@
 .item-extras {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(59, 42, 32, 0.12);
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
@@ -302,14 +419,14 @@
   flex-direction: column;
   gap: 0.1rem;
   font-size: 0.82rem;
-  border-left: 2px solid rgba(91, 141, 239, 0.6);
+  border-left: 2px solid rgba(229, 106, 68, 0.55);
   padding-left: 0.6rem;
 }
 .event-list time {
-  opacity: 0.6;
+  color: var(--ink-soft);
   font-size: 0.74rem;
 }
 .event-change,
 .event-notes {
-  opacity: 0.85;
+  color: var(--ink-soft);
 }

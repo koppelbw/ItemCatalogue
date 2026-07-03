@@ -38,6 +38,7 @@ export const itemSchema = z
     valuationDate: z.string().nullable(),
     acquisitionReference: nullableString(100),
     isStored: z.boolean(),
+    isShownInUI: z.boolean(),
     roomId: z.number().int().nullable(),
     containerId: z.number().int().nullable(),
     ownerId: z.number().int().nullable(),
@@ -105,6 +106,7 @@ export const containerSchema = z
     depthInches: positive,
     heightInches: positive,
     color: hexColor,
+    isShownInUI: z.boolean(),
   })
   .refine((d) => (d.roomId != null) !== (d.parentContainerId != null), {
     path: ['owner'],

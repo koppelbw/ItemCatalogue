@@ -43,6 +43,11 @@ public class Item : IEntity, IAuditable
     public string? AcquisitionReference { get; set; }
 
     public bool IsStored { get; set; }
+
+    // Whether the item is rendered in the houseview 3D scene (declutter toggle; hidden
+    // items still count in inventory). Items default hidden — loose in-room markers are opt-in.
+    public bool IsShownInUI { get; set; } = false;
+
     public bool IsDeleted { get; set; }
     public DeletedReason? ReasonForDeletion { get; set; }
 

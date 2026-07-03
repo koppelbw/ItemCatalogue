@@ -80,6 +80,7 @@ public static class ItemMappings
         ValuationDate = request.ValuationDate,
         AcquisitionReference = request.AcquisitionReference,
         IsStored = request.IsStored,
+        IsShownInUI = request.IsShownInUI,
         RoomId = request.RoomId,
         ContainerId = request.ContainerId,
         OwnerId = request.OwnerId,
@@ -105,6 +106,7 @@ public static class ItemMappings
         item.ValuationDate = request.ValuationDate;
         item.AcquisitionReference = request.AcquisitionReference;
         item.IsStored = request.IsStored;
+        item.IsShownInUI = request.IsShownInUI;
         item.RoomId = request.RoomId;
         item.ContainerId = request.ContainerId;
         item.OwnerId = request.OwnerId;
@@ -130,6 +132,7 @@ public static class ItemMappings
         item.PurchaseDate,
         item.WarrantyExpiryDate,
         item.IsStored,
+        item.IsShownInUI,
         item.IsDeleted,
         item.ReasonForDeletion,
         item.RoomId,

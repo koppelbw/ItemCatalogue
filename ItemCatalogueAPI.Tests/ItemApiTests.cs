@@ -18,7 +18,7 @@ public class ItemApiTests(ApiFactory factory) : ApiTestBase(factory)
             Brand: "Acme", Model: "L-100", SerialNumber: "SN-123", PurchasedFrom: "Hardware Store",
             Quantity: 1, Condition: Condition.Good, AcquisitionType: AcquisitionType.Purchased,
             PurchaseDate: new DateTime(2024, 6, 1), WarrantyExpiryDate: null,
-            IsStored: false, RoomId: null, ContainerId: null, OwnerId: null,
+            IsStored: false, IsShownInUI: true, RoomId: null, ContainerId: null, OwnerId: null,
             ReleaseDate: new DateTime(2024, 1, 1), ValuationDate: new DateTime(2025, 1, 1),
             AcquisitionReference: "INV-001");
 
@@ -50,6 +50,29 @@ public class ItemApiTests(ApiFactory factory) : ApiTestBase(factory)
         created.ValuationDate.ShouldBe(new DateTime(2025, 1, 1));
         created.AcquisitionReference.ShouldBe("INV-001");
         created.IsDeleted.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Create_WithIsShownInUiFalse_PersistsFalse()
+    {
+        // Items default hidden; a create that sets IsShownInUI = false must round-trip as false
+        // (guards the EF HasDefaultValue(false) mapping for the CLR-sentinel value).
+        var response = await Client.PostAsJsonAsync("/api/items", ValidItem() with { IsShownInUI = false });
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var created = (await response.Content.ReadFromJsonAsync<ItemResponse>())!;
+        created.IsShownInUI.ShouldBeFalse();
+
+        var fetched = await Client.GetFromJsonAsync<ItemResponse>($"/api/items/{created.Id}");
+        fetched!.IsShownInUI.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Create_WithIsShownInUiTrue_PersistsTrue()
+    {
+        var response = await Client.PostAsJsonAsync("/api/items", ValidItem() with { IsShownInUI = true });
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+        var created = (await response.Content.ReadFromJsonAsync<ItemResponse>())!;
+        created.IsShownInUI.ShouldBeTrue();
     }
 
     [Fact]

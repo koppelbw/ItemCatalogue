@@ -306,3 +306,11 @@ WHEN NOT MATCHED THEN
     VALUES (source.Id, source.Name, source.Description, source.PurchasePrice, source.CurrentValue, source.Brand, source.Model, source.SerialNumber, source.PurchasedFrom, source.Quantity, source.Condition, source.AcquisitionType, source.PurchaseDate, source.WarrantyExpiryDate, source.IsStored, source.IsDeleted, source.ReasonForDeletion, source.RoomId, source.ContainerId, source.OwnerId);
 
 SET IDENTITY_INSERT dbo.Item OFF;
+
+-- Items default hidden in the 3D house view (Item.IsShownInUI DEFAULT 0). Enforce a curated
+-- visible starter set so a freshly-seeded database still shows the room-level appliances that
+-- used to carry the Furniture tag (ids 18/19/35/49/50). Scoped to seeded ids and idempotent, so
+-- re-publishing corrects existing rows without disturbing user-created items (Id > 268).
+UPDATE dbo.Item
+   SET IsShownInUI = CASE WHEN Id IN (18, 19, 35, 49, 50) THEN 1 ELSE 0 END
+ WHERE Id BETWEEN 1 AND 268;

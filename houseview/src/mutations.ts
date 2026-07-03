@@ -3,6 +3,7 @@ import { ApiError, apiDelete, apiGet, apiPost, apiPut, fetchAll } from './api';
 import type {
   CollectionResponse,
   ItemEventResponse,
+  ItemResponse,
   ItemTagsResponse,
   TagResponse,
 } from './types';
@@ -22,6 +23,28 @@ export function useCollections() {
   return useQuery({
     queryKey: ['collections'],
     queryFn: () => fetchAll<CollectionResponse>('collections', new AbortController().signal),
+  });
+}
+
+/**
+ * Membership map for the Index tag filter: tagId → the ids of items carrying
+ * that tag. Item tags don't ride on ItemResponse, so we invert the per-tag
+ * item listing (items?tagId=) instead — one request per tag, fired together.
+ */
+export function useTagItemIds(tags: TagResponse[] | undefined) {
+  return useQuery({
+    queryKey: ['tagItemIds', (tags ?? []).map((t) => t.id)],
+    enabled: tags !== undefined,
+    queryFn: async () => {
+      const signal = new AbortController().signal;
+      const entries = await Promise.all(
+        (tags ?? []).map(async (t) => {
+          const items = await fetchAll<ItemResponse>(`items?tagId=${t.id}`, signal);
+          return [t.id, new Set(items.map((i) => i.id))] as const;
+        }),
+      );
+      return new Map<number, ReadonlySet<number>>(entries);
+    },
   });
 }
 
@@ -87,8 +110,7 @@ export function useSetItemTags() {
     mutationFn: ({ itemId, tagIds }) => apiPut<ItemTagsResponse>(`items/${itemId}/tags`, { tagIds }),
     onSuccess: (_res, vars) => {
       qc.invalidateQueries({ queryKey: ['itemTags', vars.itemId] });
-      // the catalogue carries furnitureItemIds, so (un)tagging can change what renders
-      qc.invalidateQueries({ queryKey: ['catalogue'] });
+      qc.invalidateQueries({ queryKey: ['tagItemIds'] });
     },
   });
 }

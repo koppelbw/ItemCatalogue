@@ -17,6 +17,7 @@ CREATE TABLE Item (
     ValuationDate     DATETIME2       NULL,
     AcquisitionReference NVARCHAR(100) NULL,
     IsStored          BIT             NOT NULL DEFAULT 0,
+    IsShownInUI       BIT             NOT NULL DEFAULT 0,
     IsDeleted         BIT             NOT NULL DEFAULT 0,
     ReasonForDeletion NVARCHAR(255)   NULL,
     ItemTypes         NVARCHAR(MAX)   NOT NULL DEFAULT '[]',

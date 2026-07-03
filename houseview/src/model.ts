@@ -75,7 +75,7 @@ export interface PlacedStair {
 export interface PlacedRoom {
   room: RoomResponse;
   floor: FloorResponse;
-  /** floor.levelIndex — the storey this room renders on */
+  /** floor.levelIndex — the story this room renders on */
   level: number;
   /** world-units footprint on its level (x/z = NW corner) */
   rect: Rect;
@@ -87,7 +87,7 @@ export interface PlacedRoom {
   hasGeometry: boolean;
   /** every item that ultimately lives in this room (including inside containers) — used for counts */
   items: ResolvedItem[];
-  /** room-level items tagged "Furniture" — the only item markers drawn inside the room */
+  /** room-level items with IsShownInUI set — the only item markers drawn inside the room */
   furnishings: ResolvedItem[];
   containers: PlacedContainer[];
   doors: PlacedDoor[];
@@ -97,14 +97,14 @@ export interface PlacedRoom {
   westInterior: boolean;
 }
 
-/** A database Location rendered as its own building in the neighbourhood. */
+/** A database Location rendered as its own building in the neighborhood. */
 export interface Site {
   /** stable unique key, `loc-<id>` */
   key: string;
   label: string;
   def: SiteDef;
   location: LocationResponse;
-  /** the location's storeys, sorted bottom-up by levelIndex */
+  /** the location's stories, sorted bottom-up by levelIndex */
   floors: FloorResponse[];
   /** all rooms across the location's floors */
   rooms: RoomResponse[];
@@ -125,8 +125,6 @@ export interface SceneModel {
   itemsByRoom: Map<number, ResolvedItem[]>;
   /** items that resolve to no room at all */
   unassigned: ResolvedItem[];
-  /** ids of items carrying the "Furniture" tag */
-  furnitureItemIds: Set<number>;
   typeCounts: Map<number, number>;
   totalItems: number;
 }
@@ -176,7 +174,7 @@ function buildBreadcrumb(
 ): string[] {
   const parts: string[] = [];
   if (location) parts.push(location.name);
-  // only spell the storey out for multi-floor locations — "Car › Main › Trunk" is noise
+  // only spell the story out for multi-floor locations — "Car › Main › Trunk" is noise
   if (floor && location && location.floors.length > 1) parts.push(floor.name);
   if (room) parts.push(room.name);
   if (item.containerId != null) {
@@ -268,7 +266,6 @@ export function buildSceneModel(data: CatalogueData): SceneModel {
     containersById,
     itemsByRoom,
     unassigned,
-    furnitureItemIds: new Set(data.furnitureItemIds),
     typeCounts,
     totalItems: resolved.length,
   };
@@ -278,7 +275,7 @@ function hasFootprint(room: RoomResponse): boolean {
   return room.widthInches != null && room.depthInches != null && room.widthInches > 0 && room.depthInches > 0;
 }
 
-/** Palette for one room: stored colours win, furniture-kind palette fills the gaps. */
+/** Palette for one room: stored colors win, furniture-kind palette fills the gaps. */
 function paletteFor(room: RoomResponse, furniture: FurnitureKind): RoomPalette {
   const base = FURNITURE_PALETTES[furniture];
   return {
@@ -299,6 +296,8 @@ function placeContainers(
   for (const c of containers) {
     if (c.roomId !== room.id) continue;
     if (c.positionXInches == null || c.positionYInches == null || c.widthInches == null || c.depthInches == null) continue;
+    // declutter toggle: hidden containers are not drawn (their items still count via room totals)
+    if (c.isShownInUI === false) continue;
     // count items in this container or anything nested inside it
     let itemCount = 0;
     for (const r of itemsById.values()) {
@@ -358,7 +357,7 @@ function placeStairs(room: RoomResponse, rect: Rect, stairs: StairResponse[]): P
       z: stair.positionYInches != null ? u(stair.positionYInches) : rect.d * 0.15,
       run: stair.runInches != null ? Math.max(1.2, u(stair.runInches)) : 3,
       w: stair.widthInches != null ? Math.max(0.6, u(stair.widthInches)) : 1.4,
-      // stairs always climb one storey visually so they read as a connection
+      // stairs always climb one story visually so they read as a connection
       rise: 2.6,
       steps: stair.stepCount ?? 10,
       rotation: stair.rotation ?? 0,
@@ -371,7 +370,7 @@ function placeStairs(room: RoomResponse, rect: Rect, stairs: StairResponse[]): P
  * Lay a Location's rooms onto the central dollhouse stage from their measured
  * geometry (Origin/Width/Depth in inches, scaled to scene units), floor by
  * floor. Rooms without geometry get auto-placed footprints east of the measured
- * ones. The whole location is then translated so its bounding box sits centred
+ * ones. The whole location is then translated so its bounding box sits centered
  * on the stage. Interior walls — any wall with another room's floor space
  * behind it on the same level — become half walls so the camera sees in; only
  * true perimeter walls stay full height.
@@ -384,7 +383,7 @@ export function placeRooms(site: Site, model: SceneModel, data: CatalogueData): 
     const measured = rooms.filter(hasFootprint);
     const unmeasured = rooms.filter((r) => !hasFootprint(r));
 
-    // measured rooms use their stored plan positions on this storey
+    // measured rooms use their stored plan positions on this story
     const floorPlaced: PlacedRoom[] = measured.map((room) => {
       const rect: Rect = {
         x: u(room.originXInches ?? 0),
@@ -406,7 +405,7 @@ export function placeRooms(site: Site, model: SceneModel, data: CatalogueData): 
     placed.push(...floorPlaced);
   }
 
-  // centre the whole location on the stage
+  // center the whole location on the stage
   if (placed.length > 0) {
     let minX = Infinity;
     let minZ = Infinity;
@@ -506,7 +505,8 @@ function makePlacedRoom(
     colors: paletteFor(room, furniture),
     hasGeometry,
     items,
-    furnishings: items.filter((r) => r.item.roomId === room.id && model.furnitureItemIds.has(r.item.id)),
+    // items default hidden: only those explicitly shown render as markers (still in `items` for counts)
+    furnishings: items.filter((r) => r.item.roomId === room.id && r.item.isShownInUI === true),
     containers: placeContainers(room, data.containers, model.itemsById, wallHeight),
     doors: placeDoors(room, rect, data.doors, wallHeight),
     stairs: placeStairs(room, rect, data.stairs),
@@ -531,7 +531,7 @@ export function placedBounds(placed: PlacedRoom[]): Rect | null {
   return { x: minX, z: minZ, w: maxX - minX, d: maxZ - minZ };
 }
 
-/** World-space centre of a placed room, used as a camera fly-to target. */
+/** World-space center of a placed room, used as a camera fly-to target. */
 export function roomCenter(placed: PlacedRoom): [number, number, number] {
   const { rect, level } = placed;
   return [rect.x + rect.w / 2, levelY(level) + 1.0, rect.z + rect.d / 2];

@@ -1,6 +1,6 @@
 // Spatial constants for the dollhouse. Room footprints now come from the
 // database (Room.OriginX/Y + Width/Depth in inches); this module owns the
-// inches → scene-unit scaling, the vertical storey rhythm, and the fallback
+// inches → scene-unit scaling, the vertical story rhythm, and the fallback
 // footprints used for rooms that have not been measured yet.
 
 export const WALL_HEIGHT = 2.5;
@@ -33,12 +33,12 @@ export function wallHeightFor(heightInches: number | null): number {
  */
 export const HOUSE_BASE = 0.22;
 
-/** Y of a storey's floor slab. levelIndex is signed (basement = -1, ground = 0, …). */
+/** Y of a story's floor slab. levelIndex is signed (basement = -1, ground = 0, …). */
 export function levelY(levelIndex: number): number {
   return HOUSE_BASE + levelIndex * LEVEL_HEIGHT;
 }
 
-/** World-space centre of the central dollhouse stage; active locations are laid out around it. */
+/** World-space center of the central dollhouse stage; active locations are laid out around it. */
 export const STAGE_CENTER: [number, number] = [6.5, 4.5];
 
 export interface Rect {
@@ -98,7 +98,7 @@ export function furnitureFor(roomType: number | null, name: string): FurnitureKi
   return NAME_FURNITURE.find(([match]) => key.includes(match))?.[1] ?? 'generic';
 }
 
-/** Visual shape for a top-level container, built from the container's own dimensions + colour. */
+/** Visual shape for a top-level container, built from the container's own dimensions + color. */
 export type ContainerShapeKind = 'bed' | 'seating' | 'table' | 'dresser' | 'wardrobe' | 'piano' | 'box';
 
 /**
@@ -186,7 +186,7 @@ export interface RoomPalette {
   accent: string;
 }
 
-/** Fallback palette by furniture kind, for rooms without stored colours. */
+/** Fallback palette by furniture kind, for rooms without stored colors. */
 export const FURNITURE_PALETTES: Record<FurnitureKind, RoomPalette> = {
   living: { floorColor: '#d9c2a0', wallColor: '#f1e2cc', accent: '#ef6f6c' },
   kitchen: { floorColor: '#ccd6d2', wallColor: '#dcebe2', accent: '#3ec6b8' },
@@ -215,12 +215,12 @@ export function fallbackRect(index: number): Rect {
 }
 
 // ---------------------------------------------------------------------------
-// Sites: every database Location is its own building in the neighbourhood.
+// Sites: every database Location is its own building in the neighborhood.
 // The active one is drawn as the central cutaway dollhouse from its measured
 // rooms; the rest stand as small satellite buildings around the stage.
 // ---------------------------------------------------------------------------
 
-export type SiteKind = 'apartment' | 'cottage' | 'storage' | 'cabin' | 'car';
+export type SiteKind = 'apartment' | 'cottage' | 'townhouse' | 'storage' | 'cabin' | 'car';
 
 export interface SiteDef {
   kind: SiteKind;
@@ -234,7 +234,8 @@ export interface SiteDef {
 /** Shell silhouettes matched by location name; anything unrecognised is a cabin. */
 const NAME_SHELLS: [string, SiteKind][] = [
   ['apartment', 'apartment'],
-  ['grandma', 'cottage'],
+  ['grandma', 'townhouse'],
+  ['cottage', 'cottage'],
   ['storage', 'storage'],
   ['car', 'car'],
 ];
@@ -247,16 +248,27 @@ export function siteKindFor(name: string): SiteKind {
 /**
  * A stable satellite slot on the lawn for a non-active Location, placed on an
  * ellipse around the central dollhouse so buildings never overlap the stage or
- * each other. Position depends only on (index, count) so the neighbourhood
+ * each other. Position depends only on (index, count) so the neighborhood
  * never reshuffles when the active Location changes — the active one's slot is
  * simply left empty (it is drawn as the central dollhouse instead). `kind` is a
  * placeholder; the model overrides it with a per-Location shell style.
+ *
+ * The isometric camera looks from the south-east, so anything north-west of
+ * the stage hides directly behind the dollhouse and anything south-east sits
+ * in front of it. The usual five-location neighborhood uses hand-tuned angles
+ * that keep every slot clear of both zones; other counts fall back to an even
+ * spread. 0° is east, 90° is south.
  */
+const SLOT_ANGLES_5 = [-55, 10, 80, 150, 215].map((deg) => (deg * Math.PI) / 180);
+
 export function satelliteSlot(index: number, count: number): SiteDef {
   const [cx, cz] = STAGE_CENTER;
   const rx = 22;
-  const rz = 16;
-  const angle = -Math.PI / 2 + (index / Math.max(1, count)) * Math.PI * 2;
+  const rz = 18.5;
+  const angle =
+    count === SLOT_ANGLES_5.length
+      ? SLOT_ANGLES_5[index]
+      : -Math.PI / 2 + ((index + 0.55) / Math.max(1, count)) * Math.PI * 2;
   const ox = cx + Math.cos(angle) * rx - SITE_INTERIOR.w / 2;
   const oz = cz + Math.sin(angle) * rz - SITE_INTERIOR.d / 2;
   return {

@@ -39,6 +39,11 @@ public class Container : IEntity, IAuditable
 
     public string? Color { get; set; }
 
+    // Whether the container is rendered in the houseview 3D scene (declutter toggle;
+    // hidden containers still count in inventory). Containers default shown — they are
+    // the furniture that makes the dollhouse legible.
+    public bool IsShownInUI { get; set; } = true;
+
     public DateTime CreatedDate { get; set; }
 
     public DateTime? LastModifiedDate { get; set; }

@@ -4,9 +4,9 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Shape, type Group as ThreeGroup } from 'three';
 import { SITE_INTERIOR } from '../layout';
 import type { Site } from '../model';
-import { B, Blob, Cyl, Group } from './primitives';
+import { B, Blob, Cyl, Group, lighten } from './primitives';
 
-// Every database Location is its own little diorama in the neighbourhood.
+// Every database Location is its own little diorama in the neighborhood.
 // Non-active locations stand as fully closed buildings - four walls, a roof,
 // a front door and lit windows - so only the central dollhouse ever shows its
 // interior. Each building shares the same bones (pad, body, nameplate) and
@@ -26,10 +26,11 @@ interface ShellPalette {
 }
 
 const PALETTES: Record<string, ShellPalette> = {
-  apartment: { wall: '#dfe7ee', floor: '#d9c2a0', accent: '#3ec6b8' },
+  apartment: { wall: '#ece4d4', floor: '#d9c2a0', accent: '#d9705c' },
   cottage: { wall: '#f3e6cf', floor: '#d9c2a0', accent: '#ef6f6c' },
+  townhouse: { wall: '#9d5f4c', floor: '#d9c2a0', accent: '#2e6f63' },
   storage: { wall: '#c9cdd2', floor: '#b6bac0', accent: '#e8893c' },
-  cabin: { wall: '#e7dfd0', floor: '#cdc3b2', accent: '#8c97a5' },
+  cabin: { wall: '#b7cdd9', floor: '#cdc3b2', accent: '#c94f4a' },
   car: { wall: '#7fa8c9', floor: '#9a9a9e', accent: '#5b8def' },
 };
 
@@ -89,7 +90,7 @@ function SiteBase({ site, index, active, onSelectSite, palette, wallH, body, chi
     );
   }, [index]);
 
-  const wallTint = hovered || active ? '#ffffff' : palette.wall;
+  const wallTint = hovered || active ? lighten(palette.wall, 36) : palette.wall;
 
   return (
     <group
@@ -144,27 +145,55 @@ function SiteBase({ site, index, active, onSelectSite, palette, wallH, body, chi
   );
 }
 
+/**
+ * Small modern apartment block in warm tones: two stories of windows with
+ * mustard-fronted balconies, a coral stair tower over the entrance, and a
+ * set-back penthouse with a glowing clerestory on the flat roof.
+ */
 function ApartmentShell({ wallH }: { wallH: number }) {
   const { w, d } = SITE_INTERIOR;
+  const coral = '#d9705c';
+  const mustard = '#e9b44c';
+  const trim = '#f7f4ee';
   return (
     <>
-      {/* flat roof slab over the main body */}
-      <B p={[w / 2, wallH + 0.04, d / 2]} s={[w + 0.3, 0.12, d + 0.3]} c="#aebccb" />
-      {/* set-back upper storey along the north edge */}
-      <B p={[w / 2, wallH + 1.15, 0.95]} s={[w + 0.24, 2.1, 1.9]} c="#cdd9e4" r={0.8} />
-      {/* glowing window band on the upper storey */}
-      <B p={[w / 2, wallH + 1.15, 1.92]} s={[w - 0.6, 0.7, 0.06]} c="#2e3338" emissive="#ffe9a3" emissiveIntensity={0.55} />
-      {/* roof lip + rooftop AC unit */}
-      <B p={[w / 2, wallH + 2.26, 0.95]} s={[w + 0.44, 0.12, 2.1]} c="#aebccb" />
-      <B p={[w / 2 + 1.2, wallH + 2.55, 0.8]} s={[0.6, 0.45, 0.6]} c="#9aa1a8" r={0.5} />
-      {/* front entrance with awning */}
-      <B p={[w / 2, 0.62, d + 0.05]} s={[0.85, 1.24, 0.1]} c="#37474f" r={0.6} />
-      <B p={[w / 2, 1.5, d + 0.3]} s={[1.15, 0.07, 0.75]} c="#3ec6b8" />
-      {/* lit windows flanking the door + on the east face */}
-      <WindowPane p={[0.95, 1.5, d]} facing="south" />
-      <WindowPane p={[w - 0.95, 1.5, d]} facing="south" />
-      <WindowPane p={[w, 1.5, 1.2]} facing="east" />
-      <WindowPane p={[w, 1.5, 2.9]} facing="east" />
+      {/* flat roof slab + parapet lip */}
+      <B p={[w / 2, wallH + 0.05, d / 2]} s={[w + 0.3, 0.12, d + 0.3]} c="#b6afa2" />
+      <B p={[w / 2, wallH + 0.15, d / 2]} s={[w + 0.44, 0.1, d + 0.44]} c="#9d968a" />
+      {/* set-back penthouse with a glowing clerestory + rooftop AC unit */}
+      <B p={[w / 2, wallH + 0.9, 1.0]} s={[w - 0.7, 1.4, 1.9]} c="#ded4c3" r={0.8} />
+      <B p={[w / 2, wallH + 1.0, 1.97]} s={[w - 1.4, 0.55, 0.06]} c="#2e3338" emissive="#ffe9a3" emissiveIntensity={0.55} />
+      <B p={[w / 2, wallH + 1.66, 1.0]} s={[w - 0.5, 0.1, 2.1]} c="#9d968a" />
+      <B p={[w - 1.0, wallH + 1.95, 0.9]} s={[0.55, 0.4, 0.55]} c="#9aa1a8" r={0.5} />
+      {/* coral stair tower with the entrance, canopy and stacked landing windows */}
+      <B p={[0.9, wallH / 2 + 0.2, d + 0.07]} s={[1.15, wallH + 0.4, 0.14]} c={coral} />
+      <B p={[0.9, 0.62, d + 0.16]} s={[0.8, 1.24, 0.08]} c="#37474f" r={0.6} />
+      <B p={[0.9, 1.52, d + 0.35]} s={[1.25, 0.07, 0.55]} c={mustard} />
+      <B p={[0.9, 2.05, d + 0.16]} s={[0.55, 0.38, 0.05]} c="#2e3338" emissive="#ffe9a3" emissiveIntensity={0.5} />
+      <B p={[0.9, 2.85, d + 0.16]} s={[0.55, 0.38, 0.05]} c="#2e3338" emissive="#ffe9a3" emissiveIntensity={0.5} />
+      {/* two stories of south windows; the upper pair opens onto balconies */}
+      <WindowPane p={[2.55, 1.15, d]} facing="south" w={0.72} h={0.62} />
+      <WindowPane p={[3.75, 1.15, d]} facing="south" w={0.72} h={0.62} />
+      <WindowPane p={[2.55, 2.45, d]} facing="south" w={0.72} h={0.62} />
+      <WindowPane p={[3.75, 2.45, d]} facing="south" w={0.72} h={0.62} />
+      {[2.55, 3.75].map((x) => (
+        <Group key={`balc${x}`} p={[x, 0, 0]}>
+          <B p={[0, 2.02, d + 0.28]} s={[1.0, 0.08, 0.62]} c={trim} />
+          <B p={[0, 2.22, d + 0.56]} s={[1.0, 0.34, 0.06]} c={mustard} />
+          <B p={[-0.47, 2.22, d + 0.28]} s={[0.06, 0.34, 0.56]} c={trim} />
+          <B p={[0.47, 2.22, d + 0.28]} s={[0.06, 0.34, 0.56]} c={trim} />
+        </Group>
+      ))}
+      {/* mustard awnings over the ground-floor windows */}
+      <B p={[2.55, 1.58, d + 0.2]} s={[0.98, 0.06, 0.44]} c={mustard} />
+      <B p={[3.75, 1.58, d + 0.2]} s={[0.98, 0.06, 0.44]} c={mustard} />
+      {/* east face window grid */}
+      <WindowPane p={[w, 1.15, 1.3]} facing="east" w={0.72} h={0.62} />
+      <WindowPane p={[w, 1.15, 2.9]} facing="east" w={0.72} h={0.62} />
+      <WindowPane p={[w, 2.45, 1.3]} facing="east" w={0.72} h={0.62} />
+      <WindowPane p={[w, 2.45, 2.9]} facing="east" w={0.72} h={0.62} />
+      {/* concrete plinth skirt */}
+      <B p={[w / 2, 0.19, d / 2]} s={[w + 0.12, 0.38, d + 0.12]} c="#a99f8f" />
     </>
   );
 }
@@ -207,59 +236,185 @@ function CottageShell({ wallH }: { wallH: number }) {
   );
 }
 
-function StorageShell({ wallH }: { wallH: number }) {
+/**
+ * Two-story brick townhouse: flat parapet roof with a dentilled cornice, tall
+ * lit windows over stone sills, an east bay window and a stooped front door
+ * with iron railings.
+ */
+function TownhouseShell({ wallH }: { wallH: number }) {
   const { w, d } = SITE_INTERIOR;
-  const ribs = Math.floor(w / 0.62);
-  const doorH = wallH - 0.55;
+  const trim = '#e9dcc3';
+  const iron = '#2b2f33';
+  const stone = '#9a8b7c';
   return (
     <>
-      {/* corrugated ribs on the north and south walls */}
-      {Array.from({ length: ribs }, (_, i) => (
-        <B key={`n${i}`} p={[0.5 + i * 0.62, wallH / 2, -0.05]} s={[0.12, wallH, 0.08]} c="#aeb4ba" />
+      {/* stone water table around the base */}
+      <B p={[w / 2, 0.26, d / 2]} s={[w + 0.14, 0.52, d + 0.14]} c="#8a7a6b" />
+      {/* dentilled cornice + brick parapet with stone coping */}
+      {Array.from({ length: 9 }, (_, i) => (
+        <B key={`dent${i}`} p={[0.45 + i * 0.47, wallH - 0.1, d + 0.08]} s={[0.16, 0.12, 0.12]} c={trim} />
       ))}
-      {Array.from({ length: ribs }, (_, i) => (
-        <B key={`s${i}`} p={[0.5 + i * 0.62, wallH / 2, d + 0.05]} s={[0.12, wallH, 0.08]} c="#aeb4ba" />
+      <B p={[w / 2, wallH + 0.06, d / 2]} s={[w + 0.55, 0.13, d + 0.55]} c={trim} />
+      <B p={[-0.02, wallH + 0.3, d / 2]} s={[0.24, 0.36, d + 0.2]} c="#8a4f3f" />
+      <B p={[w + 0.02, wallH + 0.3, d / 2]} s={[0.24, 0.36, d + 0.2]} c="#8a4f3f" />
+      <B p={[w / 2, wallH + 0.3, -0.02]} s={[w + 0.2, 0.36, 0.24]} c="#8a4f3f" />
+      <B p={[w / 2, wallH + 0.3, d + 0.02]} s={[w + 0.2, 0.36, 0.24]} c="#8a4f3f" />
+      <B p={[-0.02, wallH + 0.52, d / 2]} s={[0.34, 0.08, d + 0.34]} c={trim} />
+      <B p={[w + 0.02, wallH + 0.52, d / 2]} s={[0.34, 0.08, d + 0.34]} c={trim} />
+      <B p={[w / 2, wallH + 0.52, -0.02]} s={[w + 0.34, 0.08, 0.34]} c={trim} />
+      <B p={[w / 2, wallH + 0.52, d + 0.02]} s={[w + 0.34, 0.08, 0.34]} c={trim} />
+      {/* recessed roof deck inside the parapet */}
+      <B p={[w / 2, wallH + 0.16, d / 2]} s={[w, 0.09, d]} c="#6f665c" />
+      {/* chimney + roof hatch tucked behind the parapet */}
+      <Group p={[w - 0.85, wallH + 0.45, 0.85]}>
+        <B p={[0, 0.25, 0]} s={[0.46, 1.1, 0.46]} c="#7e4638" />
+        <B p={[0, 0.84, 0]} s={[0.58, 0.1, 0.58]} c={trim} />
+      </Group>
+      <B p={[1.0, wallH + 0.45, 1.0]} s={[0.7, 0.5, 0.7]} c="#8a7a6b" r={0.6} />
+      {/* upper-story windows with sills and lintels */}
+      {[0.95, 2.3, 3.65].map((x) => (
+        <Group key={`up${x}`} p={[x, 2.52, 0]}>
+          <WindowPane p={[0, 0, d]} facing="south" w={0.62} h={0.8} />
+          <B p={[0, -0.52, d + 0.05]} s={[0.86, 0.09, 0.14]} c={stone} />
+          <B p={[0, 0.53, d + 0.04]} s={[0.86, 0.11, 0.1]} c={stone} />
+        </Group>
       ))}
-      {/* flat metal roof with an accent fascia band under it */}
-      <B p={[w / 2, wallH + 0.07, d / 2]} s={[w + 0.5, 0.12, d + 0.5]} c="#8e959c" />
-      <B p={[w / 2, wallH - 0.06, d / 2]} s={[w + 0.2, 0.16, d + 0.2]} c="#e8893c" />
-      {/* closed roll-up door on the east face */}
-      <B p={[w + 0.05, doorH / 2, d / 2]} s={[0.1, doorH, 2.8]} c="#dde1e5" />
-      {Array.from({ length: 4 }, (_, j) => (
-        <B key={`slat${j}`} p={[w + 0.11, 0.45 + j * 0.42, d / 2]} s={[0.02, 0.05, 2.8]} c="#b7bcc2" />
+      <WindowPane p={[w, 2.52, 1.3]} facing="east" w={0.62} h={0.8} />
+      <WindowPane p={[w, 2.52, 2.9]} facing="east" w={0.62} h={0.8} />
+      {/* ground-floor bay window on the east face */}
+      <B p={[w + 0.26, 1.05, 2.1]} s={[0.52, 2.1, 1.5]} c="#9d5f4c" />
+      <B p={[w + 0.26, 2.15, 2.1]} s={[0.66, 0.1, 1.64]} c={trim} />
+      <WindowPane p={[w + 0.52, 1.42, 2.1]} facing="east" w={1.0} h={0.85} />
+      {/* wide parlour window with a planted window box */}
+      <WindowPane p={[3.2, 1.5, d]} facing="south" w={1.1} h={0.95} />
+      <B p={[3.2, 0.9, d + 0.05]} s={[1.34, 0.09, 0.14]} c={stone} />
+      <B p={[3.2, 1.0, d + 0.12]} s={[1.2, 0.16, 0.18]} c={iron} />
+      <Blob p={[2.85, 1.12, d + 0.12]} r={0.11} c="#6fae72" />
+      <Blob p={[3.2, 1.14, d + 0.12]} r={0.12} c="#ef6f6c" />
+      <Blob p={[3.55, 1.12, d + 0.12]} r={0.11} c="#6fae72" />
+      {/* trimmed front door with transom, brass knob and a porch lantern */}
+      <B p={[0.68, 1.1, d + 0.03]} s={[0.14, 1.6, 0.08]} c={trim} />
+      <B p={[1.62, 1.1, d + 0.03]} s={[0.14, 1.6, 0.08]} c={trim} />
+      <B p={[1.15, 1.97, d + 0.04]} s={[1.1, 0.14, 0.1]} c={trim} />
+      <B p={[1.15, 1.08, d + 0.05]} s={[0.82, 1.32, 0.1]} c="#2e6f63" r={0.6} />
+      <B p={[1.43, 1.05, d + 0.11]} s={[0.07, 0.07, 0.05]} c="#f2c14e" />
+      <B p={[1.15, 1.85, d + 0.06]} s={[0.78, 0.22, 0.05]} c="#2e3338" emissive="#ffe9a3" emissiveIntensity={0.55} />
+      <B p={[1.95, 1.62, d + 0.08]} s={[0.13, 0.22, 0.1]} c="#2e3338" emissive="#ffe9a3" emissiveIntensity={0.8} />
+      {/* stone stoop stepping down to the lawn, flanked by iron railings */}
+      <B p={[1.15, 0.06, d + 0.35]} s={[1.4, 0.72, 0.7]} c={stone} />
+      <B p={[1.15, -0.02, d + 0.85]} s={[1.34, 0.56, 0.36]} c={stone} />
+      <B p={[1.15, -0.09, d + 1.16]} s={[1.34, 0.42, 0.3]} c={stone} />
+      {[0.48, 1.82].map((x) => (
+        <Group key={`rail${x}`} p={[x, 0, 0]}>
+          <B p={[0, 0.62, d + 0.16]} s={[0.06, 0.44, 0.06]} c={iron} />
+          <B p={[0, 0.55, d + 0.92]} s={[0.06, 0.6, 0.06]} c={iron} />
+          <B p={[0, 0.82, d + 0.55]} s={[0.05, 0.05, 0.9]} c={iron} />
+        </Group>
       ))}
-      <B p={[w + 0.12, 0.26, d / 2]} s={[0.04, 0.08, 0.6]} c="#7d838a" />
+      {/* street tree by the west wall */}
+      <Cyl p={[-0.7, 0.35, d - 0.6]} rTop={0.09} rBottom={0.12} h={1.1} c="#8a5f3a" />
+      <Blob p={[-0.7, 1.25, d - 0.6]} r={0.52} c="#6fae72" scale={[1, 1.15, 1]} />
     </>
   );
 }
 
-function CabinShell({ wallH }: { wallH: number }) {
+function StorageShell({ wallH }: { wallH: number }) {
   const { w, d } = SITE_INTERIOR;
-  const halfDepth = d / 2;
-  const rise = 0.9;
-  const angle = Math.atan2(rise, halfDepth);
-  const panelLen = Math.sqrt(halfDepth * halfDepth + rise * rise) + 0.4;
+  const orange = '#e8893c';
+  const slat = '#c9702a';
+  const ribs = Math.floor(w / 0.62);
+  const doorH = wallH - 0.55;
   return (
     <>
-      {/* full gabled roof */}
+      {/* corrugated ribs on the north wall */}
+      {Array.from({ length: ribs }, (_, i) => (
+        <B key={`n${i}`} p={[0.5 + i * 0.62, wallH / 2, -0.05]} s={[0.12, wallH, 0.08]} c="#aeb4ba" />
+      ))}
+      {/* flat metal roof with an accent fascia band under it */}
+      <B p={[w / 2, wallH + 0.07, d / 2]} s={[w + 0.5, 0.12, d + 0.5]} c="#8e959c" />
+      <B p={[w / 2, wallH - 0.06, d / 2]} s={[w + 0.2, 0.16, d + 0.2]} c={orange} />
+      {/* row of framed orange unit doors with number plaques on the south face */}
+      {[0.95, 2.3, 3.65].map((x, i) => (
+        <Group key={`unit${i}`} p={[x, 0, d]}>
+          <B p={[0, 0.78, 0.03]} s={[1.14, 1.56, 0.06]} c="#eef1f4" />
+          <B p={[0, 0.75, 0.07]} s={[0.98, 1.44, 0.06]} c={orange} />
+          {Array.from({ length: 4 }, (_, j) => (
+            <B key={`sl${j}`} p={[0, 0.3 + j * 0.32, 0.11]} s={[0.98, 0.05, 0.02]} c={slat} />
+          ))}
+          <B p={[0, 1.7, 0.05]} s={[0.34, 0.2, 0.05]} c="#eef1f4" />
+        </Group>
+      ))}
+      {/* big roll-up door on the east face, flanked by bollards */}
+      <B p={[w + 0.05, doorH / 2, d / 2]} s={[0.1, doorH, 2.8]} c={orange} />
+      {Array.from({ length: 4 }, (_, j) => (
+        <B key={`slat${j}`} p={[w + 0.11, 0.45 + j * 0.42, d / 2]} s={[0.02, 0.05, 2.8]} c={slat} />
+      ))}
+      <B p={[w + 0.12, 0.26, d / 2]} s={[0.04, 0.08, 0.6]} c="#7d838a" />
+      <Cyl p={[w + 0.5, 0.3, d / 2 - 1.7]} rTop={0.09} rBottom={0.09} h={0.6} c={orange} />
+      <Cyl p={[w + 0.5, 0.3, d / 2 + 1.7]} rTop={0.09} rBottom={0.09} h={0.6} c={orange} />
+    </>
+  );
+}
+
+/**
+ * Friendly suburban home: slate gabled roof, brick chimney, covered front
+ * porch with a red door, shuttered windows and a lit attic window in the
+ * east gable.
+ */
+function HouseShell({ wallH }: { wallH: number }) {
+  const { w, d } = SITE_INTERIOR;
+  const halfDepth = d / 2;
+  const rise = 1.05;
+  const angle = Math.atan2(rise, halfDepth);
+  const panelLen = Math.sqrt(halfDepth * halfDepth + rise * rise) + 0.45;
+  const roof = '#5f6b74';
+  const trim = '#f7f4ee';
+  const shutter = '#46687a';
+  const deck = '#c7b299';
+  return (
+    <>
+      {/* slate gabled roof */}
       <mesh position={[w / 2, wallH + rise / 2, d / 4]} rotation={[-angle, 0, 0]} castShadow>
-        <boxGeometry args={[w + 0.5, 0.12, panelLen]} />
-        <meshStandardMaterial color="#8a7355" roughness={0.9} />
+        <boxGeometry args={[w + 0.6, 0.12, panelLen]} />
+        <meshStandardMaterial color={roof} roughness={0.9} />
       </mesh>
       <mesh position={[w / 2, wallH + rise / 2, (3 * d) / 4]} rotation={[angle, 0, 0]} castShadow>
-        <boxGeometry args={[w + 0.5, 0.12, panelLen]} />
-        <meshStandardMaterial color="#8a7355" roughness={0.9} />
+        <boxGeometry args={[w + 0.6, 0.12, panelLen]} />
+        <meshStandardMaterial color={roof} roughness={0.9} />
       </mesh>
-      <B p={[w / 2, wallH + rise + 0.03, d / 2]} s={[w + 0.7, 0.14, 0.24]} c="#6f5a41" />
-      <Gable p={[w - 0.07, wallH, d / 2]} width={d} rise={rise} color="#ded2bd" />
-      <Gable p={[-0.07, wallH, d / 2]} width={d} rise={rise} color="#ded2bd" />
-      {/* front door + lit window */}
-      <B p={[w / 2 - 0.9, 0.58, d + 0.05]} s={[0.72, 1.16, 0.1]} c="#6e5233" r={0.7} />
-      <WindowPane p={[w / 2 + 1.0, 1.25, d]} facing="south" w={0.7} h={0.6} />
-      {/* stump and firewood by the walls */}
-      <Cyl p={[-0.5, 0.4, 0.6]} rTop={0.16} rBottom={0.2} h={0.8} c="#8a5f3a" />
-      <Cyl p={[w + 0.35, 0.18, 2.7]} rTop={0.14} rBottom={0.14} h={0.9} c="#8a5f3a" rotX={Math.PI / 2} />
-      <Cyl p={[w + 0.35, 0.44, 2.7]} rTop={0.13} rBottom={0.13} h={0.8} c="#7a5334" rotX={Math.PI / 2} />
+      <B p={[w / 2, wallH + rise + 0.04, d / 2]} s={[w + 0.8, 0.14, 0.24]} c="#4d5860" />
+      <Gable p={[w - 0.07, wallH, d / 2]} width={d} rise={rise} color="#c2d5df" />
+      <Gable p={[-0.07, wallH, d / 2]} width={d} rise={rise} color="#c2d5df" />
+      {/* lit attic window in the east gable */}
+      <B p={[w + 0.075, wallH + 0.45, d / 2]} s={[0.05, 0.52, 0.52]} c={trim} />
+      <B p={[w + 0.11, wallH + 0.45, d / 2]} s={[0.04, 0.38, 0.38]} c="#2e3338" emissive="#ffe9a3" emissiveIntensity={0.5} />
+      {/* brick chimney through the north slope */}
+      <Group p={[0.8, wallH + 0.5, 1.2]}>
+        <B p={[0, 0.45, 0]} s={[0.5, 1.35, 0.5]} c="#9b6a5a" />
+        <B p={[0, 1.18, 0]} s={[0.62, 0.12, 0.62]} c="#7d5347" />
+      </Group>
+      {/* covered porch: deck, step, posts and roof */}
+      <B p={[1.35, -0.02, d + 0.5]} s={[2.1, 0.56, 1.0]} c={deck} />
+      <B p={[1.35, -0.13, d + 1.1]} s={[1.2, 0.34, 0.24]} c={deck} />
+      <B p={[0.45, 0.99, d + 0.9]} s={[0.1, 1.46, 0.1]} c={trim} />
+      <B p={[2.25, 0.99, d + 0.9]} s={[0.1, 1.46, 0.1]} c={trim} />
+      <B p={[1.35, 1.75, d + 0.5]} s={[2.3, 0.08, 1.15]} c={roof} />
+      <B p={[1.35, 1.67, d + 1.05]} s={[2.3, 0.07, 0.07]} c={trim} />
+      {/* red front door under the porch + a small side light */}
+      <B p={[0.95, 0.88, d + 0.05]} s={[0.78, 1.24, 0.1]} c="#c94f4a" r={0.6} />
+      <B p={[1.22, 0.85, d + 0.11]} s={[0.07, 0.07, 0.05]} c="#f2c14e" />
+      <WindowPane p={[1.85, 1.0, d]} facing="south" w={0.5} h={0.5} />
+      {/* shuttered windows on the south and east faces */}
+      <WindowPane p={[3.5, 1.15, d]} facing="south" w={0.95} h={0.75} />
+      <B p={[2.87, 1.15, d + 0.03]} s={[0.16, 0.9, 0.06]} c={shutter} />
+      <B p={[4.13, 1.15, d + 0.03]} s={[0.16, 0.9, 0.06]} c={shutter} />
+      <WindowPane p={[w, 1.15, 1.5]} facing="east" w={0.8} h={0.7} />
+      <B p={[w + 0.03, 1.15, 0.92]} s={[0.06, 0.85, 0.16]} c={shutter} />
+      <B p={[w + 0.03, 1.15, 2.08]} s={[0.06, 0.85, 0.16]} c={shutter} />
+      {/* garden bushes by the porch */}
+      <Blob p={[3.0, 0.25, d + 0.35]} r={0.3} c="#6fae72" scale={[1.2, 0.7, 1]} />
+      <Blob p={[3.0, 0.44, d + 0.4]} r={0.1} c="#ef6f6c" />
+      <Blob p={[4.2, 0.22, d + 0.3]} r={0.26} c="#549058" scale={[1.1, 0.7, 1]} />
     </>
   );
 }
@@ -315,14 +470,30 @@ export function SiteBuilding(props: SiteBuildingProps) {
   switch (props.site.def.kind) {
     case 'apartment':
       return (
-        <SiteBase {...props} palette={PALETTES.apartment} wallH={2.4}>
-          <ApartmentShell wallH={2.4} />
+        <SiteBase {...props} palette={PALETTES.apartment} wallH={3.2}>
+          <ApartmentShell wallH={3.2} />
         </SiteBase>
       );
     case 'cottage':
       return (
         <SiteBase {...props} palette={PALETTES.cottage} wallH={2.2}>
           <CottageShell wallH={2.2} />
+        </SiteBase>
+      );
+    case 'townhouse':
+      return (
+        <SiteBase
+          {...props}
+          palette={PALETTES.townhouse}
+          wallH={3.4}
+          body={(lit) => (
+            <mesh position={[SITE_INTERIOR.w / 2, 1.7, SITE_INTERIOR.d / 2]} castShadow receiveShadow>
+              <boxGeometry args={[SITE_INTERIOR.w, 3.4, SITE_INTERIOR.d]} />
+              <meshStandardMaterial color={lit ? lighten(PALETTES.townhouse.wall, 34) : PALETTES.townhouse.wall} roughness={0.95} />
+            </mesh>
+          )}
+        >
+          <TownhouseShell wallH={3.4} />
         </SiteBase>
       );
     case 'storage':
@@ -335,8 +506,8 @@ export function SiteBuilding(props: SiteBuildingProps) {
       return <SiteBase {...props} palette={PALETTES.car} wallH={1.9} body={(hovered) => <CarBody hovered={hovered} />} />;
     default:
       return (
-        <SiteBase {...props} palette={PALETTES.cabin} wallH={2.1}>
-          <CabinShell wallH={2.1} />
+        <SiteBase {...props} palette={PALETTES.cabin} wallH={2.2}>
+          <HouseShell wallH={2.2} />
         </SiteBase>
       );
   }

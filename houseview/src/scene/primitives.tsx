@@ -71,7 +71,7 @@ export function Group({ p, rotY = 0, children }: { p: [number, number, number]; 
   );
 }
 
-/** Shifts a "#RRGGBB" hex colour's channels by `by` (positive lightens, negative darkens). */
+/** Shifts a "#RRGGBB" hex color's channels by `by` (positive lightens, negative darkens). */
 export function shift(hex: string, by: number): string {
   const n = parseInt(hex.slice(1, 7), 16);
   if (Number.isNaN(n)) return hex;

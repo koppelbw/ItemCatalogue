@@ -22,7 +22,7 @@ public class TagApiTests(ApiFactory factory) : ApiTestBase(factory)
     private async Task<ItemResponse> CreateItemAsync(string name = "Laptop")
     {
         var request = new CreateItemRequest(name, null, [ItemType.Electronics], null, null, null, null, null, null, 1,
-            null, null, null, null, false, null, null, null, null, null, null);
+            null, null, null, null, false, true, null, null, null, null, null, null);
         var response = await Client.PostAsJsonAsync("/api/items", request);
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
         return (await response.Content.ReadFromJsonAsync<ItemResponse>())!;
