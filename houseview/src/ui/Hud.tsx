@@ -8,10 +8,10 @@ interface HudProps {
   model: SceneModel;
   /** rooms of the active Location, shown in the room dock */
   placedRooms: PlacedRoom[];
-  /** storeys of the active Location, sorted top-down */
+  /** stories of the active Location, sorted top-down */
   floors: FloorResponse[];
   live: boolean;
-  /** levelIndex of the storey in focus */
+  /** levelIndex of the story in focus */
   floor: number;
   activeSite: string;
   onFloor: (level: number) => void;
@@ -21,7 +21,7 @@ interface HudProps {
   onNavigate: (view: View) => void;
 }
 
-/** Chip label for a storey: B for basements, 1-based numbers above grade. */
+/** Chip label for a story: B for basements, 1-based numbers above grade. */
 function levelShort(levelIndex: number): string {
   return levelIndex < 0 ? (levelIndex === -1 ? 'B' : `B${-levelIndex}`) : String(levelIndex + 1);
 }
@@ -64,7 +64,7 @@ export function Hud({
     );
   }, [activeSite]);
 
-  // rooms of the storey in focus first, then the rest of the building
+  // rooms of the story in focus first, then the rest of the building
   const dockRooms = [...placedRooms].sort((a, b) => (a.level === floor ? -1 : 0) - (b.level === floor ? -1 : 0) || a.room.id - b.room.id);
 
   return (
@@ -92,7 +92,7 @@ export function Hud({
         </div>
       </header>
 
-      {/* the active location's storeys, from the database (top-down) */}
+      {/* the active location's stories, from the database (top-down) */}
       {floors.length > 1 && (
         <nav className="floor-switch hud-pop" aria-label="Floor">
           {floors.map((f) => (

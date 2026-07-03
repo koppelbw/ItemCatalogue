@@ -22,7 +22,7 @@ export const TREE_SPOTS: { p: [number, number, number]; h: number; r: number }[]
   { p: [27, 0, 6], h: 1.5, r: 1.0 },
 ];
 
-/** centre of the grass disc (the bike path rings it) */
+/** center of the grass disc (the bike path rings it) */
 const LAWN_CENTER: [number, number] = [5.5, 5];
 /** duck pond, on the northern lawn just left of the utility crew */
 const POND_XZ: [number, number] = [-5.0, -9.0];
@@ -144,7 +144,7 @@ function Cyclist({ frame, shirt }: { frame: string; shirt: string }) {
   );
 }
 
-// canopy top = trunk height + blob centre offset (0.6r) + stretched blob radius (1.15r)
+// canopy top = trunk height + blob center offset (0.6r) + stretched blob radius (1.15r)
 const BIRD_PERCHES = TREE_SPOTS.map(({ p, h, r }) => [p[0], h + r * 1.75 + 0.05, p[2]] as [number, number, number]);
 
 /**

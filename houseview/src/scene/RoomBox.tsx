@@ -209,7 +209,7 @@ function ContainerBox({
   const kind = containerShapeFor(pc.container.containerType, pc.container.name);
   // shapes are authored facing south; when the row carries no explicit rotation,
   // turn the piece so its back sits against the nearest wall and it opens into
-  // the room. The turn is about the footprint centre with width/depth swapped
+  // the room. The turn is about the footprint center with width/depth swapped
   // for east/west facings, so the catalogued footprint stays exactly where it is.
   const facing = pc.rotation ? 'S' : containerFacing(kind, rect.w, rect.d, pc.x, pc.z, pc.w, pc.d);
   const swap = facing === 'E' || facing === 'W';

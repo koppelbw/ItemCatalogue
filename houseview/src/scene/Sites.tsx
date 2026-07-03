@@ -146,7 +146,7 @@ function SiteBase({ site, index, active, onSelectSite, palette, wallH, body, chi
 }
 
 /**
- * Small modern apartment block in warm tones: two storeys of windows with
+ * Small modern apartment block in warm tones: two stories of windows with
  * mustard-fronted balconies, a coral stair tower over the entrance, and a
  * set-back penthouse with a glowing clerestory on the flat roof.
  */
@@ -171,7 +171,7 @@ function ApartmentShell({ wallH }: { wallH: number }) {
       <B p={[0.9, 1.52, d + 0.35]} s={[1.25, 0.07, 0.55]} c={mustard} />
       <B p={[0.9, 2.05, d + 0.16]} s={[0.55, 0.38, 0.05]} c="#2e3338" emissive="#ffe9a3" emissiveIntensity={0.5} />
       <B p={[0.9, 2.85, d + 0.16]} s={[0.55, 0.38, 0.05]} c="#2e3338" emissive="#ffe9a3" emissiveIntensity={0.5} />
-      {/* two storeys of south windows; the upper pair opens onto balconies */}
+      {/* two stories of south windows; the upper pair opens onto balconies */}
       <WindowPane p={[2.55, 1.15, d]} facing="south" w={0.72} h={0.62} />
       <WindowPane p={[3.75, 1.15, d]} facing="south" w={0.72} h={0.62} />
       <WindowPane p={[2.55, 2.45, d]} facing="south" w={0.72} h={0.62} />
@@ -237,7 +237,7 @@ function CottageShell({ wallH }: { wallH: number }) {
 }
 
 /**
- * Two-storey brick townhouse: flat parapet roof with a dentilled cornice, tall
+ * Two-story brick townhouse: flat parapet roof with a dentilled cornice, tall
  * lit windows over stone sills, an east bay window and a stooped front door
  * with iron railings.
  */
@@ -271,7 +271,7 @@ function TownhouseShell({ wallH }: { wallH: number }) {
         <B p={[0, 0.84, 0]} s={[0.58, 0.1, 0.58]} c={trim} />
       </Group>
       <B p={[1.0, wallH + 0.45, 1.0]} s={[0.7, 0.5, 0.7]} c="#8a7a6b" r={0.6} />
-      {/* upper-storey windows with sills and lintels */}
+      {/* upper-story windows with sills and lintels */}
       {[0.95, 2.3, 3.65].map((x) => (
         <Group key={`up${x}`} p={[x, 2.52, 0]}>
           <WindowPane p={[0, 0, d]} facing="south" w={0.62} h={0.8} />

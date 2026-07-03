@@ -32,7 +32,7 @@ interface SceneProps {
   model: SceneModel;
   /** rooms of the active Location, laid onto the central dollhouse stage */
   placedRooms: PlacedRoom[];
-  /** levelIndex of the storey in focus */
+  /** levelIndex of the story in focus */
   floor: number;
   selection: Selection;
   focus: Focus;
@@ -118,7 +118,7 @@ const PLINTH_MARGIN = 0.28;
 function Lawn({ bounds, plinths, house }: { bounds: Rect | null; plinths: Rect[]; house: boolean }) {
   const b = bounds ?? { x: 1.5, z: 0.5, w: 10, d: 8 };
   const cx = b.x + b.w / 2;
-  // front (south) edge of the building along its centre line, so the walk-up
+  // front (south) edge of the building along its center line, so the walk-up
   // meets the actual front rooms instead of the far corner of the bounding box
   const spanning = plinths.filter((r) => r.x - PLINTH_MARGIN <= cx && r.x + r.w + PLINTH_MARGIN >= cx);
   const frontZ = spanning.length ? Math.max(...spanning.map((r) => r.z + r.d + PLINTH_MARGIN)) : b.z + b.d;
@@ -132,7 +132,7 @@ function Lawn({ bounds, plinths, house }: { bounds: Rect | null; plinths: Rect[]
       {/* concrete foundation: one plinth per ground-floor room, sized to the room
           plus a lip. The lips overlap on shared walls so the slabs merge, while
           concave notches in the plan stay lawn instead of paved dead space. Tops
-          are coplanar and one flat colour, so overlaps never read as z-fighting. */}
+          are coplanar and one flat color, so overlaps never read as z-fighting. */}
       {plinths.map((r, i) => (
         <mesh key={i} position={[r.x + r.w / 2, HOUSE_BASE / 2 - 0.06, r.z + r.d / 2]} castShadow receiveShadow>
           <boxGeometry args={[r.w + PLINTH_MARGIN * 2, HOUSE_BASE, r.d + PLINTH_MARGIN * 2]} />
@@ -158,7 +158,7 @@ function Lawn({ bounds, plinths, house }: { bounds: Rect | null; plinths: Rect[]
   );
 }
 
-/** Gabled roof crowning the top storey. The south-facing panel is glassy so top-floor items stay visible. */
+/** Gabled roof crowning the top story. The south-facing panel is glassy so top-floor items stay visible. */
 function Roof({ bounds, wallTop }: { bounds: Rect; wallTop: number }) {
   const halfDepth = bounds.d / 2;
   const rise = Math.min(2.2, halfDepth * 0.55);
@@ -208,13 +208,13 @@ const GHOST_OPACITY = 0.16;
 
 function HouseLevels({ placedRooms, floor, selection, onSelectItem, onSelectRoom, onSelectContainer }: HouseLevelsProps) {
   const groupRefs = useRef(new Map<number, ThreeGroup>());
-  // one stable fade proxy per storey so a floor change can kill the previous
+  // one stable fade proxy per story so a floor change can kill the previous
   // opacity tween; a throwaway proxy would leave the old tween running, and
   // its onComplete would snap a freshly ghosted floor back to full opacity
   const fadeProxies = useRef(new Map<number, { f: number }>());
   const firstRun = useRef(true);
 
-  // storeys present in the active location, top-down
+  // stories present in the active location, top-down
   const byLevel = useMemo(() => {
     const map = new Map<number, PlacedRoom[]>();
     for (const placed of placedRooms) {
@@ -232,10 +232,10 @@ function HouseLevels({ placedRooms, floor, selection, onSelectItem, onSelectRoom
     [byLevel, topLevel],
   );
 
-  // Floor focus, dollhouse style: the storey in focus (and the ones below it)
-  // are solid; storeys above stay in place as translucent ghosts so the whole
+  // Floor focus, dollhouse style: the story in focus (and the ones below it)
+  // are solid; stories above stay in place as translucent ghosts so the whole
   // silhouette is always readable. A basement rises out of the ground when
-  // active, and the rest of the house lifts a storey (as ghosts) to make room.
+  // active, and the rest of the house lifts a story (as ghosts) to make room.
   useEffect(() => {
     const first = firstRun.current;
     firstRun.current = false;
@@ -291,7 +291,7 @@ function HouseLevels({ placedRooms, floor, selection, onSelectItem, onSelectRoom
       let targetF: number;
       let targetY: number;
       if (level < 0) {
-        // buried storeys are invisible until focused, then rise to the surface
+        // buried stories are invisible until focused, then rise to the surface
         targetF = level === floor ? 1 : 0;
         targetY = level === floor ? HOUSE_BASE : levelY(level);
       } else {
@@ -402,7 +402,7 @@ export function Scene({
   // every Location except the active one is a satellite building; the active one
   // is drawn as the central cutaway dollhouse from `placedRooms`.
   const satellites = model.sites.filter((s) => s.key !== activeSite);
-  // The foundation follows only the lowest storey that sits on the ground; upper
+  // The foundation follows only the lowest story that sits on the ground; upper
   // floors (a floating attic here) would otherwise pave notches with no room below.
   const nonNeg = placedRooms.filter((p) => p.level >= 0);
   const groundLevel = nonNeg.length ? Math.min(...nonNeg.map((p) => p.level)) : 0;

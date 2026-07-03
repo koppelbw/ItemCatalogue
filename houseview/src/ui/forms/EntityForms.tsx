@@ -323,7 +323,7 @@ export function FloorForm({
       <form id="floorForm" onSubmit={handleSubmit(onSubmit)} className="entity-form">
         <TextField control={control} errors={errors} name="name" label="Name" />
         <SelectField control={control} errors={errors} name="locationId" label="Location" options={locationOptions} placeholder="Pick a location" required />
-        <p className="form-hint">Level index orders the storeys: basement −1, ground 0, upstairs 1…</p>
+        <p className="form-hint">Level index orders the stories: basement −1, ground 0, upstairs 1…</p>
         <div className="form-row">
           <NumberField control={control} errors={errors} name="levelIndex" label="Level index" integer />
           <NumberField control={control} errors={errors} name="ceilingHeightInches" label="Ceiling height (in)" />
@@ -424,10 +424,10 @@ export function RoomForm({
           <NumberField control={control} errors={errors} name="rotation" label="Rotation (°)" />
         </div>
         <div className="form-row">
-          <TextField control={control} errors={errors} name="wallColor" label="Wall colour" nullable placeholder="#RRGGBB" />
-          <TextField control={control} errors={errors} name="floorColor" label="Floor colour" nullable placeholder="#RRGGBB" />
+          <TextField control={control} errors={errors} name="wallColor" label="Wall color" nullable placeholder="#RRGGBB" />
+          <TextField control={control} errors={errors} name="floorColor" label="Floor color" nullable placeholder="#RRGGBB" />
         </div>
-        <TextField control={control} errors={errors} name="ceilingColor" label="Ceiling colour" nullable placeholder="#RRGGBB" />
+        <TextField control={control} errors={errors} name="ceilingColor" label="Ceiling color" nullable placeholder="#RRGGBB" />
       </form>
     </Modal>
   );
@@ -570,7 +570,7 @@ export function ContainerForm({
         </div>
         <div className="form-row">
           <NumberField control={control} errors={errors} name="heightInches" label="Height (in)" />
-          <TextField control={control} errors={errors} name="color" label="Colour" nullable placeholder="#RRGGBB" />
+          <TextField control={control} errors={errors} name="color" label="Color" nullable placeholder="#RRGGBB" />
         </div>
         <CheckboxField control={control} name="isShownInUI" label="Show in 3D view" />
       </form>
@@ -734,7 +734,7 @@ export function StairForm({
       <form id="stairForm" onSubmit={handleSubmit(onSubmit)} className="entity-form">
         <TextField control={control} errors={errors} name="name" label="Name" nullable />
         <SelectField control={control} errors={errors} name="shape" label="Shape" options={enumOptions(STAIR_SHAPE_NAMES)} required />
-        <p className="form-hint">From room is the lower storey; leave “to room” empty for an exterior level.</p>
+        <p className="form-hint">From room is the lower story; leave “to room” empty for an exterior level.</p>
         <div className="form-row">
           <SelectField control={control} errors={errors} name="fromRoomId" label="From room (lower)" options={roomOptions} placeholder="Pick a room" required />
           <SelectField control={control} errors={errors} name="toRoomId" label="To room (upper)" options={roomOptions} placeholder="(outside)" />

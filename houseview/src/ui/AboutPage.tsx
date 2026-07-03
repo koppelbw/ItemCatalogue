@@ -1,6 +1,7 @@
 import gsap from 'gsap';
 import { useEffect, useRef } from 'react';
 import type { SceneModel } from '../model';
+import { SocialFooter } from './SocialFooter';
 import { TopNav, type View } from './TopNav';
 
 // "About" - the story of the application: why it exists, how the backend is
@@ -18,6 +19,7 @@ const STACK = [
   'EF Core 10',
   'SQL Server',
   'FluentValidation',
+  'Azure Blob Storage',
   'OpenTelemetry',
   'OpenAPI',
   'SSDT (.sqlproj)',
@@ -25,6 +27,8 @@ const STACK = [
   'React 18',
   'Three.js / @react-three/fiber',
   'GSAP',
+  'React Query',
+  'React Hook Form + Zod',
   'TypeScript + Vite',
 ];
 
@@ -39,7 +43,11 @@ const PATTERNS: { title: string; body: string }[] = [
   },
   {
     title: 'Soft vs. hard delete',
-    body: 'Items are soft-deleted (IsDeleted + a DeletedReason, so history survives); Rooms, Locations and Persons are hard-deleted via ExecuteDeleteAsync.',
+    body: 'Only Items are soft-deleted (IsDeleted + a DeletedReason, so history survives and the removal is written to the item’s event log); every other entity is hard-deleted via ExecuteDeleteAsync.',
+  },
+  {
+    title: 'Per-item event log',
+    body: 'Each Item carries an ItemEvent timeline — created, updated, soft-deleted — so an item’s history is a queryable audit trail rather than something that scrolls off the screen.',
   },
   {
     title: 'Optimistic concurrency',
@@ -83,6 +91,14 @@ const DECISIONS: { title: string; body: string }[] = [
   {
     title: 'Vendor-neutral observability',
     body: 'OpenTelemetry traces, metrics and logs with auto-instrumentation. Only the exporter is environment-specific: Application Insights in Azure, OTLP to a local Aspire dashboard, or quietly nothing.',
+  },
+  {
+    title: 'Storage behind a port',
+    body: 'Picture bytes go to Azure Blob Storage through an IImageStorage port defined in Application; the Azure SDK lives only in a separate Infrastructure project. Uploads proxy through the API (magic-byte sniffed before they reach storage) and are read back via short-lived SAS URLs.',
+  },
+  {
+    title: 'Built to run as a public demo',
+    body: 'A background service resets the database to its seed baseline on a schedule, rate limiting guards the endpoints, and CORS is scoped to the deployed Static Web App. Shipped to Azure through a GitHub Actions pipeline.',
   },
 ];
 
@@ -130,8 +146,9 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
           <h2>Why this exists</h2>
           <p>
             <strong>ItemCatalogue</strong> is a personal catalogue for the physical things you own — track <em>what</em> an
-            item is, <em>where</em> it lives (location and room), <em>who</em> owns it, what it&rsquo;s worth, and whether
-            it&rsquo;s been disposed of and why. Right now it&rsquo;s tracking{' '}
+            item is, <em>where</em> it lives (which building, which floor, which room, right down to the drawer it&rsquo;s
+            inside), <em>who</em> owns it, what it&rsquo;s worth, and whether it&rsquo;s been disposed of and why. Right now
+            it&rsquo;s tracking{' '}
             <strong>{model.totalItems} item{model.totalItems === 1 ? '' : 's'}</strong> across{' '}
             <strong>{model.sites.length} place{model.sites.length === 1 ? '' : 's'}</strong>.
           </p>
@@ -147,8 +164,11 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
         <section className="about-section index-reveal">
           <h2>The backend</h2>
           <p>
-            A JSON REST API exposing CRUD for four entities — <code>Item</code>, <code>Room</code>, <code>Location</code>{' '}
-            and <code>Person</code> — arranged as five projects with dependencies pointing inward toward the domain:
+            A JSON REST API — around a dozen resources spanning a spatial model (<code>Location</code>,{' '}
+            <code>Floor</code>, <code>Room</code>, <code>Container</code>, <code>Item</code>, plus the <code>Door</code>s
+            and <code>Stair</code>s that join rooms up) and the things that describe them (<code>Person</code>,{' '}
+            <code>Tag</code>, <code>Collection</code>, <code>ItemEvent</code>, <code>Picture</code>) — arranged as five
+            projects with dependencies pointing inward toward the domain:
           </p>
           <div className="arch-diagram" aria-label="Architecture diagram">
             <div className="arch-row">
@@ -174,6 +194,10 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
             </div>
             <div className="arch-row arch-row-db">
               <div className="arch-box arch-db">
+                <strong>Infrastructure</strong>
+                <span>Azure Blob adapter</span>
+              </div>
+              <div className="arch-box arch-db">
                 <strong>Database (.sqlproj)</strong>
                 <span>owns the SQL Server schema — raw SQL, not EF migrations</span>
               </div>
@@ -186,6 +210,23 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
               </span>
             ))}
           </div>
+        </section>
+
+        <section className="about-section index-reveal">
+          <h2>The domain model</h2>
+          <p>
+            What began as four flat entities is now a small, <em>measured</em> world. Everything hangs off a{' '}
+            <strong>Location → Floor → Room → Container → Item</strong> hierarchy, and it carries real dimensions: floors,
+            rooms, containers, doors and stairs all store inch-accurate sizes and positions. That geometry is exactly what
+            lets the neighborhood render as a truthful cutaway of the actual space rather than a decorative cartoon.
+          </p>
+          <p>
+            An <code>Item</code> lives directly in a <code>Room</code> or nested inside a <code>Container</code> (which can
+            itself sit inside another container), is owned by a <code>Person</code>, can be labeled with{' '}
+            <code>Tag</code>s, gathered into <code>Collection</code>s, photographed with <code>Picture</code>s, and keeps a
+            running <code>ItemEvent</code> history. <code>Door</code>s and <code>Stair</code>s connect rooms so the scene
+            knows how the stories join together.
+          </p>
         </section>
 
         <section className="about-section index-reveal">
@@ -215,27 +256,35 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
         <section className="about-section index-reveal">
           <h2>Quality &amp; testing</h2>
           <p>
-            Four test projects (xUnit v3 + NSubstitute + Shouldly) cover the Domain, Application, Persistence and API
-            layers — the integration tiers provision a real SQL Server in Docker via Testcontainers, deployed from the
-            same SSDT dacpac that owns the schema, with a schema-drift gate keeping the EF model honest against it.
+            Five test projects (xUnit v3 + NSubstitute + Shouldly) cover the Domain, Application, Persistence, API and
+            Infrastructure layers — the integration tiers stand up real dependencies in Docker via Testcontainers: a SQL
+            Server deployed from the same SSDT dacpac that owns the schema, and Azurite for blob storage. A schema-drift
+            gate keeps the EF model honest against that dacpac.
           </p>
         </section>
 
         <section className="about-section index-reveal">
           <h2>How this UI was made</h2>
           <p>
-            The front-end you are looking at — the isometric 3D neighborhood, the searchable Index, and this page — was
-            designed and built by <strong>Claude Fable&nbsp;5</strong>, Anthropic&rsquo;s frontier model, working inside{' '}
-            <strong>Claude Code</strong>: from the first <code>npm install</code> through the camera choreography, the
-            Sims-style cutaway dollhouse, half-wall sightline logic, ghost floors, and every GSAP transition, verified
-            against the running app along the way.
+            The front-end you are looking at — the isometric 3D neighborhood, the searchable Index, the full Manage
+            workspace, and this page — was designed and built by <strong>Claude Fable&nbsp;5</strong>, Anthropic&rsquo;s
+            frontier model, working inside <strong>Claude Code</strong>: from the first <code>npm install</code> through
+            the camera choreography, the Sims-style cutaway dollhouse, half-wall sightline logic, ghost floors, and every
+            GSAP transition, verified against the running app along the way.
           </p>
           <p>
             It is a Vite + React + TypeScript app: <strong>Three.js</strong> via <code>@react-three/fiber</code> renders
             the neighborhood (every database Location is its own building, furnished from primitive boxes, cylinders and
-            spheres — no 3D asset files), <strong>GSAP</strong> drives the cinematics, and a dev-server proxy talks to the
-            API — falling back to a bundled mirror of the seed data when the backend is asleep, which is why this page
-            works either way.
+            spheres — no 3D asset files), <strong>GSAP</strong> drives the cinematics, and <strong>React Query</strong>{' '}
+            talks to the API — falling back to a bundled mirror of the seed data when the backend is asleep, which is why
+            this page works either way.
+          </p>
+          <p>
+            It is not read-only. The <strong>Manage</strong> page is a complete CRUD workspace over every entity —
+            locations, floors, rooms, containers, doors, stairs, items, people, tags and collections — with{' '}
+            <strong>React Hook Form + Zod</strong> forms, an explorer tree, and paginated tables; edits round-trip through
+            the same concurrency tokens and validation the API enforces, and quietly switch off when only demo data is
+            present.
           </p>
           <div className="about-credit">
             <span className="about-credit-mark">✳</span>
@@ -254,6 +303,8 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
             Browse the Index →
           </button>
         </footer>
+
+        <SocialFooter />
       </div>
     </div>
   );

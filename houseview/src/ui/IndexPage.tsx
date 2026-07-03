@@ -4,6 +4,8 @@ import type { SceneModel } from '../model';
 import { formatPrice, itemValue, primaryType } from '../model';
 import { useCollections, useTagItemIds, useTags } from '../mutations';
 import { ITEM_TYPE_COLORS, ITEM_TYPE_NAMES, type ResolvedItem } from '../types';
+import { Paginated } from './Paginated';
+import { SocialFooter } from './SocialFooter';
 import { TopNav, type View } from './TopNav';
 
 // "The Index" - the traditional counterpart to the dollhouse: an editorial,
@@ -65,7 +67,6 @@ export function IndexPage({ model, live, onNavigate, onViewItem }: IndexPageProp
   const [stored, setStored] = useState<StoredFilter>('all');
   const [sort, setSort] = useState<SortKey>('name');
   const rootRef = useRef<HTMLDivElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const all = useMemo(() => [...model.itemsById.values()], [model]);
@@ -288,19 +289,6 @@ export function IndexPage({ model, live, onNavigate, onViewItem }: IndexPageProp
     searchRef.current?.focus();
   }, []);
 
-  // rows cascade in whenever the result set changes
-  const filterKey = filtered.map((r) => r.item.id).join(',');
-  useEffect(() => {
-    const rows = listRef.current?.children;
-    if (!rows || rows.length === 0) return;
-    gsap.fromTo(
-      rows,
-      { y: 16, autoAlpha: 0 },
-      { y: 0, autoAlpha: 1, duration: 0.4, stagger: 0.035, ease: 'power2.out', overwrite: 'auto' },
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterKey]);
-
   // "/" focuses search; Escape clears it, then leaves the page
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -488,17 +476,22 @@ export function IndexPage({ model, live, onNavigate, onViewItem }: IndexPageProp
             <button onClick={resetFilters}>Clear the filters</button>
           </div>
         ) : (
-          <ul className="index-list" ref={listRef}>
-            {filtered.map((r) => (
-              <IndexRow key={r.item.id} resolved={r} onView={() => onViewItem(r.item.id)} />
-            ))}
-          </ul>
+          // remount (resetting to page 1) whenever the filter/sort signature changes
+          <Paginated
+            key={`${query}|${sort}|${[...types].join(',')}|${locationId}|${floorId}|${roomId}|${containerId}|${collectionId}|${tagId}|${ownerId}|${stored}`}
+            rows={filtered}
+            pageSize={25}
+          >
+            {(pageRows) => <IndexList pageRows={pageRows} onViewItem={onViewItem} />}
+          </Paginated>
         )}
 
         <footer className="index-footer">
           Showing {filtered.length} of {all.length} items
           {totalValue > 0 && <> · combined value {formatPrice(totalValue)}</>}
         </footer>
+
+        <SocialFooter />
       </div>
     </div>
   );
@@ -543,6 +536,30 @@ function FilterSelect({
         </option>
       )}
     </select>
+  );
+}
+
+/** One page of rows; cascades them in whenever the visible page changes. */
+function IndexList({ pageRows, onViewItem }: { pageRows: ResolvedItem[]; onViewItem: (id: number) => void }) {
+  const listRef = useRef<HTMLUListElement>(null);
+  const pageKey = pageRows.map((r) => r.item.id).join(',');
+  useEffect(() => {
+    const rows = listRef.current?.children;
+    if (!rows || rows.length === 0) return;
+    gsap.fromTo(
+      rows,
+      { y: 16, autoAlpha: 0 },
+      { y: 0, autoAlpha: 1, duration: 0.4, stagger: 0.035, ease: 'power2.out', overwrite: 'auto' },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageKey]);
+
+  return (
+    <ul className="index-list" ref={listRef}>
+      {pageRows.map((r) => (
+        <IndexRow key={r.item.id} resolved={r} onView={() => onViewItem(r.item.id)} />
+      ))}
+    </ul>
   );
 }
 

@@ -23,6 +23,7 @@ import {
 import { CollectionMembers } from './CollectionMembers';
 import { Explorer } from './Explorer';
 import { Paginated } from './Paginated';
+import { SocialFooter } from './SocialFooter';
 import { TopNav, type View } from './TopNav';
 import {
   CollectionForm,
@@ -467,6 +468,8 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
             </Paginated>
           </Section>
         )}
+
+        <SocialFooter />
       </div>
 
       {/* forms */}

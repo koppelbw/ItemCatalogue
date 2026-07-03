@@ -25,7 +25,7 @@ interface DetailPanelProps {
   onSelectContainer: (id: number) => void;
   onSelectRoom: (roomId: number) => void;
   onSelectLocation: (locationId: number) => void;
-  /** fly the dollhouse to a storey (by levelIndex) of the active location */
+  /** fly the dollhouse to a story (by levelIndex) of the active location */
   onSelectFloor: (levelIndex: number) => void;
   onEditItem: (item: ItemResponse) => void;
   onDeleteItem: (item: ItemResponse) => void;
@@ -337,7 +337,7 @@ interface CrumbHandlers {
   location: (locationId: number) => void;
 }
 
-/** Location › Floor › Room crumbs, spelling the storey out only for multi-floor locations. */
+/** Location › Floor › Room crumbs, spelling the story out only for multi-floor locations. */
 function roomCrumbs(room: RoomResponse, model: SceneModel, on: CrumbHandlers): Crumb[] {
   const crumbs: Crumb[] = [];
   const floor = model.floorsById.get(room.floorId);

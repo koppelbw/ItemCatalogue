@@ -23,7 +23,7 @@ const viewFromHash = (): View =>
         ? 'manage'
         : 'house';
 
-/** the storey shown first for a location: the ground floor when there is one */
+/** the story shown first for a location: the ground floor when there is one */
 function defaultLevel(site: Site | null): number {
   if (!site || site.floors.length === 0) return 0;
   const levels = site.floors.map((f) => f.levelIndex);
@@ -59,7 +59,7 @@ export default function App() {
     () => (model && data && activeSiteObj ? placeRooms(activeSiteObj, model, data) : []),
     [model, data, activeSiteObj],
   );
-  // storeys of the active location, top-down for the switcher
+  // stories of the active location, top-down for the switcher
   const levels = useMemo(
     () => (activeSiteObj ? [...activeSiteObj.floors].sort((a, b) => b.levelIndex - a.levelIndex) : []),
     [activeSiteObj],
@@ -95,7 +95,7 @@ export default function App() {
     setFocus({ target, zoomFactor, seq: seqRef.current });
   }, []);
 
-  // Switching floors glides the camera up/down to the storey being shown.
+  // Switching floors glides the camera up/down to the story being shown.
   const changeFloor = useCallback(
     (level: number) => {
       setFloor(level);
@@ -141,7 +141,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [floor, changeFloor, view, levels]);
 
-  // Fly to a placed room, switching the floor focus to its storey so it is
+  // Fly to a placed room, switching the floor focus to its story so it is
   // actually visible (a focused basement rises to the surface).
   const flyToPlaced = (placed: PlacedRoom, zoom: number) => {
     setFloor(placed.level);

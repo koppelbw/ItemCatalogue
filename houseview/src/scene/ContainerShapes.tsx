@@ -4,10 +4,10 @@ import { B, Cyl, shift } from './primitives';
 // Distinct primitive silhouettes for containers that are really furniture
 // (beds, sofas, tables, dressers, wardrobes) rather than generic storage.
 // Every shape is built purely from the container's catalogued dimensions
-// (w × h × d) and colour — nothing hardcoded per instance — so what renders
+// (w × h × d) and color — nothing hardcoded per instance — so what renders
 // stays true to the database row, just more legible than a single box.
 //
-// Colour handling: parts derive from the RAW "#RRGGBB" colour with a single
+// Color handling: parts derive from the RAW "#RRGGBB" color with a single
 // channel shift, and hover/selection brightening folds into that same shift
 // (shift() cannot re-parse its own "rgb()" output, so never shift twice).
 
@@ -16,7 +16,7 @@ interface ContainerShapeProps {
   w: number;
   h: number;
   d: number;
-  /** raw stored colour, "#RRGGBB" */
+  /** raw stored color, "#RRGGBB" */
   color: string;
   /** hovered or selected — brightens every part */
   active: boolean;
@@ -26,7 +26,7 @@ interface ShapeProps {
   w: number;
   h: number;
   d: number;
-  /** part tone: channel shift relative to the stored colour, hover-aware */
+  /** part tone: channel shift relative to the stored color, hover-aware */
   tone: (by: number) => string;
 }
 
@@ -172,7 +172,7 @@ function GrandPianoShape({ w, h, d, tone }: ShapeProps) {
   );
 }
 
-/** Tall cabinet with a centre door seam and handles on the south face. */
+/** Tall cabinet with a center door seam and handles on the south face. */
 function WardrobeShape({ w, h, d, tone }: ShapeProps) {
   return (
     <>

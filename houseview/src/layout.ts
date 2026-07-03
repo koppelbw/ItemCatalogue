@@ -1,6 +1,6 @@
 // Spatial constants for the dollhouse. Room footprints now come from the
 // database (Room.OriginX/Y + Width/Depth in inches); this module owns the
-// inches → scene-unit scaling, the vertical storey rhythm, and the fallback
+// inches → scene-unit scaling, the vertical story rhythm, and the fallback
 // footprints used for rooms that have not been measured yet.
 
 export const WALL_HEIGHT = 2.5;
@@ -33,12 +33,12 @@ export function wallHeightFor(heightInches: number | null): number {
  */
 export const HOUSE_BASE = 0.22;
 
-/** Y of a storey's floor slab. levelIndex is signed (basement = -1, ground = 0, …). */
+/** Y of a story's floor slab. levelIndex is signed (basement = -1, ground = 0, …). */
 export function levelY(levelIndex: number): number {
   return HOUSE_BASE + levelIndex * LEVEL_HEIGHT;
 }
 
-/** World-space centre of the central dollhouse stage; active locations are laid out around it. */
+/** World-space center of the central dollhouse stage; active locations are laid out around it. */
 export const STAGE_CENTER: [number, number] = [6.5, 4.5];
 
 export interface Rect {
@@ -98,7 +98,7 @@ export function furnitureFor(roomType: number | null, name: string): FurnitureKi
   return NAME_FURNITURE.find(([match]) => key.includes(match))?.[1] ?? 'generic';
 }
 
-/** Visual shape for a top-level container, built from the container's own dimensions + colour. */
+/** Visual shape for a top-level container, built from the container's own dimensions + color. */
 export type ContainerShapeKind = 'bed' | 'seating' | 'table' | 'dresser' | 'wardrobe' | 'piano' | 'box';
 
 /**
@@ -186,7 +186,7 @@ export interface RoomPalette {
   accent: string;
 }
 
-/** Fallback palette by furniture kind, for rooms without stored colours. */
+/** Fallback palette by furniture kind, for rooms without stored colors. */
 export const FURNITURE_PALETTES: Record<FurnitureKind, RoomPalette> = {
   living: { floorColor: '#d9c2a0', wallColor: '#f1e2cc', accent: '#ef6f6c' },
   kitchen: { floorColor: '#ccd6d2', wallColor: '#dcebe2', accent: '#3ec6b8' },
