@@ -457,7 +457,13 @@ export function DetailPanel({
     const el = ref.current;
     if (!el) return;
     if (open) {
-      gsap.fromTo(el, { autoAlpha: 0, x: 60 }, { autoAlpha: 1, x: 0, duration: 0.6, ease: 'power3.out' });
+      // clearProps hands transform back to the stylesheet once the tween ends,
+      // so the desktop translateY(-50%) centring survives breakpoint resizes
+      gsap.fromTo(
+        el,
+        { autoAlpha: 0, x: 60 },
+        { autoAlpha: 1, x: 0, duration: 0.6, ease: 'power3.out', clearProps: 'transform,translate' },
+      );
     }
   }, [open, selection]);
 

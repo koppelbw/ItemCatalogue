@@ -46,9 +46,14 @@ export default function App() {
   const [deleteTarget, setDeleteTarget] = useState<ItemResponse | null>(null);
   const seqRef = useRef(0);
 
-  // The Location whose floors fill the central dollhouse. Falls back to the first
+  // The Location the site opens on: prefer the one named "House", else the first.
+  const defaultSiteKey = useMemo(
+    () => model?.sites.find((s) => s.label.toLowerCase() === 'house')?.key ?? model?.sites[0]?.key ?? '',
+    [model],
+  );
+  // The Location whose floors fill the central dollhouse. Falls back to the opening
   // location until one is explicitly chosen, so the stage is never empty.
-  const activeKey = model ? (model.sitesByKey.has(activeSite) ? activeSite : (model.sites[0]?.key ?? '')) : '';
+  const activeKey = model ? (model.sitesByKey.has(activeSite) ? activeSite : defaultSiteKey) : '';
   const activeSiteObj = model?.sitesByKey.get(activeKey) ?? null;
   const placedRooms = useMemo(
     () => (model && data && activeSiteObj ? placeRooms(activeSiteObj, model, data) : []),
