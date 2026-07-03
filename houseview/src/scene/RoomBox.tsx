@@ -2,7 +2,7 @@ import { Html } from '@react-three/drei';
 import { useState } from 'react';
 import { HALF_WALL_HEIGHT, SLAB_THICKNESS, WALL_THICKNESS, containerFacing, containerShapeFor, itemSpots, type Rect } from '../layout';
 import type { PlacedDoor, PlacedRoom } from '../model';
-import { WALL_EAST, WALL_NORTH, WALL_SOUTH, WALL_WEST, type Selection } from '../types';
+import { WALL_NORTH, WALL_WEST, type Selection } from '../types';
 import { ContainerShape } from './ContainerShapes';
 import { ItemMarker } from './ItemMarker';
 import { lighten } from './primitives';
@@ -69,7 +69,6 @@ export function RoomBox({ placed, selection, onSelectItem, onSelectRoom, onSelec
 
   const northDoors = doors.filter((d) => d.wall === WALL_NORTH);
   const westDoors = doors.filter((d) => d.wall === WALL_WEST);
-  const openDoors = doors.filter((d) => d.wall === WALL_SOUTH || d.wall === WALL_EAST);
 
   // door openings are cut into half walls too — a doorway taller than the half
   // wall leaves a clean gap (cutWall only adds a header when the door is shorter)
@@ -133,30 +132,6 @@ export function RoomBox({ placed, selection, onSelectItem, onSelectRoom, onSelec
             <meshStandardMaterial color="#b8a78c" roughness={0.7} />
           </mesh>
         ))}
-
-      {/* doors on the open (south/east) cutaway sides render as thresholds on the floor */}
-      {openDoors.map((d) => {
-        const alongX = d.wall === WALL_SOUTH;
-        const cx = alongX ? d.offset + d.w / 2 : rect.w - 0.02;
-        const cz = alongX ? rect.d - 0.02 : d.offset + d.w / 2;
-        return (
-          <group key={d.door.id}>
-            <mesh position={[cx, 0.04, cz]}>
-              <boxGeometry args={alongX ? [d.w, 0.08, 0.24] : [0.24, 0.08, d.w]} />
-              <meshStandardMaterial color="#9c7a52" roughness={0.6} />
-            </mesh>
-            {/* jamb posts so the opening reads as a doorway */}
-            <mesh position={[alongX ? d.offset : cx, d.h / 2, alongX ? cz : d.offset]} castShadow>
-              <boxGeometry args={[0.1, d.h, 0.1]} />
-              <meshStandardMaterial color="#9c7a52" roughness={0.7} />
-            </mesh>
-            <mesh position={[alongX ? d.offset + d.w : cx, d.h / 2, alongX ? cz : d.offset + d.w]} castShadow>
-              <boxGeometry args={[0.1, d.h, 0.1]} />
-              <meshStandardMaterial color="#9c7a52" roughness={0.7} />
-            </mesh>
-          </group>
-        );
-      })}
 
       {/* measured top-level containers, clickable */}
       {containers.map((pc) => (

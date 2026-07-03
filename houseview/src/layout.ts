@@ -220,7 +220,7 @@ export function fallbackRect(index: number): Rect {
 // rooms; the rest stand as small satellite buildings around the stage.
 // ---------------------------------------------------------------------------
 
-export type SiteKind = 'apartment' | 'cottage' | 'storage' | 'cabin' | 'car';
+export type SiteKind = 'apartment' | 'cottage' | 'townhouse' | 'storage' | 'cabin' | 'car';
 
 export interface SiteDef {
   kind: SiteKind;
@@ -234,7 +234,8 @@ export interface SiteDef {
 /** Shell silhouettes matched by location name; anything unrecognised is a cabin. */
 const NAME_SHELLS: [string, SiteKind][] = [
   ['apartment', 'apartment'],
-  ['grandma', 'cottage'],
+  ['grandma', 'townhouse'],
+  ['cottage', 'cottage'],
   ['storage', 'storage'],
   ['car', 'car'],
 ];

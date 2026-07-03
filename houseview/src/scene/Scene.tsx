@@ -413,7 +413,7 @@ export function Scene({
   const plinths = groundPlaced.map((p) => p.rect);
   // homes get the walk-up path + mailbox; apartments, storage units and cars don't
   const activeKind = model.sitesByKey.get(activeSite)?.def.kind;
-  const activeIsHouse = activeKind === 'cabin' || activeKind === 'cottage';
+  const activeIsHouse = activeKind === 'cabin' || activeKind === 'cottage' || activeKind === 'townhouse';
   return (
     <Canvas
       shadows

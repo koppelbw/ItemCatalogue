@@ -121,24 +121,54 @@ body {
   pointer-events: auto;
 }
 
-.nav-btn {
+.top-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 5px;
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+.top-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: none;
-  background: var(--ink);
-  color: #f8f2e7;
+  background: transparent;
+  color: var(--ink);
   font-family: var(--font-body);
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   padding: 10px 18px;
   border-radius: 999px;
   cursor: pointer;
-  box-shadow: var(--shadow);
-  transition: transform 0.22s ease, background 0.22s ease;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
-.nav-btn:hover {
-  transform: translateY(-2px);
-  background: #46403a;
+.top-nav-btn svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+.top-nav-btn:hover {
+  background: rgba(43, 38, 32, 0.09);
+}
+
+.top-nav-btn.primary {
+  background: var(--accent);
+  color: #fffdf7;
+  box-shadow: 0 6px 18px rgba(239, 111, 108, 0.45);
+}
+
+.top-nav-btn.primary:hover {
+  background: #e85e5b;
 }
 
 .stats {
@@ -1250,21 +1280,6 @@ body {
 
 /* ---------- the about page ---------- */
 
-.nav-btn-row {
-  display: flex;
-  gap: 8px;
-}
-
-.nav-btn-ghost {
-  background: var(--glass);
-  color: var(--ink);
-  border: 1px solid var(--glass-border);
-}
-
-.nav-btn-ghost:hover {
-  background: #fffdf7;
-}
-
 .about-header-right {
   display: flex;
   align-items: center;
@@ -1467,6 +1482,15 @@ body {
   .stats {
     padding: 10px 16px;
     gap: 16px;
+  }
+
+  /* icons-only for the secondary nav segments; keep the primary label */
+  .top-nav-btn:not(.primary) span {
+    display: none;
+  }
+
+  .top-nav-btn {
+    padding: 10px 14px;
   }
 
   .floor-switch {

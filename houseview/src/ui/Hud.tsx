@@ -81,6 +81,33 @@ export function Hud({
           </p>
         </div>
         <div className="header-right">
+          <nav className="top-nav" aria-label="Pages">
+            <button className="top-nav-btn primary" onClick={onBrowse} title="Browse the index">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <path d="M8.5 6h12M8.5 12h12M8.5 18h12" />
+                <circle cx="3.8" cy="6" r="1.5" fill="currentColor" stroke="none" />
+                <circle cx="3.8" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                <circle cx="3.8" cy="18" r="1.5" fill="currentColor" stroke="none" />
+              </svg>
+              <span>Browse</span>
+            </button>
+            <button className="top-nav-btn" onClick={onManage} title="Manage locations, rooms, containers and items">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <path d="M3.5 8h9M18.9 8h1.6M3.5 16h3M12.9 16h7.6" />
+                <circle cx="15.7" cy="8" r="2.6" />
+                <circle cx="9.7" cy="16" r="2.6" />
+              </svg>
+              <span>Manage</span>
+            </button>
+            <button className="top-nav-btn" onClick={onAbout} title="About Habitat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9.2" />
+                <path d="M12 11v5.4" />
+                <circle cx="12" cy="7.4" r="0.6" fill="currentColor" stroke="none" />
+              </svg>
+              <span>About</span>
+            </button>
+          </nav>
           <div className="stats">
             <div>
               <strong>{model.totalItems}</strong>
@@ -90,17 +117,6 @@ export function Hud({
               <strong>{model.sites.length}</strong>
               <span>places</span>
             </div>
-          </div>
-          <div className="nav-btn-row">
-            <button className="nav-btn" onClick={onBrowse}>
-              Browse the index ↗
-            </button>
-            <button className="nav-btn nav-btn-ghost" onClick={onManage}>
-              Manage
-            </button>
-            <button className="nav-btn nav-btn-ghost" onClick={onAbout}>
-              About
-            </button>
           </div>
         </div>
       </header>
