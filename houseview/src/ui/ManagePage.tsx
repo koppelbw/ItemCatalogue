@@ -179,7 +179,7 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
 
         <h1 className="index-title">Manage</h1>
         {!live && (
-          <p className="form-banner">Editing is disabled while showing demo data — start the API to make changes.</p>
+          <p className="form-banner">Editing is disabled while showing demo data</p>
         )}
         {banner && <p className="form-banner">{banner}</p>}
 

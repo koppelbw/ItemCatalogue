@@ -12,6 +12,14 @@
   max-width: 1040px;
 }
 
+/* the shared .index-title clips descenders at line-height:1; "Manage" has a
+   'g' that dips into the banner below, so give this page's title breathing room */
+.manage-page .index-title {
+  line-height: 1.1;
+  padding-bottom: 0.12em;
+  margin-bottom: 0.6rem;
+}
+
 .manage-tabs {
   display: flex;
   flex-wrap: wrap;

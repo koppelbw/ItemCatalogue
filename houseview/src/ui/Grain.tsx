@@ -73,12 +73,22 @@ export function Grain() {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         cancelAnimationFrame(raf);
-        setup();
+        try {
+          setup();
+        } catch {
+          return; // canvas unavailable; leave the grain off rather than loop on errors
+        }
         raf = requestAnimationFrame(frame);
       }, 150);
     };
 
-    setup();
+    // The grain is purely decorative — a canvas hiccup must never take the app
+    // down, so bail out quietly if setup fails instead of throwing out of the effect.
+    try {
+      setup();
+    } catch {
+      return;
+    }
     raf = requestAnimationFrame(frame);
     window.addEventListener('resize', onResize);
 
