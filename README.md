@@ -1,8 +1,8 @@
 # ItemCatalogue
 
-A personal catalogue for the physical things you own — track **what** an item is, **where** it's
-stored (Room → Location), **who** owns it, what it's worth, and whether it's been disposed of and
-why.
+A personal catalogue for the physical things you own — track **what** an item is, **where** it
+lives (Location → Floor → Room → Container), **who** owns it, what it's worth, and whether it's
+been disposed of and why.
 
 ItemCatalogue is a small, real-world domain used as a vehicle for practicing **Clean / Hexagonal
 Architecture** and modern ASP.NET Core. It is a personal-scale application (a home inventory), so
@@ -23,17 +23,55 @@ The comments are not there for a production audience; they are a **learning log 
 
 ## What it does
 
-A JSON REST API exposing CRUD for four entities:
+A JSON REST API exposing CRUD for the full spatial hierarchy of a home plus the items inside it:
 
-| Entity     | Route            | Notes                                                         |
-|------------|------------------|---------------------------------------------------------------|
-| `Item`     | `api/items`      | The thing you own. **Soft delete** (kept with a reason).      |
-| `Room`     | `api/rooms`      | A physical room. **Hard delete.**                             |
-| `Location` | `api/locations`  | A storage spot within a room. **Hard delete.**                |
-| `Person`   | `api/persons`    | An owner. **Hard delete.**                                     |
+| Entity      | Route                        | Notes                                                        |
+|-------------|------------------------------|--------------------------------------------------------------|
+| `Location`  | `api/locations`              | A building/property (house, storage unit, …).                |
+| `Floor`     | `api/floors`                 | A story within a location.                                   |
+| `Room`      | `api/rooms`                  | A room on a floor, with real plan geometry (origin, footprint, rotation, colors — in inches). |
+| `Container` | `api/containers`             | A storage container in a room; containers can nest.          |
+| `Item`      | `api/items`                  | The thing you own. **Soft delete** (kept with a reason).     |
+| `ItemEvent` | `api/items/{id}/events`      | Timeline events for an item.                                 |
+| `Door`      | `api/doors`                  | A doorway between rooms (rendered in 3D).                    |
+| `Stair`     | `api/stairs`                 | A staircase between floors (rendered in 3D).                 |
+| `Person`    | `api/persons`                | An owner.                                                    |
+| `Tag`       | `api/tags`                   | Free-form labels for items.                                  |
+| `Collection`| `api/collections`            | Named groupings of items.                                    |
+| `Picture`   | `api/{owner}/{id}/pictures`  | Photos for locations/rooms/containers/items, stored in Azure Blob Storage. |
 
 An `Item` has a type (stored as a JSON array — items can be more than one type), an optional price,
-a storage location, and an owner.
+a container or room it lives in, and an owner. Geometry entities (rooms, doors, stairs, measured
+containers) carry real-world dimensions in inches so the 3D UI can rebuild the house to scale.
+
+---
+
+## Front ends
+
+### 🏠 Habitat (`houseview/`) — the catalogue, spatially
+
+**Live at <https://purple-tree-02473b20f.7.azurestaticapps.net/#/index>**
+
+An isometric 3D "dollhouse" view of the database, in the spirit of The Sims' cutaway camera. Every
+`Location` is a building in the neighborhood; the active one opens as a cutaway dollhouse built
+from its **Floors → Rooms → Containers**, laid out from the real plan geometry stored in the
+database. Doors are cut into the walls, stairs climb between stories, and every item floats as a
+holographic marker in the room it ultimately lives in. It also includes:
+
+- **The Index** (`#/index`) — a searchable, filterable, sortable flat list of everything.
+- **Manage** (`#/manage`) — CRUD tables for every entity, with Zod-validated forms mirroring the
+  server's FluentValidation rules, `rowVersion` round-tripping for optimistic concurrency, and
+  RFC 9457 ProblemDetails mapped onto form fields.
+
+Built with **React + Three.js (@react-three/fiber, drei) + GSAP + TanStack Query +
+react-hook-form + Zod** on Vite. See [`houseview/README.md`](houseview/README.md) for how the
+database maps to 3D and how to run it locally (`npm run dev` proxies to the API on port 5012;
+without a live API it falls back to bundled demo data).
+
+### 📋 catalogue-ui (`catalogue-ui/`)
+
+A conventional React + TypeScript CRUD front end, built from scratch as a guided React learning
+exercise. Deployed to its own Azure Static Web App via its own pipeline.
 
 ---
 
@@ -41,40 +79,48 @@ a storage location, and an owner.
 
 - **.NET 10 / C#** — ASP.NET Core Web API (controllers)
 - **EF Core 10** over **SQL Server**
+- **React + TypeScript + Vite** front ends (Three.js/R3F for the 3D view)
 - **FluentValidation** for request validation
-- **OpenTelemetry** (traces + metrics + logs) with auto-instrumentation
+- **OpenTelemetry** (traces + metrics + logs) with auto-instrumentation, exported to
+  **Application Insights** in Azure
 - **OpenAPI** (built-in) for the API surface
 - **SQL Server Database Project (`.sqlproj`)** — schema is source-controlled as raw SQL
+- **xUnit v3 + NSubstitute + Shouldly + Testcontainers** for the test suite
+- **Azure** — App Service (API), Azure SQL, Static Web Apps (both UIs), Blob Storage (pictures),
+  deployed by **GitHub Actions**
 - **Aspire Dashboard** (via Docker Compose) for viewing telemetry locally
 
 ---
 
 ## Architecture
 
-Clean / Hexagonal (Ports & Adapters). Five projects, dependencies pointing **inward** toward the
+Clean / Hexagonal (Ports & Adapters). Six projects, dependencies pointing **inward** toward the
 domain:
 
 ```
-ItemCatalogueAPI  ──► Application ──► Domain ◄── Persistence
-   (composition         (use cases,      (entities,        (EF Core adapters,
-    root, HTTP)          DTOs, ports)     ports, rules)      DbContext)
+ItemCatalogueAPI ──► Application ──► Domain ◄── Persistence
+  (composition        (use cases,     (entities,    (EF Core adapters,
+   root, HTTP)         DTOs, ports)    ports, rules)  DbContext)
+                                         ▲
+                                         └────────── Infrastructure
+                                                      (Azure Blob Storage adapter)
 
 Database (.sqlproj) ── owns the SQL Server schema (not EF migrations)
 ```
 
-- **`Domain`** — Entities (`Item`, `Room`, `Location`, `Person`), enums (`ItemType`,
-  `DeletedReason`), domain exceptions, pagination primitives, and the **repository ports**
-  (`IItemRepository`, …). No framework dependencies.
-- **`Application`** — Use-case services (`ItemService`, …) behind **service ports**
-  (`IItemService`, …), DTOs, manual mapping helpers, and FluentValidation validators. Orchestrates
-  repositories; speaks DTOs in and out.
+- **`Domain`** — Entities (`Location`, `Floor`, `Room`, `Container`, `Item`, `Door`, `Stair`,
+  `Person`, `Tag`, `Collection`, `ItemEvent`, `Picture`), enums, domain exceptions, pagination
+  primitives, and the **repository ports**. No framework dependencies.
+- **`Application`** — Use-case services behind **service ports**, DTOs, manual mapping helpers,
+  and FluentValidation validators. Orchestrates repositories; speaks DTOs in and out.
 - **`Persistence`** — EF Core **repository adapters**, the `DbContext`, and a SaveChanges
   interceptor for auditing.
+- **`Infrastructure`** — External-service adapters; currently the **Azure Blob Storage** adapter
+  behind the picture-storage port (proxy upload, SAS-token reads).
 - **`ItemCatalogueAPI`** — The composition root: controllers, DI wiring, exception-handling
   middleware, observability setup, and the HTTP pipeline.
 - **`Database`** — A SQL Server SSDT project holding the schema as raw `.sql` table definitions plus
-  post-deployment seed scripts. **Schema is managed here, not via EF migrations.** (Builds in Visual
-  Studio / MSBuild, not the `dotnet` CLI.)
+  post-deployment seed scripts. **Schema is managed here, not via EF migrations.**
 
 ### Key architectural decisions
 
@@ -86,8 +132,8 @@ Database (.sqlproj) ── owns the SQL Server schema (not EF migrations)
 - **Schema-first via a SQL project**, not EF migrations — the database is the source of truth for
   the schema.
 - **Per-layer DI modules.** Each layer owns an `AddXxx()` extension (`AddApplication`,
-  `AddPersistence`, `AddObservability`, `AddGlobalExceptionHandling`) so `Program.cs` stays a thin
-  composition root.
+  `AddPersistence`, `AddInfrastructure`, `AddObservability`, `AddGlobalExceptionHandling`) so
+  `Program.cs` stays a thin composition root.
 
 ### Design patterns
 
@@ -96,7 +142,7 @@ Database (.sqlproj) ── owns the SQL Server schema (not EF migrations)
   includes) access.
 - **DTO / request–response** at the API boundary; entities never leak out of the Application layer.
 - **Soft vs. hard delete strategies** — `Item` is soft-deleted (`IsDeleted` + `DeletedReason`);
-  `Room`/`Location`/`Person` are hard-deleted via `ExecuteDeleteAsync`.
+  everything else is hard-deleted via `ExecuteDeleteAsync`.
 - **Optimistic concurrency** via a SQL `ROWVERSION` token that round-trips through the DTOs; a stale
   write raises `ConcurrencyConflictException` → **HTTP 409** instead of silently clobbering.
 - **Offset pagination envelope** — every list endpoint is paginated (`PageRequest` → `PagedResult`),
@@ -113,6 +159,35 @@ Database (.sqlproj) ── owns the SQL Server schema (not EF migrations)
 
 ---
 
+## Testing
+
+Five test projects mirror the five source layers (~400 tests): `Domain.Tests`,
+`Application.Tests`, `Persistence.Tests`, `ItemCatalogueAPI.Tests`, and `Infrastructure.Tests`,
+on **xUnit v3 + NSubstitute + Shouldly**.
+
+- Domain and Application tests are pure unit tests.
+- Persistence, API, and Infrastructure tests are integration tests running against real
+  dependencies via **Testcontainers** (SQL Server + Azurite) — Docker required.
+- A **schema drift gate** (`SchemaDriftTests`, using EfCore.SchemaCompare) fails the build if the
+  EF model and the SSDT dacpac ever disagree, keeping the schema-first approach honest.
+
+---
+
+## CI/CD & Azure
+
+Three independent GitHub Actions pipelines, each triggered only by its own paths:
+
+- [`ci-cd.yml`](.github/workflows/ci-cd.yml) — builds the solution, runs the full test suite
+  (Testcontainers on the Linux runner), then — on `master` only, after tests pass — publishes the
+  dacpac to **Azure SQL** and the API to **Azure App Service**.
+- [`houseview.yml`](.github/workflows/houseview.yml) — builds Habitat and deploys it to its own
+  **Azure Static Web App** (PRs get automatic preview environments).
+- [`frontend.yml`](.github/workflows/frontend.yml) — same treatment for catalogue-ui.
+
+Telemetry from the deployed API flows to **Application Insights**.
+
+---
+
 ## Observability
 
 Vendor-neutral OpenTelemetry instrumentation; only the **exporter** is environment-specific:
@@ -125,17 +200,31 @@ A local **Aspire Dashboard** is provided via `docker-compose.aspire.yml`; see
 [`LOCAL-TELEMETRY.md`](LOCAL-TELEMETRY.md) for the walk-through. Use the `http (Aspire)` /
 `https (Aspire)` launch profiles to point telemetry at it.
 
+---
+
+## Running locally
+
+See [`LOCAL-DATABASE.md`](LOCAL-DATABASE.md) for the full walk-through. The short version:
+
+```bash
+docker compose -f docker-compose.sqlserver.yml up -d   # SQL Server
+dotnet run --project ItemCatalogueAPI --launch-profile http   # API on :5012
+cd houseview && npm install && npm run dev             # Habitat on :5173
+```
 
 ---
 
 ## Roadmap / TODO
 
-- [ ] **React UI** — a front-end SPA for browsing and managing the catalogue.
+- [x] **React UI** — two of them: Habitat (3D) and catalogue-ui.
+- [x] **Unit & integration testing** — ~400 tests across five projects.
+- [x] **Deploy to Azure** — API, database, and both UIs live via GitHub Actions CI/CD.
+- [x] **Pictures** — photo upload/read for locations, rooms, containers, and items via Blob
+      Storage (feature complete; Azure storage account provisioning still pending).
 - [ ] **Authentication & authorization** — secure the API (likely Entra ID / OIDC) and scope data
       to the owner.
-- [ ] **Unit testing** — service- and repository-level tests (the interfaces and manual mapping are
-      already test-friendly).
-- [ ] **Deploy to Azure** — host the API + database in Azure, wire up Application Insights.
+- [ ] **Infrastructure as code** — Terraform for the Azure resources (currently provisioned
+      manually).
 - [ ] **Bulk upload via Excel template** — upload an Excel sheet of items processed asynchronously:
   - Excel file lands in **Azure Blob Storage**
   - a message is dropped on a **Blob / Storage Queue**
