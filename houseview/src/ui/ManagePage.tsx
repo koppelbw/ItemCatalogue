@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { useCatalogue } from '../api';
+import { DEMO_HINT, useCatalogue } from '../api';
 import { formatPrice, itemValue } from '../model';
 import { mapApiError, useCollections, useRemove, useTags } from '../mutations';
 import {
@@ -194,7 +194,7 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
         {tab === 'explore' && <Explorer data={data} live={live} openForm={setForm} deleteItem={setDeleteItem} />}
 
         {tab === 'items' && (
-          <Section title="Items" onAdd={live ? () => setForm({ kind: 'item' }) : undefined}>
+          <Section title="Items" live={live} onAdd={() => setForm({ kind: 'item' })}>
             <Paginated rows={data.items}>
               {(rows) => (
             <table className="manage-table">
@@ -228,7 +228,7 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
         )}
 
         {tab === 'locations' && (
-          <Section title="Locations" onAdd={live ? () => setForm({ kind: 'location' }) : undefined}>
+          <Section title="Locations" live={live} onAdd={() => setForm({ kind: 'location' })}>
             <Paginated rows={data.locations}>
               {(rows) => (
             <table className="manage-table">
@@ -258,7 +258,7 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
         )}
 
         {tab === 'floors' && (
-          <Section title="Floors" onAdd={live ? () => setForm({ kind: 'floor' }) : undefined}>
+          <Section title="Floors" live={live} onAdd={() => setForm({ kind: 'floor' })}>
             <Paginated rows={data.floors}>
               {(rows) => (
             <table className="manage-table">
@@ -285,7 +285,7 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
         )}
 
         {tab === 'rooms' && (
-          <Section title="Rooms" onAdd={live ? () => setForm({ kind: 'room' }) : undefined}>
+          <Section title="Rooms" live={live} onAdd={() => setForm({ kind: 'room' })}>
             <Paginated rows={data.rooms}>
               {(rows) => (
             <table className="manage-table">
@@ -311,7 +311,7 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
         )}
 
         {tab === 'containers' && (
-          <Section title="Containers" onAdd={live ? () => setForm({ kind: 'container' }) : undefined}>
+          <Section title="Containers" live={live} onAdd={() => setForm({ kind: 'container' })}>
             <Paginated rows={data.containers}>
               {(rows) => (
             <table className="manage-table">
@@ -343,7 +343,7 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
         )}
 
         {tab === 'doors' && (
-          <Section title="Doors" onAdd={live ? () => setForm({ kind: 'door' }) : undefined}>
+          <Section title="Doors" live={live} onAdd={() => setForm({ kind: 'door' })}>
             <Paginated rows={data.doors}>
               {(rows) => (
             <table className="manage-table">
@@ -371,7 +371,7 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
         )}
 
         {tab === 'stairs' && (
-          <Section title="Stairs" onAdd={live ? () => setForm({ kind: 'stair' }) : undefined}>
+          <Section title="Stairs" live={live} onAdd={() => setForm({ kind: 'stair' })}>
             <Paginated rows={data.stairs}>
               {(rows) => (
             <table className="manage-table">
@@ -398,7 +398,7 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
         )}
 
         {tab === 'persons' && (
-          <Section title="People" onAdd={live ? () => setForm({ kind: 'person' }) : undefined}>
+          <Section title="People" live={live} onAdd={() => setForm({ kind: 'person' })}>
             <Paginated rows={data.persons}>
               {(rows) => (
             <table className="manage-table">
@@ -421,7 +421,7 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
         )}
 
         {tab === 'tags' && (
-          <Section title="Tags" onAdd={live ? () => setForm({ kind: 'tag' }) : undefined}>
+          <Section title="Tags" live={live} onAdd={() => setForm({ kind: 'tag' })}>
             <Paginated rows={tagsQuery.data ?? []}>
               {(rows) => (
             <table className="manage-table">
@@ -445,7 +445,7 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
         )}
 
         {tab === 'collections' && (
-          <Section title="Collections" onAdd={live ? () => setForm({ kind: 'collection' }) : undefined}>
+          <Section title="Collections" live={live} onAdd={() => setForm({ kind: 'collection' })}>
             <Paginated rows={collectionsQuery.data ?? []}>
               {(rows) => (
             <table className="manage-table">
@@ -457,7 +457,14 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
                     <td>{c.name}</td>
                     <td>{c.items.length}</td>
                     <td className="row-actions">
-                      {live && <button className="btn btn-small" onClick={() => setMembers(c)}>Members</button>}
+                      <button
+                        className={live ? 'btn btn-small' : 'btn btn-small demo-disabled'}
+                        disabled={!live}
+                        title={live ? undefined : DEMO_HINT}
+                        onClick={() => setMembers(c)}
+                      >
+                        Members
+                      </button>
                       <RowActions live={live} onEdit={() => setForm({ kind: 'collection', initial: c })} onDelete={() => confirmDelete(`collection "${c.name}"`, () => removeCollection.mutateAsync({ id: c.id }))} />
                     </td>
                   </tr>
@@ -514,13 +521,18 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
   );
 }
 
-function Section({ title, onAdd, children }: { title: string; onAdd?: () => void; children: ReactNode }) {
+function Section({ title, live, onAdd, children }: { title: string; live: boolean; onAdd?: () => void; children: ReactNode }) {
   return (
     <section className="manage-section">
       <div className="manage-section-head">
         <h2>{title}</h2>
         {onAdd && (
-          <button className="btn btn-primary btn-small" onClick={onAdd}>
+          <button
+            className={live ? 'btn btn-primary btn-small' : 'btn btn-primary btn-small demo-disabled'}
+            disabled={!live}
+            title={live ? undefined : DEMO_HINT}
+            onClick={onAdd}
+          >
             + Add
           </button>
         )}
@@ -531,14 +543,23 @@ function Section({ title, onAdd, children }: { title: string; onAdd?: () => void
 }
 
 function RowActions({ live, onEdit, onDelete, deleted }: { live: boolean; onEdit: () => void; onDelete: () => void; deleted?: boolean }) {
-  if (!live) return <span className="row-actions-muted">—</span>;
   return (
     <>
-      <button className="btn btn-small" onClick={onEdit}>
+      <button
+        className={live ? 'btn btn-small' : 'btn btn-small demo-disabled'}
+        disabled={!live}
+        title={live ? undefined : DEMO_HINT}
+        onClick={onEdit}
+      >
         Edit
       </button>
       {!deleted && (
-        <button className="btn btn-small btn-danger" onClick={onDelete}>
+        <button
+          className={live ? 'btn btn-small btn-danger' : 'btn btn-small btn-danger demo-disabled'}
+          disabled={!live}
+          title={live ? undefined : DEMO_HINT}
+          onClick={onDelete}
+        >
           Delete
         </button>
       )}
