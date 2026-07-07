@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { DEMO_HINT } from '../api';
 import { formatPrice, itemValue } from '../model';
 import { mapApiError, useRemove } from '../mutations';
 import {
@@ -132,6 +133,13 @@ interface ExplorerProps {
 }
 
 export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
+  // Spread onto any edit affordance: in demo mode the button renders greyed-out with a
+  // hover hint instead of disappearing, so the functionality stays discoverable.
+  const actionBtn = (className: string) => ({
+    className: live ? className : `${className} demo-disabled`,
+    disabled: !live,
+    title: live ? undefined : DEMO_HINT,
+  });
   const [node, setNode] = useState<ExploreNode>({ kind: 'root' });
   const [banner, setBanner] = useState<string | null>(null);
 
@@ -240,11 +248,9 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
     return (
       <>
         <ViewHead kicker="Catalogue" title="All locations">
-          {live && (
-            <button className="btn btn-primary btn-small" onClick={() => openForm({ kind: 'location' })}>
-              + Add location
-            </button>
-          )}
+          <button {...actionBtn('btn btn-primary btn-small')} onClick={() => openForm({ kind: 'location' })}>
+            + Add location
+          </button>
         </ViewHead>
         <Paginated rows={data.locations}>
           {(rows) => (
@@ -283,27 +289,21 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
     return (
       <>
         <ViewHead kicker={`Location #${location.id}`} title={location.name} description={location.description}>
-          {live && (
-            <>
-              <button className="btn btn-small" onClick={() => openForm({ kind: 'location', initial: location })}>Edit</button>
-              <button
-                className="btn btn-small btn-danger"
-                onClick={() => confirmDelete(`location "${location.name}"`, () => removeLocation.mutateAsync({ id: location.id }))}
-              >
-                Delete
-              </button>
-            </>
-          )}
+          <button {...actionBtn('btn btn-small')} onClick={() => openForm({ kind: 'location', initial: location })}>Edit</button>
+          <button
+            {...actionBtn('btn btn-small btn-danger')}
+            onClick={() => confirmDelete(`location "${location.name}"`, () => removeLocation.mutateAsync({ id: location.id }))}
+          >
+            Delete
+          </button>
         </ViewHead>
         <PictureSection kind="locations" ownerId={location.id} live={live} />
         <SubSection
           label={`${floorsTopDown.length} floor${floorsTopDown.length === 1 ? '' : 's'}`}
           action={
-            live && (
-              <button className="btn btn-primary btn-small" onClick={() => openForm({ kind: 'floor', presetLocationId: location.id })}>
-                + Add floor
-              </button>
-            )
+            <button {...actionBtn('btn btn-primary btn-small')} onClick={() => openForm({ kind: 'floor', presetLocationId: location.id })}>
+              + Add floor
+            </button>
           }
         >
           <Paginated rows={floorsTopDown}>
@@ -338,26 +338,20 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
     return (
       <>
         <ViewHead kicker={`Floor #${floor.id} · level ${floor.levelIndex}`} title={floor.name}>
-          {live && (
-            <>
-              <button className="btn btn-small" onClick={() => openForm({ kind: 'floor', initial: floor })}>Edit</button>
-              <button
-                className="btn btn-small btn-danger"
-                onClick={() => confirmDelete(`floor "${floor.name}"`, () => removeFloor.mutateAsync({ id: floor.id }))}
-              >
-                Delete
-              </button>
-            </>
-          )}
+          <button {...actionBtn('btn btn-small')} onClick={() => openForm({ kind: 'floor', initial: floor })}>Edit</button>
+          <button
+            {...actionBtn('btn btn-small btn-danger')}
+            onClick={() => confirmDelete(`floor "${floor.name}"`, () => removeFloor.mutateAsync({ id: floor.id }))}
+          >
+            Delete
+          </button>
         </ViewHead>
         <SubSection
           label={`${rooms.length} room${rooms.length === 1 ? '' : 's'}`}
           action={
-            live && (
-              <button className="btn btn-primary btn-small" onClick={() => openForm({ kind: 'room', presetFloorId: floor.id })}>
-                + Add room
-              </button>
-            )
+            <button {...actionBtn('btn btn-primary btn-small')} onClick={() => openForm({ kind: 'room', presetFloorId: floor.id })}>
+              + Add room
+            </button>
           }
         >
           <Paginated rows={rooms}>
@@ -403,17 +397,13 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
     return (
       <>
         <ViewHead kicker={`Room #${room.id}`} title={room.name} description={room.description}>
-          {live && (
-            <>
-              <button className="btn btn-small" onClick={() => openForm({ kind: 'room', initial: room })}>Edit</button>
-              <button
-                className="btn btn-small btn-danger"
-                onClick={() => confirmDelete(`room "${room.name}"`, () => removeRoom.mutateAsync({ id: room.id }))}
-              >
-                Delete
-              </button>
-            </>
-          )}
+          <button {...actionBtn('btn btn-small')} onClick={() => openForm({ kind: 'room', initial: room })}>Edit</button>
+          <button
+            {...actionBtn('btn btn-small btn-danger')}
+            onClick={() => confirmDelete(`room "${room.name}"`, () => removeRoom.mutateAsync({ id: room.id }))}
+          >
+            Delete
+          </button>
         </ViewHead>
         <div className="chip-row">
           {room.roomType != null && <span className="chip chip-muted">{ROOM_TYPE_NAMES[room.roomType] ?? `Type ${room.roomType}`}</span>}
@@ -426,31 +416,25 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
         {containerTable(
           'Storage in this room',
           containers,
-          live && (
-            <button className="btn btn-primary btn-small" onClick={() => openForm({ kind: 'container', presetRoomId: room.id })}>
-              + Add container
-            </button>
-          ),
+          <button {...actionBtn('btn btn-primary btn-small')} onClick={() => openForm({ kind: 'container', presetRoomId: room.id })}>
+            + Add container
+          </button>,
         )}
         {itemTable(
           'Items in this room',
           looseItems,
-          live && (
-            <button className="btn btn-primary btn-small" onClick={() => openForm({ kind: 'item', presetRoomId: room.id })}>
-              + Add item
-            </button>
-          ),
+          <button {...actionBtn('btn btn-primary btn-small')} onClick={() => openForm({ kind: 'item', presetRoomId: room.id })}>
+            + Add item
+          </button>,
         )}
 
         {(doors.length > 0 || live) && (
           <SubSection
             label="Doors"
             action={
-              live && (
-                <button className="btn btn-primary btn-small" onClick={() => openForm({ kind: 'door', presetFromRoomId: room.id })}>
-                  + Add door
-                </button>
-              )
+              <button {...actionBtn('btn btn-primary btn-small')} onClick={() => openForm({ kind: 'door', presetFromRoomId: room.id })}>
+                + Add door
+              </button>
             }
           >
             {doors.length === 0 ? (
@@ -471,17 +455,13 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
                         <td>{otherSide(d.fromRoomId, d.toRoomId)}</td>
                         <td>{`${d.widthInches}″ × ${d.heightInches}″`}</td>
                         <td className="row-actions">
-                          {live && (
-                            <>
-                              <button className="btn btn-small" onClick={() => openForm({ kind: 'door', initial: d })}>Edit</button>
-                              <button
-                                className="btn btn-small btn-danger"
-                                onClick={() => confirmRowDelete(`door "${d.name ?? d.id}"`, () => removeDoor.mutateAsync({ id: d.id }))}
-                              >
-                                Delete
-                              </button>
-                            </>
-                          )}
+                          <button {...actionBtn('btn btn-small')} onClick={() => openForm({ kind: 'door', initial: d })}>Edit</button>
+                          <button
+                            {...actionBtn('btn btn-small btn-danger')}
+                            onClick={() => confirmRowDelete(`door "${d.name ?? d.id}"`, () => removeDoor.mutateAsync({ id: d.id }))}
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -497,11 +477,9 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
           <SubSection
             label="Stairs"
             action={
-              live && (
-                <button className="btn btn-primary btn-small" onClick={() => openForm({ kind: 'stair', presetFromRoomId: room.id })}>
-                  + Add stair
-                </button>
-              )
+              <button {...actionBtn('btn btn-primary btn-small')} onClick={() => openForm({ kind: 'stair', presetFromRoomId: room.id })}>
+                + Add stair
+              </button>
             }
           >
             {stairs.length === 0 ? (
@@ -521,17 +499,13 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
                         <td>{otherSide(s.fromRoomId, s.toRoomId)}</td>
                         <td>{s.stepCount ?? '—'}</td>
                         <td className="row-actions">
-                          {live && (
-                            <>
-                              <button className="btn btn-small" onClick={() => openForm({ kind: 'stair', initial: s })}>Edit</button>
-                              <button
-                                className="btn btn-small btn-danger"
-                                onClick={() => confirmRowDelete(`stair "${s.name ?? s.id}"`, () => removeStair.mutateAsync({ id: s.id }))}
-                              >
-                                Delete
-                              </button>
-                            </>
-                          )}
+                          <button {...actionBtn('btn btn-small')} onClick={() => openForm({ kind: 'stair', initial: s })}>Edit</button>
+                          <button
+                            {...actionBtn('btn btn-small btn-danger')}
+                            onClick={() => confirmRowDelete(`stair "${s.name ?? s.id}"`, () => removeStair.mutateAsync({ id: s.id }))}
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -554,19 +528,15 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
     return (
       <>
         <ViewHead kicker={`Container #${container.id}`} title={container.name} description={container.description}>
-          {live && (
-            <>
-              <button className="btn btn-small" onClick={() => openForm({ kind: 'container', initial: container })}>Edit</button>
-              <button
-                className="btn btn-small btn-danger"
-                onClick={() =>
-                  confirmDelete(`container "${container.name}"`, () => removeContainer.mutateAsync({ id: container.id }))
-                }
-              >
-                Delete
-              </button>
-            </>
-          )}
+          <button {...actionBtn('btn btn-small')} onClick={() => openForm({ kind: 'container', initial: container })}>Edit</button>
+          <button
+            {...actionBtn('btn btn-small btn-danger')}
+            onClick={() =>
+              confirmDelete(`container "${container.name}"`, () => removeContainer.mutateAsync({ id: container.id }))
+            }
+          >
+            Delete
+          </button>
         </ViewHead>
         <div className="chip-row">
           {container.containerType != null && (
@@ -581,23 +551,19 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
         {containerTable(
           'Nested inside',
           nested,
-          live && (
-            <button
-              className="btn btn-primary btn-small"
-              onClick={() => openForm({ kind: 'container', presetParentContainerId: container.id })}
-            >
-              + Add container
-            </button>
-          ),
+          <button
+            {...actionBtn('btn btn-primary btn-small')}
+            onClick={() => openForm({ kind: 'container', presetParentContainerId: container.id })}
+          >
+            + Add container
+          </button>,
         )}
         {itemTable(
           'Items inside',
           items,
-          live && (
-            <button className="btn btn-primary btn-small" onClick={() => openForm({ kind: 'item', presetContainerId: container.id })}>
-              + Add item
-            </button>
-          ),
+          <button {...actionBtn('btn btn-primary btn-small')} onClick={() => openForm({ kind: 'item', presetContainerId: container.id })}>
+            + Add item
+          </button>,
         )}
       </>
     );
@@ -611,12 +577,8 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
     return (
       <>
         <ViewHead kicker={`Item #${item.id}`} title={item.name} description={item.description}>
-          {live && (
-            <>
-              <button className="btn btn-small" onClick={() => openForm({ kind: 'item', initial: item })}>Edit</button>
-              <button className="btn btn-small btn-danger" onClick={() => deleteItem(item)}>Delete</button>
-            </>
-          )}
+          <button {...actionBtn('btn btn-small')} onClick={() => openForm({ kind: 'item', initial: item })}>Edit</button>
+          <button {...actionBtn('btn btn-small btn-danger')} onClick={() => deleteItem(item)}>Delete</button>
         </ViewHead>
         <div className="chip-row">
           {item.itemTypes.map((t) => (

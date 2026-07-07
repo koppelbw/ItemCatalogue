@@ -15,6 +15,9 @@ import type {
 const PAGE_SIZE = 100;
 const REQUEST_TIMEOUT_MS = 4000;
 
+/** Hover text for actions that exist but need the live API (shown greyed-out in demo mode). */
+export const DEMO_HINT = 'Unavailable in demo mode — run the live API to enable this';
+
 // Empty in dev so the Vite proxy serves /api; set to the API's absolute origin at
 // build time (VITE_API_BASE_URL) for the deployed Static Web App, which is cross-origin.
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -127,6 +130,12 @@ export async function fetchAll<T>(path: string, signal: AbortSignal): Promise<T[
  * Floors ride embedded in LocationResponse, so they need no extra call.
  */
 export async function loadCatalogue(): Promise<CatalogueData> {
+  // Dev affordance: ?demo forces the bundled fallback so demo-mode UI can be
+  // previewed without stopping the API.
+  if (new URLSearchParams(window.location.search).has('demo')) {
+    return FALLBACK_DATA;
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {

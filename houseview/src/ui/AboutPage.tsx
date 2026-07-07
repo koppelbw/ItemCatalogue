@@ -30,6 +30,7 @@ const STACK = [
   'React Query',
   'React Hook Form + Zod',
   'TypeScript + Vite',
+  'Anthropic Messages API',
 ];
 
 const PATTERNS: { title: string; body: string }[] = [
@@ -99,6 +100,10 @@ const DECISIONS: { title: string; body: string }[] = [
   {
     title: 'Built to run as a public demo',
     body: 'A background service resets the database to its seed baseline on a schedule, rate limiting guards the endpoints, and CORS is scoped to the deployed Static Web App. Shipped to Azure through a GitHub Actions pipeline.',
+  },
+  {
+    title: 'The AI model behind a port',
+    body: 'The chat assistant talks to Anthropic through an IAnthropicClient port defined in Application; the raw typed-HttpClient adapter (no SDK) lives in Infrastructure. The agent loop is unit-tested by scripting the fake client with tool_use responses — no network, no cost.',
   },
 ];
 
@@ -195,7 +200,7 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
             <div className="arch-row arch-row-db">
               <div className="arch-box arch-db">
                 <strong>Infrastructure</strong>
-                <span>Azure Blob adapter</span>
+                <span>Azure Blob + Anthropic API adapters</span>
               </div>
               <div className="arch-box arch-db">
                 <strong>Database (.sqlproj)</strong>
@@ -226,6 +231,27 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
             <code>Tag</code>s, gathered into <code>Collection</code>s, photographed with <code>Picture</code>s, and keeps a
             running <code>ItemEvent</code> history. <code>Door</code>s and <code>Stair</code>s connect rooms so the scene
             knows how the stories join together.
+          </p>
+        </section>
+
+        <section className="about-section index-reveal">
+          <h2>The AI assistant</h2>
+          <p>
+            The <strong>✳ Ask Habitat</strong> button in the house view opens a chat assistant that can both answer
+            questions about the catalogue and change it — &ldquo;where&rsquo;s the drill?&rdquo;, &ldquo;add a hammer to
+            the garage toolbox&rdquo;, &ldquo;move the camping gear to the basement&rdquo;. Under the hood it is a
+            hand-rolled <strong>agentic tool-use loop</strong>: the API relays the conversation to{' '}
+            <strong>Anthropic&rsquo;s Messages API</strong> over a raw typed <code>HttpClient</code> (no SDK), and while
+            the model answers with <code>tool_use</code> the backend executes one of six inventory tools — search,
+            house structure, item details, create, update, soft-delete — against the same Application services the REST
+            controllers use, feeding each result back until the model produces a final answer.
+          </p>
+          <p>
+            Replies cite entities as <code>habitat://</code> deep links — click one and the camera flies to the item,
+            room, or container it names. Anything the assistant creates or moves appears in the 3D scene immediately
+            (mutations invalidate the catalogue query). The endpoint is stateless — the browser holds the conversation —
+            and guardrails cap conversation size, output tokens, and tool iterations per turn; business errors are
+            returned to the model as tool errors so it can correct itself instead of failing the request.
           </p>
         </section>
 
