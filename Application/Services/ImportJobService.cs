@@ -140,6 +140,39 @@ public sealed class ImportJobService(
         }
     }
 
+    public async Task MarkChunkFailedAsync(ImportChunkMessage message, string reason, CancellationToken cancellationToken = default)
+    {
+        // Best effort: pull the real CSV row numbers from the payload so the report points at
+        // spreadsheet rows. If the payload itself is the problem (the likely reason the chunk
+        // poisoned), fall back to one aggregate error under row 0 (= file-level).
+        List<ImportRowError> errors;
+        try
+        {
+            var rows = await payloadStore.ReadChunkAsync(message.JobId, message.StartRow, message.Count, cancellationToken);
+            errors = rows.Select(r => new ImportRowError(r.RowNumber, [reason])).ToList();
+        }
+        catch
+        {
+            errors = [new ImportRowError(0, [$"{message.Count} row(s) in chunk {message.ChunkIndex}: {reason}"])];
+        }
+
+        var chunk = new ImportChunk
+        {
+            JobId = message.JobId,
+            ChunkIndex = message.ChunkIndex,
+            Succeeded = 0,
+            Failed = message.Count,
+            ProcessedAt = timeProvider.GetUtcNow().UtcDateTime,
+            ErrorsJson = ImportMappings.SerializeErrors(errors),
+        };
+
+        var recorded = await importJobRepository.RecordChunkAsync(chunk, [], cancellationToken);
+        if (recorded)
+        {
+            logger.ImportChunkPoisoned(message.JobId, message.ChunkIndex, message.Count);
+        }
+    }
+
     // Some browsers send a full client path as the upload's file name; keep only the leaf and fit
     // the FileName column (255).
     private static string SanitizeFileName(string? fileName)

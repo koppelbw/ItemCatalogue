@@ -29,4 +29,7 @@ internal static partial class ServiceLog
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Processed import chunk {ChunkIndex} of job {JobId}: {Succeeded} succeeded, {Failed} failed")]
     public static partial void ImportChunkProcessed(this ILogger logger, int jobId, int chunkIndex, int succeeded, int failed);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Import chunk {ChunkIndex} of job {JobId} poisoned; recorded its {RowCount} row(s) as failed")]
+    public static partial void ImportChunkPoisoned(this ILogger logger, int jobId, int chunkIndex, int rowCount);
 }

@@ -21,4 +21,10 @@ public interface IImportJobService
     // Processes one chunk message: read the payload slice, validate/map, and record the outcome
     // atomically. Idempotent — a redelivered message is a no-op (see RecordChunkAsync).
     Task ProcessChunkAsync(ImportChunkMessage message, CancellationToken cancellationToken = default);
+
+    // Terminal failure path (the poison-queue trigger): records the chunk's rows as failed so the
+    // job still reaches Completed instead of hanging one marker short. Idempotent like
+    // ProcessChunkAsync — if the chunk somehow succeeded earlier, the marker already exists and
+    // this is a no-op.
+    Task MarkChunkFailedAsync(ImportChunkMessage message, string reason, CancellationToken cancellationToken = default);
 }

@@ -233,6 +233,45 @@ public class ImportJobServiceTests
     }
 
     [Fact]
+    public async Task MarkChunkFailedAsync_PayloadReadable_RecordsPerRowFailuresWithNoItems()
+    {
+        _payloadStore.ReadChunkAsync(42, 0, 2, Arg.Any<CancellationToken>())
+            .Returns([
+                new ImportPayloadRow(2, Row(2, "Drill").ToCreateRequest(null, null, null)),
+                new ImportPayloadRow(3, Row(3, "Ladder").ToCreateRequest(null, null, null)),
+            ]);
+
+        await _service.MarkChunkFailedAsync(new ImportChunkMessage(42, 0, 0, 2), "poisoned");
+
+        await _jobRepository.Received(1).RecordChunkAsync(
+            Arg.Is<ImportChunk>(c =>
+                c.JobId == 42 &&
+                c.Succeeded == 0 &&
+                c.Failed == 2 &&
+                c.ErrorsJson!.Contains("\"RowNumber\":2") &&
+                c.ErrorsJson.Contains("\"RowNumber\":3") &&
+                c.ErrorsJson.Contains("poisoned")),
+            Arg.Is<IReadOnlyCollection<Item>>(items => items.Count == 0),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task MarkChunkFailedAsync_PayloadUnreadable_StillRecordsAnAggregateFailure()
+    {
+        // The most likely reason a chunk poisons is that its payload cannot be read — the failure
+        // marker must not depend on reading it again.
+        _payloadStore.ReadChunkAsync(42, 3, 25, Arg.Any<CancellationToken>())
+            .Returns<IReadOnlyList<ImportPayloadRow>>(_ => throw new InvalidOperationException("blob missing"));
+
+        await _service.MarkChunkFailedAsync(new ImportChunkMessage(42, 3, 3, 25), "poisoned");
+
+        await _jobRepository.Received(1).RecordChunkAsync(
+            Arg.Is<ImportChunk>(c => c.Failed == 25 && c.ErrorsJson!.Contains("25 row(s) in chunk 3")),
+            Arg.Is<IReadOnlyCollection<Item>>(items => items.Count == 0),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task GetStatusAsync_DerivesProgressAndMergesErrorsFromMarkers()
     {
         _jobRepository.GetWithChunksAsync(42, Arg.Any<CancellationToken>()).Returns(new ImportJob
