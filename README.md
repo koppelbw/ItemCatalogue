@@ -39,6 +39,7 @@ A JSON REST API exposing CRUD for the full spatial hierarchy of a home plus the 
 | `Tag`       | `api/tags`                   | Free-form labels for items.                                  |
 | `Collection`| `api/collections`            | Named groupings of items.                                    |
 | `Picture`   | `api/{owner}/{id}/pictures`  | Photos for locations/rooms/containers/items, stored in Azure Blob Storage. |
+| `Chat`      | `api/chat`                   | The AI assistant: an Anthropic tool-use agent loop over the inventory (stateless — the client sends the conversation). |
 
 An `Item` has a type (stored as a JSON array — items can be more than one type), an optional price,
 a container or room it lives in, and an owner. Geometry entities (rooms, doors, stairs, measured
@@ -58,6 +59,11 @@ from its **Floors → Rooms → Containers**, laid out from the real plan geomet
 database. Doors are cut into the walls, stairs climb between stories, and every item floats as a
 holographic marker in the room it ultimately lives in. It also includes:
 
+- **✳ Ask Habitat** — an AI assistant chat panel. Ask where things are ("where's the drill?") or
+  make changes in plain English ("add a hammer to the garage toolbox") — the backend runs an
+  **agentic tool-use loop** against Anthropic's Messages API, executing inventory tools through the
+  same Application services the REST controllers use. Replies cite entities as `habitat://` deep
+  links that fly the camera to the item, room, or container they name.
 - **The Index** (`#/index`) — a searchable, filterable, sortable flat list of everything.
 - **Manage** (`#/manage`) — CRUD tables for every entity, with Zod-validated forms mirroring the
   server's FluentValidation rules, `rowVersion` round-tripping for optimistic concurrency, and
@@ -81,6 +87,8 @@ exercise. Deployed to its own Azure Static Web App via its own pipeline.
 - **EF Core 10** over **SQL Server**
 - **React + TypeScript + Vite** front ends (Three.js/R3F for the 3D view)
 - **FluentValidation** for request validation
+- **Anthropic Messages API** for the AI assistant — a raw typed `HttpClient` integration (no SDK),
+  wire format and agent loop hand-rolled as a learning exercise
 - **OpenTelemetry** (traces + metrics + logs) with auto-instrumentation, exported to
   **Application Insights** in Azure
 - **OpenAPI** (built-in) for the API surface
@@ -103,7 +111,8 @@ ItemCatalogueAPI ──► Application ──► Domain ◄── Persistence
    root, HTTP)         DTOs, ports)    ports, rules)  DbContext)
                                          ▲
                                          └────────── Infrastructure
-                                                      (Azure Blob Storage adapter)
+                                                      (Azure Blob Storage +
+                                                       Anthropic API adapters)
 
 Database (.sqlproj) ── owns the SQL Server schema (not EF migrations)
 ```
@@ -115,8 +124,9 @@ Database (.sqlproj) ── owns the SQL Server schema (not EF migrations)
   and FluentValidation validators. Orchestrates repositories; speaks DTOs in and out.
 - **`Persistence`** — EF Core **repository adapters**, the `DbContext`, and a SaveChanges
   interceptor for auditing.
-- **`Infrastructure`** — External-service adapters; currently the **Azure Blob Storage** adapter
-  behind the picture-storage port (proxy upload, SAS-token reads).
+- **`Infrastructure`** — External-service adapters: the **Azure Blob Storage** adapter behind the
+  picture-storage port (proxy upload, SAS-token reads), and the **Anthropic Messages API** adapter
+  behind the chat port (raw typed `HttpClient`, snake_case wire JSON hand-serialized).
 - **`ItemCatalogueAPI`** — The composition root: controllers, DI wiring, exception-handling
   middleware, observability setup, and the HTTP pipeline.
 - **`Database`** — A SQL Server SSDT project holding the schema as raw `.sql` table definitions plus
@@ -155,13 +165,20 @@ Database (.sqlproj) ── owns the SQL Server schema (not EF migrations)
   `EntityInUseException` → **HTTP 409** rather than a raw 500.
 - **Auditing interceptor** — a SaveChanges interceptor stamps `CreatedDate` / `LastModifiedDate`
   on `IAuditable` entities.
-- **Source-generated logging** (`LoggerMessage`) per layer (`ServiceLog`, `RepositoryLog`).
+- **Source-generated logging** (`LoggerMessage`) per layer (`ServiceLog`, `RepositoryLog`,
+  `ChatLog` — the chat log lines include per-turn token counts, the feature's cost driver).
+- **Agentic tool-use loop** — the AI assistant (`ChatService`) sends the conversation plus a
+  six-tool catalog to the model and, while it answers `tool_use`, dispatches those calls to the
+  existing Application services and feeds results back (capped iterations, output-token limits,
+  conversation-size validation). Business errors return to the model as error tool-results so it
+  can self-correct; the Anthropic client is a port, so the loop is unit-tested against a scripted
+  fake with zero network calls.
 
 ---
 
 ## Testing
 
-Five test projects mirror the five source layers (~400 tests): `Domain.Tests`,
+Five test projects mirror the five source layers (~430 tests): `Domain.Tests`,
 `Application.Tests`, `Persistence.Tests`, `ItemCatalogueAPI.Tests`, and `Infrastructure.Tests`,
 on **xUnit v3 + NSubstitute + Shouldly**.
 
@@ -221,6 +238,10 @@ cd houseview && npm install && npm run dev             # Habitat on :5173
 - [x] **Deploy to Azure** — API, database, and both UIs live via GitHub Actions CI/CD.
 - [x] **Pictures** — photo upload/read for locations, rooms, containers, and items via Blob
       Storage (feature complete; Azure storage account provisioning still pending).
+- [x] **AI assistant** — "Ask Habitat" chat agent that searches and edits the inventory via an
+      Anthropic tool-use loop, with `habitat://` deep links into the 3D view. (API key via user
+      secrets locally / `Anthropic__ApiKey` in Azure — weigh the cost exposure before enabling it
+      on the public demo.)
 - [ ] **Authentication & authorization** — secure the API (likely Entra ID / OIDC) and scope data
       to the owner.
 - [ ] **Infrastructure as code** — Terraform for the Azure resources (currently provisioned
