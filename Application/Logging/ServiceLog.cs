@@ -23,4 +23,10 @@ internal static partial class ServiceLog
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Bulk-created {Succeeded} Item(s), rejected {Failed} row(s)")]
     public static partial void ItemsBulkCreated(this ILogger logger, int succeeded, int failed);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Started import job {JobId}: {TotalRows} row(s), {EnqueuedRows} enqueued in {TotalChunks} chunk(s)")]
+    public static partial void ImportJobStarted(this ILogger logger, int jobId, int totalRows, int enqueuedRows, int totalChunks);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Processed import chunk {ChunkIndex} of job {JobId}: {Succeeded} succeeded, {Failed} failed")]
+    public static partial void ImportChunkProcessed(this ILogger logger, int jobId, int chunkIndex, int succeeded, int failed);
 }

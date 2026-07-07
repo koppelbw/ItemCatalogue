@@ -30,9 +30,7 @@ public class ItemServiceTests
         _service = new ItemService(
             _repository,
             _eventRepository,
-            _roomRepository,
-            _containerRepository,
-            _personRepository,
+            new ItemBulkPreparer(new CreateItemRequestValidator(), _roomRepository, _containerRepository, _personRepository),
             TimeProvider.System,
             new CreateItemRequestValidator(),
             new UpdateItemRequestValidator(),

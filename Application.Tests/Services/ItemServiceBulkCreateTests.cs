@@ -23,13 +23,13 @@ public class ItemServiceBulkCreateTests
 
     public ItemServiceBulkCreateTests()
     {
-        // Real validators, faked repositories — same convention as ItemServiceTests.
+        // Real validators and a real preparer, faked repositories — same convention as
+        // ItemServiceTests. Exercising CreateManyAsync through the real ItemBulkPreparer keeps
+        // these tests pinning the full validate -> FK-check -> insert pipeline.
         _service = new ItemService(
             _repository,
             Substitute.For<IItemEventRepository>(),
-            _roomRepository,
-            _containerRepository,
-            _personRepository,
+            new ItemBulkPreparer(new CreateItemRequestValidator(), _roomRepository, _containerRepository, _personRepository),
             TimeProvider.System,
             new CreateItemRequestValidator(),
             new UpdateItemRequestValidator(),

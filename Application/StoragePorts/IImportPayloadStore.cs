@@ -7,7 +7,7 @@ namespace Application.StoragePorts;
 // each chunk processor reads only its slice. Queue messages carry just {jobId, startRow, count}.
 public interface IImportPayloadStore
 {
-    Task WriteAsync(int jobId, IReadOnlyList<CreateItemRequest> rows, CancellationToken cancellationToken = default);
+    Task WriteAsync(int jobId, IReadOnlyList<ImportPayloadRow> rows, CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<CreateItemRequest>> ReadChunkAsync(int jobId, int startRow, int count, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ImportPayloadRow>> ReadChunkAsync(int jobId, int startRow, int count, CancellationToken cancellationToken = default);
 }

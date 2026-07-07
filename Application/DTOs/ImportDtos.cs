@@ -15,6 +15,10 @@ public sealed record ImportChunkMessage(int JobId, int ChunkIndex, int StartRow,
 // (header = line 1, first data row = 2) so rows can be found in the original spreadsheet.
 public sealed record ImportRowError(int RowNumber, IReadOnlyList<string> Messages);
 
+// One normalized payload row: the request plus the CSV line it came from, so chunk-processing
+// errors can point back at the user's spreadsheet row long after intake.
+public sealed record ImportPayloadRow(int RowNumber, CreateItemRequest Item);
+
 // Per-row failure keyed by index into the request list passed to CreateManyAsync. The bulk core
 // deliberately knows nothing about CSV line numbers; callers translate Index using their own
 // offset (see ImportJobService.ProcessChunkAsync).

@@ -53,6 +53,11 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
         // OFFSET/FETCH requires a deterministic order; Id (the clustered PK) is stable.
         => PaginateAsync(ReadQuery().OrderBy(e => e.Id), page, cancellationToken);
 
+    public virtual async Task<IReadOnlyList<TEntity>> GetAllUnpagedAsync(CancellationToken cancellationToken = default)
+        // Plain EntitySet, not ReadQuery(): reference-data callers need the rows themselves, not
+        // the display graph a concrete repository's ReadQuery may eager-load.
+        => await EntitySet.AsNoTracking().OrderBy(e => e.Id).ToListAsync(cancellationToken);
+
     // Shared pagination kernel: one COUNT round-trip, then the bounded Skip/Take window.
     // Concrete repositories build a filtered IQueryable (already ordered) and delegate here.
     protected async Task<PagedResult<TEntity>> PaginateAsync(
