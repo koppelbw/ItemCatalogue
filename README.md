@@ -68,6 +68,12 @@ holographic marker in the room it ultimately lives in. It also includes:
 - **Manage** (`#/manage`) — CRUD tables for every entity, with Zod-validated forms mirroring the
   server's FluentValidation rules, `rowVersion` round-tripping for optimistic concurrency, and
   RFC 9457 ProblemDetails mapped onto form fields.
+- **📷 Photos** — attach photos to any location, room, container, or item. Viewing stays quiet: a
+  small camera icon next to entity names (Index rows, Manage tables, detail panels) reveals the
+  cover shot in a hover popover, and clicking opens a lightbox with caption editing, a cover-photo
+  star, and delete. Detail views carry the upload section — on phones a **"Take photo"** button
+  opens the camera directly. Images are downscaled in the browser before upload, proxied through
+  the API into **Azure Blob Storage**, and read back via short-lived SAS links.
 
 Built with **React + Three.js (@react-three/fiber, drei) + GSAP + TanStack Query +
 react-hook-form + Zod** on Vite. See [`houseview/README.md`](houseview/README.md) for how the
@@ -236,8 +242,10 @@ cd houseview && npm install && npm run dev             # Habitat on :5173
 - [x] **React UI** — two of them: Habitat (3D) and catalogue-ui.
 - [x] **Unit & integration testing** — ~400 tests across five projects.
 - [x] **Deploy to Azure** — API, database, and both UIs live via GitHub Actions CI/CD.
-- [x] **Pictures** — photo upload/read for locations, rooms, containers, and items via Blob
-      Storage (feature complete; Azure storage account provisioning still pending).
+- [x] **Pictures** — photo upload and viewing for locations, rooms, containers, and items: Blob
+      Storage behind an `IImageStorage` port, hover-thumbnail icons and an upload/camera section
+      throughout Habitat, client-side downscaling, short-lived SAS reads. Storage account
+      provisioned in Azure.
 - [x] **AI assistant** — "Ask Habitat" chat agent that searches and edits the inventory via an
       Anthropic tool-use loop, with `habitat://` deep links into the 3D view. (API key via user
       secrets locally / `Anthropic__ApiKey` in Azure — weigh the cost exposure before enabling it
