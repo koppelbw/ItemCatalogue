@@ -25,6 +25,8 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
     public DbSet<ItemTag> ItemTags { get; set; }
     public DbSet<CollectionItem> CollectionItems { get; set; }
     public DbSet<Picture> Pictures { get; set; }
+    public DbSet<ImportJob> ImportJobs { get; set; }
+    public DbSet<ImportChunk> ImportChunks { get; set; }
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
@@ -538,6 +540,57 @@ public sealed class ItemCatalogueDbContext(DbContextOptions<ItemCatalogueDbConte
 
             builder.Property(p => p.RowVersion)
                 .IsRowVersion();
+        });
+
+        modelBuilder.Entity<ImportJob>(builder =>
+        {
+            builder.ToTable("ImportJob");
+
+            builder.HasKey(j => j.Id);
+
+            builder.Property(j => j.Id)
+                .ValueGeneratedOnAdd();
+
+            builder.Property(j => j.FileName)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            builder.Property(j => j.IntakeErrorsJson)
+                .HasColumnType("nvarchar(max)");
+
+            builder.Property(j => j.RowVersion)
+                .IsRowVersion();
+        });
+
+        // Insert-only marker rows (no RowVersion/audit columns — mirrors ItemEvent). The unique
+        // (JobId, ChunkIndex) index is the bulk-import idempotency guard: RecordChunkAsync writes
+        // the marker and the chunk's items in one transaction, so a redelivered queue message
+        // violates the index and rolls back without duplicating items.
+        modelBuilder.Entity<ImportChunk>(builder =>
+        {
+            builder.ToTable("ImportChunk");
+
+            builder.HasKey(c => c.Id);
+
+            builder.Property(c => c.Id)
+                .ValueGeneratedOnAdd();
+
+            builder.Property(c => c.ProcessedAt)
+                .IsRequired();
+
+            builder.Property(c => c.ErrorsJson)
+                .HasColumnType("nvarchar(max)");
+
+            // Leading column JobId also covers the FK, so EF emits no separate IX_ImportChunk_JobId
+            // (same pattern as Floor's IX_Floor_LocationId_LevelIndex).
+            builder.HasIndex(c => new { c.JobId, c.ChunkIndex })
+                .IsUnique();
+
+            builder.HasOne(c => c.Job)
+                .WithMany(j => j.Chunks)
+                .HasForeignKey(c => c.JobId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .IsRequired();
         });
 
         // Item <-> Tag: a plain many-to-many through the ItemTag join entity. The skip-navigations

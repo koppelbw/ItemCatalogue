@@ -167,7 +167,9 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
 
     // SaveChanges wraps provider errors in DbUpdateException (unlike ExecuteDelete, which throws the
     // SqlException directly). 2627 = unique constraint, 2601 = unique index — both mean a duplicate key.
-    private static bool IsUniqueViolation(DbUpdateException ex)
+    // Protected so derived repositories can classify their own SaveChanges failures the same way
+    // (e.g. ImportJobRepository treating a duplicate chunk marker as "already processed").
+    protected static bool IsUniqueViolation(DbUpdateException ex)
         => ex.InnerException is SqlException { Number: 2627 or 2601 };
 
     // Translate a unique-violation save failure into a domain exception the API maps to 409 Conflict,
