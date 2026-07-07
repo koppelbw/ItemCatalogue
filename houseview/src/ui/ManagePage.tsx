@@ -23,6 +23,7 @@ import {
 import { CollectionMembers } from './CollectionMembers';
 import { Explorer } from './Explorer';
 import { Paginated } from './Paginated';
+import { PictureHoverIcon } from './pictures/PictureHoverIcon';
 import { SocialFooter } from './SocialFooter';
 import { TopNav, type View } from './TopNav';
 import {
@@ -205,7 +206,11 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
                 {rows.map((it) => (
                   <tr key={it.id} className={it.isDeleted ? 'row-deleted' : ''}>
                     <td>{it.id}</td>
-                    <td>{it.name}{it.isDeleted && <span className="chip chip-deleted">deleted</span>}</td>
+                    <td>
+                      {it.name}
+                      {it.isDeleted && <span className="chip chip-deleted">deleted</span>}{' '}
+                      <PictureHoverIcon kind="items" ownerId={it.id} live={live} />
+                    </td>
                     <td>{it.itemTypes.map((t) => ITEM_TYPE_NAMES[t] ?? t).join(', ')}</td>
                     <td>{formatPrice(itemValue(it))}</td>
                     <td>{itemWhere(it)}</td>
@@ -240,7 +245,9 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
                   return (
                     <tr key={l.id}>
                       <td>{l.id}</td>
-                      <td>{l.name}</td>
+                      <td>
+                        {l.name} <PictureHoverIcon kind="locations" ownerId={l.id} live={live} />
+                      </td>
                       <td>{l.description ?? '—'}</td>
                       <td>{l.floors.length}</td>
                       <td>{roomCount}</td>
@@ -294,7 +301,9 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
                 {rows.map((r) => (
                   <tr key={r.id}>
                     <td>{r.id}</td>
-                    <td>{r.name}</td>
+                    <td>
+                      {r.name} <PictureHoverIcon kind="rooms" ownerId={r.id} live={live} />
+                    </td>
                     <td>{roomWhere(r)}</td>
                     <td>{r.roomType != null ? (ROOM_TYPE_NAMES[r.roomType] ?? r.roomType) : '—'}</td>
                     <td>{sizeCell(r.widthInches, r.depthInches)}</td>
@@ -320,7 +329,9 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
                 {rows.map((c) => (
                   <tr key={c.id}>
                     <td>{c.id}</td>
-                    <td>{c.name}</td>
+                    <td>
+                      {c.name} <PictureHoverIcon kind="containers" ownerId={c.id} live={live} />
+                    </td>
                     <td>{c.containerType != null ? (CONTAINER_TYPE_NAMES[c.containerType] ?? c.containerType) : '—'}</td>
                     <td>
                       {c.roomId != null

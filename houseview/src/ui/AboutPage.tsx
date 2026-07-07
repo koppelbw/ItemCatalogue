@@ -256,6 +256,23 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
         </section>
 
         <section className="about-section index-reveal">
+          <h2>Photos</h2>
+          <p>
+            Every location, room, container and item can carry photos. Viewing stays deliberately quiet: a small camera
+            icon next to an entity&rsquo;s name — in the Index, the Manage tables, and the detail panels — reveals its
+            cover shot in a hover popover, and clicking through opens a lightbox with caption editing, a cover-photo
+            star, and delete. The detail views carry the upload section itself; on a phone the &ldquo;Take photo&rdquo;
+            button opens the camera directly.
+          </p>
+          <p>
+            Under the hood the browser downscales big camera shots to a web-friendly JPEG before they leave the device,
+            the API sniffs the bytes (magic numbers, not the declared type) and proxies them into{' '}
+            <strong>Azure Blob Storage</strong>, and images are read back through short-lived SAS links minted per
+            request — the storage container itself stays private.
+          </p>
+        </section>
+
+        <section className="about-section index-reveal">
           <h2>Architectural decisions</h2>
           <div className="pattern-grid">
             {DECISIONS.map((d) => (

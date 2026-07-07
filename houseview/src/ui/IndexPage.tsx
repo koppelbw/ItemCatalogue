@@ -5,6 +5,7 @@ import { formatPrice, itemValue, primaryType } from '../model';
 import { useCollections, useTagItemIds, useTags } from '../mutations';
 import { ITEM_TYPE_COLORS, ITEM_TYPE_NAMES, type ResolvedItem } from '../types';
 import { Paginated } from './Paginated';
+import { PictureHoverIcon } from './pictures/PictureHoverIcon';
 import { SocialFooter } from './SocialFooter';
 import { TopNav, type View } from './TopNav';
 
@@ -482,7 +483,7 @@ export function IndexPage({ model, live, onNavigate, onViewItem }: IndexPageProp
             rows={filtered}
             pageSize={25}
           >
-            {(pageRows) => <IndexList pageRows={pageRows} onViewItem={onViewItem} />}
+            {(pageRows) => <IndexList pageRows={pageRows} live={live} onViewItem={onViewItem} />}
           </Paginated>
         )}
 
@@ -540,7 +541,15 @@ function FilterSelect({
 }
 
 /** One page of rows; cascades them in whenever the visible page changes. */
-function IndexList({ pageRows, onViewItem }: { pageRows: ResolvedItem[]; onViewItem: (id: number) => void }) {
+function IndexList({
+  pageRows,
+  live,
+  onViewItem,
+}: {
+  pageRows: ResolvedItem[];
+  live: boolean;
+  onViewItem: (id: number) => void;
+}) {
   const listRef = useRef<HTMLUListElement>(null);
   const pageKey = pageRows.map((r) => r.item.id).join(',');
   useEffect(() => {
@@ -557,13 +566,13 @@ function IndexList({ pageRows, onViewItem }: { pageRows: ResolvedItem[]; onViewI
   return (
     <ul className="index-list" ref={listRef}>
       {pageRows.map((r) => (
-        <IndexRow key={r.item.id} resolved={r} onView={() => onViewItem(r.item.id)} />
+        <IndexRow key={r.item.id} resolved={r} live={live} onView={() => onViewItem(r.item.id)} />
       ))}
     </ul>
   );
 }
 
-function IndexRow({ resolved, onView }: { resolved: ResolvedItem; onView: () => void }) {
+function IndexRow({ resolved, live, onView }: { resolved: ResolvedItem; live: boolean; onView: () => void }) {
   const { item, location, room, owner } = resolved;
   const accent = ITEM_TYPE_COLORS[primaryType(item) % ITEM_TYPE_COLORS.length];
   return (
@@ -591,6 +600,11 @@ function IndexRow({ resolved, onView }: { resolved: ResolvedItem; onView: () => 
         </span>
         <span className="row-action">View in 3D ↗</span>
       </button>
+      {/* a sibling of the row button (the hover icon is itself a button, and
+          buttons cannot nest); hidden on phones with the other secondary columns */}
+      <span className="index-row-pic">
+        <PictureHoverIcon kind="items" ownerId={item.id} live={live} />
+      </span>
     </li>
   );
 }

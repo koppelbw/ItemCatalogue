@@ -1,11 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ApiError, apiDelete, apiGet, apiPost, apiPut, fetchAll } from './api';
+import { ApiError, apiDelete, apiGet, apiPost, apiPostForm, apiPut, fetchAll } from './api';
+import { isAllowedPictureType, prepareImage } from './imageResize';
 import type {
   CollectionResponse,
   ItemEventResponse,
   ItemResponse,
   ItemTagsResponse,
+  PictureOwnerKind,
+  PictureResponse,
   TagResponse,
+  UpdatePictureRequest,
 } from './types';
 
 // ---------------------------------------------------------------------------
@@ -144,6 +148,60 @@ export function useRemoveCollectionItem() {
   return useMutation<void, ApiError, { collectionId: number; itemId: number }>({
     mutationFn: ({ collectionId, itemId }) => apiDelete(`collections/${collectionId}/items/${itemId}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['collections'] }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Pictures — blob-backed photos on Location/Room/Container/Item. The API
+// returns short-lived SAS read URLs (~15 min), so cached lists go stale just
+// under that TTL; components additionally invalidate on <img> load errors.
+// Picture writes never touch ['catalogue'] — entity data is unaffected.
+// ---------------------------------------------------------------------------
+
+const PICTURE_STALE_MS = 10 * 60 * 1000;
+
+export function usePictures(kind: PictureOwnerKind, ownerId: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ['pictures', kind, ownerId],
+    queryFn: () => fetchAll<PictureResponse>(`${kind}/${ownerId}/pictures`, new AbortController().signal),
+    enabled,
+    staleTime: PICTURE_STALE_MS,
+  });
+}
+
+export function useUploadPicture() {
+  const qc = useQueryClient();
+  return useMutation<PictureResponse, Error, { kind: PictureOwnerKind; ownerId: number; file: File; isPrimary: boolean }>({
+    mutationFn: async ({ kind, ownerId, file, isPrimary }) => {
+      // Mirror the server's allowed-type rule up front so a wrong pick fails
+      // instantly instead of after a pointless (possibly resized) upload.
+      if (!isAllowedPictureType(file.type)) {
+        throw new Error('Only JPEG, PNG, WebP, or GIF images are supported.');
+      }
+      const prepared = await prepareImage(file);
+      const form = new FormData();
+      form.append('file', prepared, prepared.name);
+      form.append('isPrimary', String(isPrimary));
+      return apiPostForm<PictureResponse>(`${kind}/${ownerId}/pictures`, form);
+    },
+    onSuccess: (_res, vars) => qc.invalidateQueries({ queryKey: ['pictures', vars.kind, vars.ownerId] }),
+  });
+}
+
+/** Metadata-only edit (caption / cover flag / sort order); bytes are immutable. */
+export function useUpdatePicture() {
+  const qc = useQueryClient();
+  return useMutation<PictureResponse, ApiError, { kind: PictureOwnerKind; ownerId: number; body: UpdatePictureRequest }>({
+    mutationFn: ({ body }) => apiPut<PictureResponse>(`pictures/${body.id}`, body),
+    onSuccess: (_res, vars) => qc.invalidateQueries({ queryKey: ['pictures', vars.kind, vars.ownerId] }),
+  });
+}
+
+export function useDeletePicture() {
+  const qc = useQueryClient();
+  return useMutation<void, ApiError, { kind: PictureOwnerKind; ownerId: number; id: number }>({
+    mutationFn: ({ id }) => apiDelete(`pictures/${id}`),
+    onSuccess: (_res, vars) => qc.invalidateQueries({ queryKey: ['pictures', vars.kind, vars.ownerId] }),
   });
 }
 
