@@ -82,6 +82,36 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
         return entity.Id;
     }
 
+    public virtual async Task InsertRangeAsync(IReadOnlyCollection<TEntity> entities, CancellationToken cancellationToken = default)
+    {
+        // AddRange + one SaveChanges: EF batches the INSERTs into few round-trips inside a single
+        // implicit transaction, and the change tracker still runs the auditing interceptor so
+        // CreatedDate is stamped on every row (a bulk-copy path would bypass it).
+        EntitySet.AddRange(entities);
+        try
+        {
+            await DbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            throw DuplicateConflict(ex);
+        }
+    }
+
+    public virtual async Task<IReadOnlyList<int>> FilterExistingIdsAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var distinctIds = ids.Distinct().ToList();
+        return await EntitySet
+            .Where(e => distinctIds.Contains(e.Id))
+            .Select(e => e.Id)
+            .ToListAsync(cancellationToken);
+    }
+
     public virtual async Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         // entity is already tracked (loaded via GetForUpdateAsync), so no Update() call is needed.

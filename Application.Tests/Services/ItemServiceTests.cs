@@ -18,6 +18,9 @@ public class ItemServiceTests
 {
     private readonly IItemRepository _repository = Substitute.For<IItemRepository>();
     private readonly IItemEventRepository _eventRepository = Substitute.For<IItemEventRepository>();
+    private readonly IRoomRepository _roomRepository = Substitute.For<IRoomRepository>();
+    private readonly IContainerRepository _containerRepository = Substitute.For<IContainerRepository>();
+    private readonly IPersonRepository _personRepository = Substitute.For<IPersonRepository>();
     private readonly ItemService _service;
 
     public ItemServiceTests()
@@ -27,6 +30,9 @@ public class ItemServiceTests
         _service = new ItemService(
             _repository,
             _eventRepository,
+            _roomRepository,
+            _containerRepository,
+            _personRepository,
             TimeProvider.System,
             new CreateItemRequestValidator(),
             new UpdateItemRequestValidator(),

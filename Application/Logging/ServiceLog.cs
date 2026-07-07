@@ -20,4 +20,7 @@ internal static partial class ServiceLog
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Soft-deleted Item {EntityId} (reason {Reason}, {RowsAffected} row(s))")]
     public static partial void ItemSoftDeleted(this ILogger logger, int entityId, DeletedReason reason, int rowsAffected);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Bulk-created {Succeeded} Item(s), rejected {Failed} row(s)")]
+    public static partial void ItemsBulkCreated(this ILogger logger, int succeeded, int failed);
 }
