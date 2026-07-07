@@ -4,6 +4,7 @@ import { HOUSE_BASE, levelY } from './layout';
 import { buildSceneModel, placeRooms, type PlacedRoom, type Site } from './model';
 import { OVERVIEW_FOCUS, Scene, type Focus } from './scene/Scene';
 import { AboutPage } from './ui/AboutPage';
+import { ChatPanel } from './ui/ChatPanel';
 import { DetailPanel } from './ui/DetailPanel';
 import { DeleteItemDialog, ItemForm, type RefData } from './ui/forms/EntityForms';
 import { Grain } from './ui/Grain';
@@ -12,6 +13,7 @@ import { IndexPage } from './ui/IndexPage';
 import { ManagePage } from './ui/ManagePage';
 import { Splash } from './ui/Splash';
 import type { View } from './ui/TopNav';
+import type { HabitatLink } from './chat';
 import type { ItemResponse, Selection } from './types';
 
 const viewFromHash = (): View =>
@@ -222,6 +224,15 @@ export default function App() {
     selectItem(itemId);
   };
 
+  // habitat://kind/id deep links in assistant replies reuse the existing selection +
+  // camera-navigation handlers, so "click here to see it" flies to the entity.
+  const openChatLink = (link: HabitatLink) => {
+    if (link.kind === 'item') selectItem(link.id);
+    else if (link.kind === 'room') selectRoom(link.id);
+    else if (link.kind === 'container') selectContainer(link.id);
+    else selectLocation(link.id);
+  };
+
   return (
     <div className="app">
       {model && data && (
@@ -269,6 +280,7 @@ export default function App() {
                 onAddToContainer={onAddToContainer}
                 onClose={clearSelection}
               />
+              <ChatPanel live={data.live} onOpenLink={openChatLink} />
             </>
           )}
           {view === 'index' && (

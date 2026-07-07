@@ -1,7 +1,7 @@
 import gsap from 'gsap';
 import { useEffect, useRef } from 'react';
 import type { PlacedRoom, SceneModel } from '../model';
-import { ITEM_TYPE_COLORS, ITEM_TYPE_NAMES, type FloorResponse } from '../types';
+import type { FloorResponse } from '../types';
 import { TopNav, type View } from './TopNav';
 
 interface HudProps {
@@ -112,27 +112,6 @@ export function Hud({
           <span className="floor-hint">↑ ↓ floors</span>
         </nav>
       )}
-
-      <aside className="legend hud-animate">
-        {ITEM_TYPE_NAMES.map((name, i) => {
-          const count = model.typeCounts.get(i) ?? 0;
-          if (count === 0) return null;
-          return (
-            <span key={name} className="legend-entry">
-              <i style={{ background: ITEM_TYPE_COLORS[i] }} />
-              {name}
-              <em>{count}</em>
-            </span>
-          );
-        })}
-        {model.unassigned.length > 0 && (
-          <span className="legend-entry">
-            <i style={{ background: '#9aa1a8' }} />
-            Unassigned
-            <em>{model.unassigned.length}</em>
-          </span>
-        )}
-      </aside>
 
       {/* rooms of the active Location */}
       <nav className="room-dock hud-pop" aria-label="Rooms">

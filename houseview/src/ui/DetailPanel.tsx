@@ -1,5 +1,6 @@
 import gsap from 'gsap';
 import { useEffect, useRef } from 'react';
+import { DEMO_HINT } from '../api';
 import type { SceneModel, Site } from '../model';
 import { formatPrice, itemValue, primaryType } from '../model';
 import {
@@ -19,7 +20,7 @@ import {
 interface DetailPanelProps {
   model: SceneModel;
   selection: Selection;
-  /** when false (demo data) all edit affordances are hidden */
+  /** when false (demo data) all edit affordances render greyed-out with a hover hint */
   live: boolean;
   onSelectItem: (id: number) => void;
   onSelectContainer: (id: number) => void;
@@ -125,18 +126,26 @@ function ItemCard({
           <dd>{new Date(item.createdDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</dd>
         </div>
       </dl>
-      {live && (
-        <div className="panel-actions">
-          <button className="btn btn-small" onClick={() => onEditItem(item)}>
-            Edit
+      <div className="panel-actions">
+        <button
+          className={live ? 'btn btn-small' : 'btn btn-small demo-disabled'}
+          disabled={!live}
+          title={live ? undefined : DEMO_HINT}
+          onClick={() => onEditItem(item)}
+        >
+          Edit
+        </button>
+        {!item.isDeleted && (
+          <button
+            className={live ? 'btn btn-small btn-danger' : 'btn btn-small btn-danger demo-disabled'}
+            disabled={!live}
+            title={live ? undefined : DEMO_HINT}
+            onClick={() => onDeleteItem(item)}
+          >
+            Delete
           </button>
-          {!item.isDeleted && (
-            <button className="btn btn-small btn-danger" onClick={() => onDeleteItem(item)}>
-              Delete
-            </button>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 }
@@ -192,13 +201,16 @@ function RoomCard({
           <ItemRow key={r.item.id} resolved={r} onSelectItem={onSelectItem} />
         ))}
       </ul>
-      {live && (
-        <div className="panel-actions">
-          <button className="btn btn-small btn-primary" onClick={() => onAddToRoom(room.id)}>
-            + Add item here
-          </button>
-        </div>
-      )}
+      <div className="panel-actions">
+        <button
+          className={live ? 'btn btn-small btn-primary' : 'btn btn-small btn-primary demo-disabled'}
+          disabled={!live}
+          title={live ? undefined : DEMO_HINT}
+          onClick={() => onAddToRoom(room.id)}
+        >
+          + Add item here
+        </button>
+      </div>
     </>
   );
 }
@@ -314,13 +326,16 @@ function ContainerCard({
           <ItemRow key={r.item.id} resolved={r} onSelectItem={onSelectItem} />
         ))}
       </ul>
-      {live && (
-        <div className="panel-actions">
-          <button className="btn btn-small btn-primary" onClick={() => onAddToContainer(container.id)}>
-            + Add item here
-          </button>
-        </div>
-      )}
+      <div className="panel-actions">
+        <button
+          className={live ? 'btn btn-small btn-primary' : 'btn btn-small btn-primary demo-disabled'}
+          disabled={!live}
+          title={live ? undefined : DEMO_HINT}
+          onClick={() => onAddToContainer(container.id)}
+        >
+          + Add item here
+        </button>
+      </div>
     </>
   );
 }
