@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { DEMO_HINT } from '../../api';
 import { mapApiError, usePictures, useUploadPicture } from '../../mutations';
 import type { PictureOwnerKind, PictureResponse } from '../../types';
 import { CameraGlyph } from './PictureHoverIcon';
@@ -62,7 +63,8 @@ function PictureChip({
  * "Take photo" (touch devices only) opens the camera via the capture
  * attribute. Uploads fire immediately on pick — downscaled client-side first
  * (see imageResize.ts) — and the first photo becomes the owner's cover.
- * Hidden entirely in demo mode, like every other write affordance.
+ * In demo mode the section renders greyed-out with a hover hint (the shared
+ * demo-disabled pattern) so the feature stays discoverable without a live API.
  */
 export function PictureSection({ kind, ownerId, live }: { kind: PictureOwnerKind; ownerId: number; live: boolean }) {
   const { data: pictures } = usePictures(kind, ownerId, live);
@@ -74,8 +76,6 @@ export function PictureSection({ kind, ownerId, live }: { kind: PictureOwnerKind
   // capture="environment" only means something where there is a camera; on
   // desktop the button would be a duplicate file picker, so show it on touch.
   const coarsePointer = useMemo(() => window.matchMedia('(pointer: coarse)').matches, []);
-
-  if (!live) return null;
 
   const onPick = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -97,18 +97,20 @@ export function PictureSection({ kind, ownerId, live }: { kind: PictureOwnerKind
         ))}
         <button
           type="button"
-          className="btn btn-small"
+          className={live ? 'btn btn-small' : 'btn btn-small demo-disabled'}
+          disabled={!live || upload.isPending}
+          title={live ? undefined : DEMO_HINT}
           onClick={() => fileRef.current?.click()}
-          disabled={upload.isPending}
         >
           {upload.isPending ? 'Uploading…' : '+ Add photo'}
         </button>
         {coarsePointer && (
           <button
             type="button"
-            className="btn btn-small"
+            className={live ? 'btn btn-small' : 'btn btn-small demo-disabled'}
+            disabled={!live || upload.isPending}
+            title={live ? undefined : DEMO_HINT}
             onClick={() => cameraRef.current?.click()}
-            disabled={upload.isPending}
           >
             Take photo
           </button>

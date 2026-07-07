@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { DEMO_HINT } from '../../api';
 import { usePictures } from '../../mutations';
 import type { PictureOwnerKind, PictureResponse } from '../../types';
 import { PictureLightbox } from './PictureLightbox';
@@ -70,9 +71,8 @@ export function PictureHoverIcon({ kind, ownerId, live }: { kind: PictureOwnerKi
   const [lightbox, setLightbox] = useState<PictureResponse | null>(null);
   const { data: pictures } = usePictures(kind, ownerId, live && armed);
 
-  if (!live) return null;
-
   const arm = () => {
+    if (!live) return;
     setArmed(true);
     setOpen(true);
   };
@@ -81,9 +81,10 @@ export function PictureHoverIcon({ kind, ownerId, live }: { kind: PictureOwnerKi
     <span className="pic-hover" onMouseEnter={arm} onMouseLeave={() => setOpen(false)}>
       <button
         type="button"
-        className="pic-icon"
+        className={live ? 'pic-icon' : 'pic-icon demo-disabled'}
+        disabled={!live}
         aria-label="Photos"
-        title="Photos"
+        title={live ? 'Photos' : DEMO_HINT}
         onClick={(e) => {
           // rows are often clickable themselves; the icon must not trigger them
           e.stopPropagation();
