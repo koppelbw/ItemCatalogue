@@ -2,6 +2,7 @@ import gsap from 'gsap';
 import { useEffect, useRef } from 'react';
 import type { SceneModel, Site } from '../model';
 import { formatPrice, itemValue, primaryType } from '../model';
+import { PictureSection } from './pictures/PictureSection';
 import {
   CONDITION_NAMES,
   CONTAINER_TYPE_NAMES,
@@ -125,6 +126,7 @@ function ItemCard({
           <dd>{new Date(item.createdDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</dd>
         </div>
       </dl>
+      <PictureSection kind="items" ownerId={item.id} live={live} />
       {live && (
         <div className="panel-actions">
           <button className="btn btn-small" onClick={() => onEditItem(item)}>
@@ -168,6 +170,7 @@ function RoomCard({
         {room.roomType != null && <span className="chip chip-muted">{ROOM_TYPE_NAMES[room.roomType] ?? `Type ${room.roomType}`}</span>}
         {size && <span className="chip chip-muted">{size}</span>}
       </div>
+      <PictureSection kind="rooms" ownerId={room.id} live={live} />
       {containers.length > 0 && (
         <>
           <div className="panel-section-label">Storage in this room</div>
@@ -205,11 +208,13 @@ function RoomCard({
 
 function LocationCard({
   site,
+  live,
   onSelectItem,
   onSelectRoom,
   onSelectFloor,
 }: {
   site: Site;
+  live: boolean;
   onSelectItem: (id: number) => void;
   onSelectRoom: (roomId: number) => void;
   onSelectFloor: (levelIndex: number) => void;
@@ -229,6 +234,7 @@ function LocationCard({
           {site.rooms.length} room{site.rooms.length === 1 ? '' : 's'}
         </span>
       </div>
+      <PictureSection kind="locations" ownerId={location.id} live={live} />
       {floorsTopDown.map((floor) => {
         const rooms = site.rooms.filter((r) => r.floorId === floor.id);
         return (
@@ -294,6 +300,7 @@ function ContainerCard({
         )}
         {size && <span className="chip chip-muted">{size}</span>}
       </div>
+      <PictureSection kind="containers" ownerId={container.id} live={live} />
       {nested.length > 0 && (
         <>
           <div className="panel-section-label">Nested inside</div>
@@ -476,7 +483,7 @@ export function DetailPanel({
   } else if (selection.kind === 'location') {
     const site = model.sites.find((s) => s.location.id === selection.id);
     body = site ? (
-      <LocationCard site={site} onSelectItem={onSelectItem} onSelectRoom={onSelectRoom} onSelectFloor={onSelectFloor} />
+      <LocationCard site={site} live={live} onSelectItem={onSelectItem} onSelectRoom={onSelectRoom} onSelectFloor={onSelectFloor} />
     ) : null;
   } else if (selection.kind === 'container') {
     const container = model.containersById.get(selection.id);

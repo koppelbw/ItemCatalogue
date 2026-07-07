@@ -21,6 +21,8 @@ import {
 import { ItemExtras } from './ItemExtras';
 import type { FormState } from './ManagePage';
 import { Paginated } from './Paginated';
+import { PictureHoverIcon } from './pictures/PictureHoverIcon';
+import { PictureSection } from './pictures/PictureSection';
 
 // Drill-down explorer for the Manage page: Locations → Floors → Rooms →
 // Containers → Items, with the same breadcrumb trail the 3D detail panel
@@ -255,7 +257,10 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
                   const floorIds = new Set(l.floors.map((f) => f.id));
                   return (
                     <tr key={l.id}>
-                      <td><button className="link-btn" onClick={() => go({ kind: 'location', id: l.id })}>{l.name}</button></td>
+                      <td>
+                        <button className="link-btn" onClick={() => go({ kind: 'location', id: l.id })}>{l.name}</button>{' '}
+                        <PictureHoverIcon kind="locations" ownerId={l.id} live={live} />
+                      </td>
                       <td>{l.description ?? '—'}</td>
                       <td>{l.floors.length}</td>
                       <td>{data.rooms.filter((r) => floorIds.has(r.floorId)).length}</td>
@@ -290,6 +295,7 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
             </>
           )}
         </ViewHead>
+        <PictureSection kind="locations" ownerId={location.id} live={live} />
         <SubSection
           label={`${floorsTopDown.length} floor${floorsTopDown.length === 1 ? '' : 's'}`}
           action={
@@ -363,7 +369,10 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.id}>
-                      <td><button className="link-btn" onClick={() => go({ kind: 'room', id: r.id })}>{r.name}</button></td>
+                      <td>
+                        <button className="link-btn" onClick={() => go({ kind: 'room', id: r.id })}>{r.name}</button>{' '}
+                        <PictureHoverIcon kind="rooms" ownerId={r.id} live={live} />
+                      </td>
                       <td>{r.roomType != null ? (ROOM_TYPE_NAMES[r.roomType] ?? r.roomType) : '—'}</td>
                       <td>{sizeLabel(r.widthInches, r.depthInches)}</td>
                       <td>{data.containers.filter((c) => c.roomId === r.id).length}</td>
@@ -412,6 +421,7 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
             <span className="chip chip-muted">{sizeLabel(room.widthInches, room.depthInches)}</span>
           )}
         </div>
+        <PictureSection kind="rooms" ownerId={room.id} live={live} />
 
         {containerTable(
           'Storage in this room',
@@ -566,6 +576,7 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
             <span className="chip chip-muted">{sizeLabel(container.widthInches, container.depthInches)}</span>
           )}
         </div>
+        <PictureSection kind="containers" ownerId={container.id} live={live} />
 
         {containerTable(
           'Nested inside',
@@ -635,6 +646,7 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
           {item.warrantyExpiryDate && <div><dt>Warranty until</dt><dd>{fmtDate(item.warrantyExpiryDate)}</dd></div>}
           <div><dt>Catalogued</dt><dd>{fmtDate(item.createdDate)}</dd></div>
         </dl>
+        <PictureSection kind="items" ownerId={item.id} live={live} />
         {/* tags + event history need the live API (item-scoped endpoints) */}
         {live && <ItemExtras itemId={item.id} />}
       </>
@@ -659,7 +671,10 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
               <tbody>
                 {rows.map((c) => (
                   <tr key={c.id}>
-                    <td><button className="link-btn" onClick={() => go({ kind: 'container', id: c.id })}>{c.name}</button></td>
+                    <td>
+                      <button className="link-btn" onClick={() => go({ kind: 'container', id: c.id })}>{c.name}</button>{' '}
+                      <PictureHoverIcon kind="containers" ownerId={c.id} live={live} />
+                    </td>
                     <td>{c.containerType != null ? (CONTAINER_TYPE_NAMES[c.containerType] ?? c.containerType) : '—'}</td>
                     <td>{sizeLabel(c.widthInches, c.depthInches)}</td>
                     <td>{maps.items.filter((it) => it.containerId === c.id).length}</td>
@@ -690,7 +705,10 @@ export function Explorer({ data, live, openForm, deleteItem }: ExplorerProps) {
                 <tbody>
                   {rows.map((it) => (
                     <tr key={it.id}>
-                      <td><button className="link-btn" onClick={() => go({ kind: 'item', id: it.id })}>{it.name}</button></td>
+                      <td>
+                        <button className="link-btn" onClick={() => go({ kind: 'item', id: it.id })}>{it.name}</button>{' '}
+                        <PictureHoverIcon kind="items" ownerId={it.id} live={live} />
+                      </td>
                       <td>{it.itemTypes.map((t) => ITEM_TYPE_NAMES[t] ?? t).join(', ')}</td>
                       <td>{formatPrice(itemValue(it))}</td>
                       <td>{maps.personName(it.ownerId)}</td>

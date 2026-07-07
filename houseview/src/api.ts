@@ -75,6 +75,25 @@ export const apiPost = <T>(path: string, body: unknown) => request<T>('POST', pa
 export const apiPut = <T>(path: string, body: unknown) => request<T>('PUT', path, body);
 export const apiDelete = (path: string) => request<void>('DELETE', path);
 
+/**
+ * Multipart POST (picture uploads). Deliberately not routed through request():
+ * the Content-Type header must be omitted so the browser sets
+ * `multipart/form-data` with its generated boundary — a manual header would
+ * break the server's form parsing.
+ */
+export async function apiPostForm<T>(path: string, form: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE}/api/${path}`, {
+    method: 'POST',
+    headers: { Accept: 'application/json' },
+    body: form,
+  });
+  if (!res.ok) {
+    const problem = await parseProblem(res);
+    throw new ApiError(res.status, problem, problem?.title ?? `POST /api/${path} responded ${res.status}`);
+  }
+  return (await res.json()) as T;
+}
+
 // ---------------------------------------------------------------------------
 // Paginated reads
 // ---------------------------------------------------------------------------

@@ -195,6 +195,45 @@ export interface ItemEventResponse {
   notes: string | null;
 }
 
+/**
+ * URL path segment for the four picture-owning entities' nested routes
+ * (POST/GET /api/{kind}/{id}/pictures).
+ */
+export type PictureOwnerKind = 'locations' | 'rooms' | 'containers' | 'items';
+
+export interface PictureResponse {
+  id: number;
+  /** Domain.Enums.PictureOwnerType ordinal: 0 Location, 1 Room, 2 Container, 3 Item */
+  ownerType: number;
+  ownerId: number;
+  /**
+   * Short-lived SAS read link (~15 min). Never persist it; the picture query's
+   * staleTime keeps cached URLs younger than the TTL, and an <img> error should
+   * invalidate the query to mint fresh ones.
+   */
+  url: string;
+  contentType: string;
+  sizeBytes: number;
+  originalFileName: string | null;
+  caption: string | null;
+  /** the owner's cover photo — at most one per owner, maintained server-side */
+  isPrimary: boolean;
+  sortOrder: number;
+  widthPixels: number | null;
+  heightPixels: number | null;
+  createdDate: string;
+  rowVersion: RowVersion;
+}
+
+/** Metadata-only update; replacing the bytes = delete + re-upload. */
+export interface UpdatePictureRequest {
+  id: number;
+  caption: string | null;
+  isPrimary: boolean;
+  sortOrder: number;
+  rowVersion: RowVersion;
+}
+
 export interface PagedResponse<T> {
   items: T[];
   totalCount: number;
