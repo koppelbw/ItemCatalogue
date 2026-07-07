@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "ConnectionStrings__local": "Server=localhost,1433;Database=ItemCatalogue;User Id=sa;Password=LocalDev!Pass123;Encrypt=True;Trust Server Certificate=True;Connect Timeout=30;Command Timeout=30",
+    "BlobStorage__ConnectionString": "UseDevelopmentStorage=true",
+    "BlobStorage__ContainerName": "catalogue-images",
+    "ImportQueue__ConnectionString": "UseDevelopmentStorage=true",
+    "Import__ChunkSize": "25"
+  }
+}
