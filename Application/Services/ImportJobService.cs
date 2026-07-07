@@ -78,7 +78,7 @@ public sealed class ImportJobService(
 
         var job = new ImportJob
         {
-            FileName = fileName,
+            FileName = SanitizeFileName(fileName),
             TotalRows = totalRows,
             RejectedAtIntake = intakeErrors.Count,
             EnqueuedRows = payloadRows.Count,
@@ -138,6 +138,16 @@ public sealed class ImportJobService(
         {
             logger.ImportChunkProcessed(message.JobId, message.ChunkIndex, chunk.Succeeded, chunk.Failed);
         }
+    }
+
+    // Some browsers send a full client path as the upload's file name; keep only the leaf and fit
+    // the FileName column (255).
+    private static string SanitizeFileName(string? fileName)
+    {
+        var raw = fileName ?? string.Empty;
+        var leaf = raw[(raw.LastIndexOfAny(['/', '\\']) + 1)..].Trim();
+        if (leaf.Length == 0) return "upload.csv";
+        return leaf.Length <= 255 ? leaf : leaf[..255];
     }
 
     // Case-insensitive name -> id lookup for one reference table, built only when the file
