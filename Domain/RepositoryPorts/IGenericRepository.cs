@@ -13,10 +13,6 @@ public interface IGenericRepository<TEntity> where TEntity : class, IEntity
 
     Task<PagedResult<TEntity>> GetAllAsync(PageRequest page, CancellationToken cancellationToken = default);
 
-    // Every row, unpaged. Intended ONLY for small reference tables (rooms, containers, people)
-    // where a complete in-memory set is needed, e.g. the import name->id resolution.
-    Task<IReadOnlyList<TEntity>> GetAllUnpagedAsync(CancellationToken cancellationToken = default);
-
     Task<int> InsertAsync(TEntity entity, CancellationToken cancellationToken = default);
 
     // Inserts every entity in one transaction (single SaveChanges). All-or-nothing at the

@@ -20,8 +20,8 @@ public class CsvItemParserTests
     public async Task ParseAsync_FullyPopulatedRow_MapsEveryColumn()
     {
         var result = await ParseAsync(
-            "Name,Description,ItemTypes,PurchasePrice,CurrentValue,Brand,Model,SerialNumber,PurchasedFrom,Quantity,Condition,AcquisitionType,PurchaseDate,WarrantyExpiryDate,IsStored,IsShownInUI,Room,Container,Owner,ReleaseDate,ValuationDate,AcquisitionReference",
-            "Desk Lamp,LED lamp,Electronics;Books,19.99,12.50,Ikea,Tertial,SN-1,Ikea Store,2,Good,Purchased,2024-01-15,2026-01-15,true,1,Garage,Toolbox,Will,2023-06-01,2025-01-01,INV-001");
+            "Name,Description,ItemTypes,PurchasePrice,CurrentValue,Brand,Model,SerialNumber,PurchasedFrom,Quantity,Condition,AcquisitionType,PurchaseDate,WarrantyExpiryDate,IsStored,IsShownInUI,RoomId,ContainerId,OwnerId,ReleaseDate,ValuationDate,AcquisitionReference",
+            "Desk Lamp,LED lamp,Electronics;Books,19.99,12.50,Ikea,Tertial,SN-1,Ikea Store,2,Good,Purchased,2024-01-15,2026-01-15,true,1,7,11,3,2023-06-01,2025-01-01,INV-001");
 
         result.Errors.ShouldBeEmpty();
         var row = result.Rows.ShouldHaveSingleItem();
@@ -42,9 +42,9 @@ public class CsvItemParserTests
         row.WarrantyExpiryDate.ShouldBe(new DateTime(2026, 1, 15));
         row.IsStored.ShouldBeTrue();
         row.IsShownInUI.ShouldBeTrue();
-        row.Room.ShouldBe("Garage");
-        row.Container.ShouldBe("Toolbox");
-        row.Owner.ShouldBe("Will");
+        row.RoomId.ShouldBe(7);
+        row.ContainerId.ShouldBe(11);
+        row.OwnerId.ShouldBe(3);
         row.ReleaseDate.ShouldBe(new DateTime(2023, 6, 1));
         row.ValuationDate.ShouldBe(new DateTime(2025, 1, 1));
         row.AcquisitionReference.ShouldBe("INV-001");
@@ -61,18 +61,29 @@ public class CsvItemParserTests
         row.IsShownInUI.ShouldBeFalse();
         row.Description.ShouldBeNull();
         row.PurchasePrice.ShouldBeNull();
-        row.Room.ShouldBeNull();
+        row.RoomId.ShouldBeNull();
     }
 
     [Fact]
     public async Task ParseAsync_BlankCells_BecomeNulls()
     {
-        var result = await ParseAsync("Name,Description,PurchasePrice,Room", "Drill, , ,  ");
+        var result = await ParseAsync("Name,Description,PurchasePrice,RoomId", "Drill, , ,  ");
 
         var row = result.Rows.ShouldHaveSingleItem();
         row.Description.ShouldBeNull();
         row.PurchasePrice.ShouldBeNull();
-        row.Room.ShouldBeNull();
+        row.RoomId.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task ParseAsync_NonNumericReferenceId_BecomesRowError()
+    {
+        var result = await ParseAsync("Name,ItemTypes,RoomId", "Drill,Electronics,Garage");
+
+        result.Rows.ShouldBeEmpty();
+        var error = result.Errors.ShouldHaveSingleItem();
+        error.RowNumber.ShouldBe(2);
+        error.Messages.ShouldHaveSingleItem().ShouldContain("not a valid RoomId");
     }
 
     [Fact]

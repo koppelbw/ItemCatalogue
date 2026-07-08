@@ -218,8 +218,8 @@ cd houseview && npm install && npm run dev             # Habitat on :5173
 `POST /api/imports` accepts a CSV (grab the column reference from `GET /api/imports/template`),
 answers **202 Accepted** immediately, and processes the rows in the background in chunks of 25
 (`Import:ChunkSize`). Poll the `Location` header (`GET /api/imports/{id}`) for progress and
-per-row errors. Reference cells (`Room`, `Container`, `Owner`) take a **name** ("Garage") or a
-numeric id; dates are `yyyy-MM-dd`; multiple `ItemTypes` are separated with `;`
+per-row errors. Reference cells (`RoomId`, `ContainerId`, `OwnerId`) take the numeric **id** of an
+existing record; dates are `yyyy-MM-dd`; multiple `ItemTypes` are separated with `;`
 (`Electronics;Books`).
 
 Running the background half locally needs **Azurite** (queues + payload blobs) and the Functions

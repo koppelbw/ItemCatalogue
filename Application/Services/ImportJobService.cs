@@ -19,9 +19,6 @@ public sealed class ImportJobService(
     IImportPayloadStore payloadStore,
     IImportDispatcher dispatcher,
     IImportJobRepository importJobRepository,
-    IRoomRepository roomRepository,
-    IContainerRepository containerRepository,
-    IPersonRepository personRepository,
     ItemBulkPreparer bulkPreparer,
     TimeProvider timeProvider,
     IOptions<ImportOptions> importOptions,
@@ -34,8 +31,7 @@ public sealed class ImportJobService(
         var parsed = await csvParser.ParseAsync(csvContent, cancellationToken);
         var totalRows = parsed.Rows.Count + parsed.Errors.Count;
 
-        // Whole-file problems surface as the same 400 problem-details shape as any other
-        // validation failure (see ValidationExceptionHandler).
+
         if (totalRows == 0)
         {
             throw new ValidationException([new ValidationFailure("File", "The file contains no data rows.")]);
@@ -46,32 +42,14 @@ public sealed class ImportJobService(
                 [new ValidationFailure("File", $"The file has {totalRows} data rows; the maximum per import is {_options.MaxRows}.")]);
         }
 
-        var intakeErrors = new List<ImportRowError>(parsed.Errors);
-        var payloadRows = new List<ImportPayloadRow>();
-
-        // Users reference rooms/containers/owners by name ("Garage", "Will"), not database id.
-        // Resolution happens here at intake — fast feedback, and the queued payload carries only
-        // ids so chunk processing needs no name knowledge. A numeric cell is taken as a direct id.
-        var rooms = await NameMap.LoadAsync(parsed.Rows.Any(r => r.Room is not null), roomRepository, r => r.Name, cancellationToken);
-        var containers = await NameMap.LoadAsync(parsed.Rows.Any(r => r.Container is not null), containerRepository, c => c.Name, cancellationToken);
-        var owners = await NameMap.LoadAsync(parsed.Rows.Any(r => r.Owner is not null), personRepository, p => p.Name, cancellationToken);
-
-        foreach (var row in parsed.Rows)
-        {
-            var rowErrors = new List<string>();
-            var roomId = rooms.Resolve("Room", row.Room, rowErrors);
-            var containerId = containers.Resolve("Container", row.Container, rowErrors);
-            var ownerId = owners.Resolve("Owner", row.Owner, rowErrors);
-
-            if (rowErrors.Count > 0)
-            {
-                intakeErrors.Add(new ImportRowError(row.RowNumber, rowErrors));
-            }
-            else
-            {
-                payloadRows.Add(new ImportPayloadRow(row.RowNumber, row.ToCreateRequest(roomId, containerId, ownerId)));
-            }
-        }
+        // The CSV carries reference ids (RoomId/ContainerId/OwnerId) directly, so intake is a
+        // straight projection: parse errors are the only intake rejections, and every well-formed
+        // row is enqueued. Whether a referenced id actually exists is validated per chunk by
+        // ItemBulkPreparer's batched FK check.
+        var intakeErrors = parsed.Errors;
+        var payloadRows = parsed.Rows
+            .Select(row => new ImportPayloadRow(row.RowNumber, row.ToCreateRequest()))
+            .ToList();
 
         var chunkSize = Math.Max(1, _options.ChunkSize);
         var totalChunks = (payloadRows.Count + chunkSize - 1) / chunkSize;
@@ -181,73 +159,5 @@ public sealed class ImportJobService(
         var leaf = raw[(raw.LastIndexOfAny(['/', '\\']) + 1)..].Trim();
         if (leaf.Length == 0) return "upload.csv";
         return leaf.Length <= 255 ? leaf : leaf[..255];
-    }
-
-    // Case-insensitive name -> id lookup for one reference table, built only when the file
-    // actually uses that column. Names shared by two rows (e.g. two rooms both named "Closet")
-    // are ambiguous — resolvable only by id.
-    private sealed class NameMap
-    {
-        private readonly Dictionary<string, int>? _idsByName;
-        private readonly HashSet<string>? _ambiguous;
-
-        private NameMap(Dictionary<string, int>? idsByName, HashSet<string>? ambiguous)
-        {
-            _idsByName = idsByName;
-            _ambiguous = ambiguous;
-        }
-
-        public static async Task<NameMap> LoadAsync<TEntity>(
-            bool needed,
-            IGenericRepository<TEntity> repository,
-            Func<TEntity, string> name,
-            CancellationToken cancellationToken)
-            where TEntity : class, IEntity
-        {
-            if (!needed)
-            {
-                return new NameMap(null, null);
-            }
-
-            var idsByName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            var ambiguous = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var entity in await repository.GetAllUnpagedAsync(cancellationToken))
-            {
-                if (!idsByName.TryAdd(name(entity), entity.Id))
-                {
-                    ambiguous.Add(name(entity));
-                }
-            }
-
-            return new NameMap(idsByName, ambiguous);
-        }
-
-        public int? Resolve(string kind, string? cell, List<string> rowErrors)
-        {
-            if (string.IsNullOrWhiteSpace(cell))
-            {
-                return null;
-            }
-
-            var value = cell.Trim();
-            if (int.TryParse(value, out var directId))
-            {
-                // Existence of a direct id is re-checked per chunk by ItemBulkPreparer's FK query.
-                return directId;
-            }
-
-            if (_ambiguous is not null && _ambiguous.Contains(value))
-            {
-                rowErrors.Add($"{kind} name '{value}' matches more than one record; use its numeric id instead.");
-                return null;
-            }
-            if (_idsByName is not null && _idsByName.TryGetValue(value, out var id))
-            {
-                return id;
-            }
-
-            rowErrors.Add($"Unknown {kind} '{value}'.");
-            return null;
-        }
     }
 }

@@ -7,9 +7,10 @@ namespace Application.Mapping;
 
 public static class ImportMappings
 {
-    // A parsed CSV row plus its resolved reference ids -> the same request shape the single-item
-    // POST endpoint takes, so everything downstream of intake is shared with the normal path.
-    public static CreateItemRequest ToCreateRequest(this CsvItemRow row, int? roomId, int? containerId, int? ownerId) => new(
+    // A parsed CSV row -> the same request shape the single-item POST endpoint takes, so everything
+    // downstream of intake is shared with the normal path. Reference ids come straight off the row
+    // (the CSV carries RoomId/ContainerId/OwnerId directly); existence is checked per chunk.
+    public static CreateItemRequest ToCreateRequest(this CsvItemRow row) => new(
         Name: row.Name,
         Description: row.Description,
         ItemTypes: row.ItemTypes,
@@ -26,9 +27,9 @@ public static class ImportMappings
         WarrantyExpiryDate: row.WarrantyExpiryDate,
         IsStored: row.IsStored,
         IsShownInUI: row.IsShownInUI,
-        RoomId: roomId,
-        ContainerId: containerId,
-        OwnerId: ownerId,
+        RoomId: row.RoomId,
+        ContainerId: row.ContainerId,
+        OwnerId: row.OwnerId,
         ReleaseDate: row.ReleaseDate,
         ValuationDate: row.ValuationDate,
         AcquisitionReference: row.AcquisitionReference);

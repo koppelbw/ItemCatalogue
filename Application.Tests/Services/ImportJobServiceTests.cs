@@ -35,9 +35,6 @@ public class ImportJobServiceTests
             _payloadStore,
             _dispatcher,
             _jobRepository,
-            _roomRepository,
-            _containerRepository,
-            _personRepository,
             new ItemBulkPreparer(new CreateItemRequestValidator(), _roomRepository, _containerRepository, _personRepository),
             TimeProvider.System,
             Microsoft.Extensions.Options.Options.Create(new ImportOptions { ChunkSize = 2, MaxRows = 10 }),
@@ -53,15 +50,8 @@ public class ImportJobServiceTests
         _jobRepository.RecordChunkAsync(Arg.Any<ImportChunk>(), Arg.Any<IReadOnlyCollection<Item>>(), Arg.Any<CancellationToken>())
             .Returns(true);
 
-        // Reference data for name resolution.
-        _roomRepository.GetAllUnpagedAsync(Arg.Any<CancellationToken>())
-            .Returns([new Room { Id = 7, Name = "Garage" }]);
-        _containerRepository.GetAllUnpagedAsync(Arg.Any<CancellationToken>())
-            .Returns([new Container { Id = 11, Name = "Toolbox" }]);
-        _personRepository.GetAllUnpagedAsync(Arg.Any<CancellationToken>())
-            .Returns([new Person { Id = 3, Name = "Will" }]);
-
-        // For the preparer's FK re-check during chunk processing: every id exists.
+        // The CSV carries reference ids directly; the only reference validation is the preparer's
+        // chunk-time FK re-check, which here treats every id as existing.
         EchoExistingIds(_roomRepository);
         EchoExistingIds(_containerRepository);
         EchoExistingIds(_personRepository);
@@ -76,16 +66,16 @@ public class ImportJobServiceTests
         => _parser.ParseAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
             .Returns(new CsvParseResult(rows, errors ?? []));
 
-    private static CsvItemRow Row(int rowNumber, string name = "Lamp", string? room = null, string? container = null, string? owner = null) =>
+    private static CsvItemRow Row(int rowNumber, string name = "Lamp", int? roomId = null, int? containerId = null, int? ownerId = null) =>
         new(rowNumber, name, null, [ItemType.Electronics], null, null, null, null, null, null, 1,
-            null, null, null, null, false, true, room, container, owner, null, null, null);
+            null, null, null, null, false, true, roomId, containerId, ownerId, null, null, null);
 
     private Task<ImportJobResponse> StartAsync() => _service.StartImportAsync(Stream.Null, "items.csv");
 
     [Fact]
-    public async Task StartImportAsync_ResolvesNamesCaseInsensitively_AndDispatchesChunks()
+    public async Task StartImportAsync_PassesReferenceIdsThroughToPayload_AndDispatchesChunks()
     {
-        ParserReturns([Row(2, "A", room: "garage"), Row(3, "B", owner: "Will"), Row(4, "C")]);
+        ParserReturns([Row(2, "A", roomId: 7), Row(3, "B", ownerId: 3), Row(4, "C")]);
 
         var response = await StartAsync();
 
@@ -95,7 +85,7 @@ public class ImportJobServiceTests
         response.EnqueuedRows.ShouldBe(3);
         response.TotalChunks.ShouldBe(2);
 
-        // Payload rows carry the resolved ids and their CSV row numbers.
+        // Reference ids flow straight from the parsed row onto the request — no resolution.
         await _payloadStore.Received(1).WriteAsync(42, Arg.Is<IReadOnlyList<ImportPayloadRow>>(rows =>
             rows.Count == 3 &&
             rows[0].RowNumber == 2 && rows[0].Item.RoomId == 7 &&
@@ -107,50 +97,6 @@ public class ImportJobServiceTests
             chunks.Count == 2 &&
             chunks[0] == new ChunkRef(0, 0, 2) &&
             chunks[1] == new ChunkRef(1, 2, 1)), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task StartImportAsync_UnknownRoomName_RejectsRowAtIntake()
-    {
-        ParserReturns([Row(2, "A", room: "Attic"), Row(3, "B")]);
-
-        var response = await StartAsync();
-
-        response.RejectedAtIntake.ShouldBe(1);
-        response.EnqueuedRows.ShouldBe(1);
-        response.TotalChunks.ShouldBe(1);
-        var error = response.Errors.ShouldHaveSingleItem();
-        error.RowNumber.ShouldBe(2);
-        error.Messages.ShouldHaveSingleItem().ShouldBe("Unknown Room 'Attic'.");
-        await _payloadStore.Received(1).WriteAsync(42,
-            Arg.Is<IReadOnlyList<ImportPayloadRow>>(rows => rows.Count == 1 && rows[0].RowNumber == 3),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task StartImportAsync_AmbiguousName_RejectsRowWithIdHint()
-    {
-        _roomRepository.GetAllUnpagedAsync(Arg.Any<CancellationToken>())
-            .Returns([new Room { Id = 1, Name = "Closet" }, new Room { Id = 2, Name = "closet" }]);
-        ParserReturns([Row(2, "A", room: "Closet")]);
-
-        var response = await StartAsync();
-
-        response.RejectedAtIntake.ShouldBe(1);
-        response.Errors.ShouldHaveSingleItem().Messages.ShouldHaveSingleItem()
-            .ShouldBe("Room name 'Closet' matches more than one record; use its numeric id instead.");
-    }
-
-    [Fact]
-    public async Task StartImportAsync_NumericCell_IsTakenAsDirectId()
-    {
-        ParserReturns([Row(2, "A", container: "123")]);
-
-        await StartAsync();
-
-        await _payloadStore.Received(1).WriteAsync(42,
-            Arg.Is<IReadOnlyList<ImportPayloadRow>>(rows => rows[0].Item.ContainerId == 123),
-            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -188,7 +134,8 @@ public class ImportJobServiceTests
     [Fact]
     public async Task StartImportAsync_AllRowsRejected_SkipsPayloadAndDispatch_AndIsCompleted()
     {
-        ParserReturns([Row(2, "A", room: "Attic")]);
+        // Every data row failed to parse, so none survive to be enqueued.
+        ParserReturns([], [new ImportRowError(2, ["'abc' is not a valid PurchasePrice."])]);
 
         var response = await StartAsync();
 
@@ -203,8 +150,8 @@ public class ImportJobServiceTests
     [Fact]
     public async Task ProcessChunkAsync_RecordsOutcome_WithErrorsKeyedByCsvRowNumber()
     {
-        var valid = Row(2, "Drill").ToCreateRequest(null, null, null);
-        var invalid = Row(3, "").ToCreateRequest(null, null, null);
+        var valid = Row(2, "Drill").ToCreateRequest();
+        var invalid = Row(3, "").ToCreateRequest();
         _payloadStore.ReadChunkAsync(42, 0, 2, Arg.Any<CancellationToken>())
             .Returns([new ImportPayloadRow(2, valid), new ImportPayloadRow(3, invalid)]);
 
@@ -227,7 +174,7 @@ public class ImportJobServiceTests
         _jobRepository.RecordChunkAsync(Arg.Any<ImportChunk>(), Arg.Any<IReadOnlyCollection<Item>>(), Arg.Any<CancellationToken>())
             .Returns(false);
         _payloadStore.ReadChunkAsync(42, 0, 1, Arg.Any<CancellationToken>())
-            .Returns([new ImportPayloadRow(2, Row(2, "Drill").ToCreateRequest(null, null, null))]);
+            .Returns([new ImportPayloadRow(2, Row(2, "Drill").ToCreateRequest())]);
 
         await Should.NotThrowAsync(() => _service.ProcessChunkAsync(new ImportChunkMessage(42, 0, 0, 1)));
     }
@@ -237,8 +184,8 @@ public class ImportJobServiceTests
     {
         _payloadStore.ReadChunkAsync(42, 0, 2, Arg.Any<CancellationToken>())
             .Returns([
-                new ImportPayloadRow(2, Row(2, "Drill").ToCreateRequest(null, null, null)),
-                new ImportPayloadRow(3, Row(3, "Ladder").ToCreateRequest(null, null, null)),
+                new ImportPayloadRow(2, Row(2, "Drill").ToCreateRequest()),
+                new ImportPayloadRow(3, Row(3, "Ladder").ToCreateRequest()),
             ]);
 
         await _service.MarkChunkFailedAsync(new ImportChunkMessage(42, 0, 0, 2), "poisoned");

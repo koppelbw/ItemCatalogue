@@ -5,23 +5,16 @@ using CsvHelper.Configuration;
 using Domain.Enums;
 using FluentValidation.Results;
 using System.Globalization;
-// CsvHelper declares its own ValidationException; the API's ValidationExceptionHandler catches
-// FluentValidation's, so disambiguate explicitly.
+
+// CsvHelper declares its own ValidationException; the API's ValidationExceptionHandler catches FluentValidation's, so disambiguate explicitly.
 using ValidationException = FluentValidation.ValidationException;
 
 namespace Infrastructure.Storage;
 
-// CsvHelper-based adapter for ICsvItemParser. Reads field-by-field (no class map) so every cell
-// that fails to parse becomes a per-row error with its CSV line number instead of aborting the
-// file. Whole-file problems (no header, missing Name column) throw ValidationException so the API
-// returns the standard 400 problem details. Culture is invariant: dates are yyyy-MM-dd and
-// decimals use '.', as documented in the downloadable template.
 public sealed class CsvItemParser : ICsvItemParser
 {
     private static readonly CsvConfiguration _configuration = new(CultureInfo.InvariantCulture)
     {
-        // Header/field presence is validated by this class (missing optional columns are fine);
-        // without these, CsvHelper would throw on the first absent column.
         HeaderValidated = null,
         MissingFieldFound = null,
         TrimOptions = TrimOptions.Trim,
@@ -68,13 +61,14 @@ public sealed class CsvItemParser : ICsvItemParser
                 AcquisitionType: ParseEnum<AcquisitionType>(csvReader, "AcquisitionType", rowErrors),
                 PurchaseDate: ParseDate(csvReader, "PurchaseDate", rowErrors),
                 WarrantyExpiryDate: ParseDate(csvReader, "WarrantyExpiryDate", rowErrors),
-                // Defaults mirror the Item table: not stored, not shown in the 3D UI (imported
-                // items have no placement geometry until the user positions them).
                 IsStored: ParseBool(csvReader, "IsStored", defaultValue: false, rowErrors),
                 IsShownInUI: ParseBool(csvReader, "IsShownInUI", defaultValue: false, rowErrors),
-                Room: Text(csvReader, "Room"),
-                Container: Text(csvReader, "Container"),
-                Owner: Text(csvReader, "Owner"),
+                // References are given by database id; a non-numeric cell becomes a per-row error
+                // via ParseInt, and a numeric-but-nonexistent id is caught at chunk time by
+                // ItemBulkPreparer's FK check.
+                RoomId: ParseInt(csvReader, "RoomId", rowErrors),
+                ContainerId: ParseInt(csvReader, "ContainerId", rowErrors),
+                OwnerId: ParseInt(csvReader, "OwnerId", rowErrors),
                 ReleaseDate: ParseDate(csvReader, "ReleaseDate", rowErrors),
                 ValuationDate: ParseDate(csvReader, "ValuationDate", rowErrors),
                 AcquisitionReference: Text(csvReader, "AcquisitionReference"));

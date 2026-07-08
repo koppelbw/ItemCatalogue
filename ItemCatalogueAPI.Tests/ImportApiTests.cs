@@ -43,17 +43,20 @@ public class ImportApiTests(ApiFactory factory) : ApiTestBase(factory)
         await queue.ClearMessagesAsync();
     }
 
-    private async Task SeedRoomAndOwnerAsync()
+    private async Task<(int RoomId, int OwnerId)> SeedRoomAndOwnerAsync()
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<ItemCatalogueDbContext>();
-        db.Rooms.Add(new Room
+        var room = new Room
         {
             Name = "Garage",
             Floor = new Floor { Name = "Main", LevelIndex = 0, Location = new Location { Name = "House" } },
-        });
-        db.People.Add(new Person { Name = "Will" });
+        };
+        var owner = new Person { Name = "Will" };
+        db.Rooms.Add(room);
+        db.People.Add(owner);
         await db.SaveChangesAsync();
+        return (room.Id, owner.Id);
     }
 
     [Fact]
@@ -84,13 +87,13 @@ public class ImportApiTests(ApiFactory factory) : ApiTestBase(factory)
     public async Task Post_ThenProcessChunks_CompletesJobAndInsertsItems()
     {
         await ClearQueueAsync();
-        await SeedRoomAndOwnerAsync();
+        var (roomId, ownerId) = await SeedRoomAndOwnerAsync();
 
-        // Row 5 fails business validation at chunk time (empty name) — the rest must survive.
+        // Row 4 fails business validation at chunk time (empty name) — the rest must survive.
         var response = await Client.PostAsync("/api/imports", CsvForm(
-            "Name,ItemTypes,PurchasePrice,Room,Owner\n" +
-            "Drill,Electronics,49.99,Garage,\n" +
-            "Ladder,Electronics,,garage,Will\n" +
+            "Name,ItemTypes,PurchasePrice,RoomId,OwnerId\n" +
+            $"Drill,Electronics,49.99,{roomId},\n" +
+            $"Ladder,Electronics,,{roomId},{ownerId}\n" +
             ",Electronics,,,\n" +
             "Vise,Electronics,,,"));
 
@@ -114,7 +117,7 @@ public class ImportApiTests(ApiFactory factory) : ApiTestBase(factory)
         status.Failed.ShouldBe(1);
         status.Errors.ShouldHaveSingleItem().RowNumber.ShouldBe(4);
 
-        // The survivors are real items with their name-resolved references intact.
+        // The survivors are real items with their referenced ids intact.
         await using var assertScope = _factory.Services.CreateAsyncScope();
         var db = assertScope.ServiceProvider.GetRequiredService<ItemCatalogueDbContext>();
         var items = await db.Items.AsNoTracking().OrderBy(i => i.Name).ToListAsync();
@@ -125,10 +128,11 @@ public class ImportApiTests(ApiFactory factory) : ApiTestBase(factory)
     }
 
     [Fact]
-    public async Task Post_UnknownRoomName_RejectsThatRowAtIntake()
+    public async Task Post_NonNumericRoomId_RejectsThatRowAtIntake()
     {
+        // A cell that isn't a number can't be an id, so the parser rejects it up front.
         var response = await Client.PostAsync("/api/imports", CsvForm(
-            "Name,ItemTypes,Room\nDrill,Electronics,Atlantis\nLadder,Electronics,"));
+            "Name,ItemTypes,RoomId\nDrill,Electronics,Atlantis\nLadder,Electronics,"));
 
         response.StatusCode.ShouldBe(HttpStatusCode.Accepted);
         var job = (await response.Content.ReadFromJsonAsync<ImportJobResponse>())!;
@@ -137,7 +141,36 @@ public class ImportApiTests(ApiFactory factory) : ApiTestBase(factory)
         job.EnqueuedRows.ShouldBe(1);
         var error = job.Errors.ShouldHaveSingleItem();
         error.RowNumber.ShouldBe(2);
-        error.Messages.ShouldHaveSingleItem().ShouldBe("Unknown Room 'Atlantis'.");
+        error.Messages.ShouldHaveSingleItem().ShouldContain("not a valid RoomId");
+    }
+
+    [Fact]
+    public async Task Post_ThenProcessChunks_NonexistentRoomId_FailsRowAtChunkTime()
+    {
+        await ClearQueueAsync();
+
+        // 999 is a well-formed id, so intake enqueues it; its non-existence is caught when the
+        // chunk is processed (ItemBulkPreparer's FK check), not at intake.
+        var response = await Client.PostAsync("/api/imports", CsvForm(
+            "Name,ItemTypes,RoomId\nDrill,Electronics,999"));
+
+        var job = (await response.Content.ReadFromJsonAsync<ImportJobResponse>())!;
+        job.RejectedAtIntake.ShouldBe(0);
+        job.EnqueuedRows.ShouldBe(1);
+
+        var messages = (await ImportQueue().ReceiveMessagesAsync(maxMessages: 10)).Value;
+        foreach (var message in messages)
+        {
+            await using var scope = _factory.Services.CreateAsyncScope();
+            var service = scope.ServiceProvider.GetRequiredService<IImportJobService>();
+            await service.ProcessChunkAsync(JsonSerializer.Deserialize<ImportChunkMessage>(message.MessageText)!);
+        }
+
+        var status = (await Client.GetFromJsonAsync<ImportJobResponse>($"/api/imports/{job.Id}"))!;
+        status.Status.ShouldBe(ImportJobStatus.Completed);
+        status.Succeeded.ShouldBe(0);
+        status.Failed.ShouldBe(1);
+        status.Errors.ShouldHaveSingleItem().Messages.ShouldContain("Room 999 does not exist.");
     }
 
     [Fact]
@@ -186,6 +219,6 @@ public class ImportApiTests(ApiFactory factory) : ApiTestBase(factory)
         response.Content.Headers.ContentType!.MediaType.ShouldBe("text/csv");
         var csv = await response.Content.ReadAsStringAsync();
         csv.ShouldStartWith("Name,Description,ItemTypes,");
-        csv.ShouldContain("Room,Container,Owner");
+        csv.ShouldContain("RoomId,ContainerId,OwnerId");
     }
 }
