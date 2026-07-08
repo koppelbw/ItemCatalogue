@@ -14,8 +14,10 @@ name: CI/CD
 # ── One-time setup (Settings ▸ Secrets and variables ▸ Actions) ──────────────────
 #   Variables:
 #     AZURE_WEBAPP_NAME            – App Service name (itemcatalogue-api-ufocqt)
+#     AZURE_FUNCTIONAPP_NAME       – Function App name (func-itemcat-ufocqt)
 #   Secrets:
 #     AZURE_WEBAPP_PUBLISH_PROFILE – App Service ▸ Overview ▸ "Download publish profile"
+#     AZURE_FUNCTIONAPP_PUBLISH_PROFILE – Function App ▸ Overview ▸ "Get publish profile"
 #     AZURE_SQL_CONNECTION_STRING  – ADO.NET connection string for the Azure SQL DB
 # ─────────────────────────────────────────────────────────────────────────────────
 
@@ -131,3 +133,18 @@ jobs:
           app-name: ${{ vars.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ./publish
+
+      # ── Deploy the bulk-import Function App ───────────────────────────────────
+      # The queue-triggered ItemCatalogueFunctions host processes the chunk messages
+      # the API enqueues. Published separately from the API (different Azure resource:
+      # func-itemcat-ufocqt, a Flex Consumption Function App). It reuses the same
+      # storage account + Azure SQL, wired via its own app settings, not here.
+      # - name: Publish Function App
+      #   run: dotnet publish ItemCatalogueFunctions/ItemCatalogueFunctions.csproj --configuration Release --output ./publish-func
+
+      # - name: Deploy Function App
+      #   uses: Azure/functions-action@v1
+      #   with:
+      #     app-name: ${{ vars.AZURE_FUNCTIONAPP_NAME }}
+      #     package: ./publish-func
+      #     publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}

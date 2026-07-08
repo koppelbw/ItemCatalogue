@@ -13,8 +13,7 @@ namespace Infrastructure.Storage;
 // the image BlobServiceClient, so import storage can point at a different account via config.
 public sealed class BlobImportPayloadStore(IOptions<ImportStorageOptions> options) : IImportPayloadStore
 {
-    private readonly BlobContainerClient _container =
-        new(options.Value.ConnectionString, options.Value.PayloadContainerName);
+    private readonly BlobContainerClient _container = new(options.Value.ConnectionString, options.Value.PayloadContainerName);
 
     public async Task WriteAsync(int jobId, IReadOnlyList<ImportPayloadRow> rows, CancellationToken cancellationToken = default)
     {

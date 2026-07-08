@@ -7,9 +7,7 @@ namespace Application.Mapping;
 
 public static class ImportMappings
 {
-    // A parsed CSV row -> the same request shape the single-item POST endpoint takes, so everything
-    // downstream of intake is shared with the normal path. Reference ids come straight off the row
-    // (the CSV carries RoomId/ContainerId/OwnerId directly); existence is checked per chunk.
+    // A parsed CSV row -> the same request shape the single-item POST endpoint takes, so everything downstream of intake is shared with the normal path.
     public static CreateItemRequest ToCreateRequest(this CsvItemRow row) => new(
         Name: row.Name,
         Description: row.Description,
@@ -62,16 +60,15 @@ public static class ImportMappings
             TotalChunks: job.TotalChunks,
             ProcessedChunks: processedChunks,
             Succeeded: succeeded,
-            // Failed counts every unsuccessful row: rejected at intake plus failed during chunk
-            // processing. When the job completes, Succeeded + Failed == TotalRows.
+
+            // Failed counts every unsuccessful row: rejected at intake plus failed during chunk processing. When the job completes, Succeeded + Failed == TotalRows.
             Failed: job.RejectedAtIntake + failedInChunks,
             Errors: errors,
             CreatedDate: job.CreatedDate,
             LastModifiedDate: job.LastModifiedDate);
     }
 
-    // Row errors are persisted as plain JSON (ImportJob.IntakeErrorsJson / ImportChunk.ErrorsJson);
-    // writer and reader live here so the format has exactly one definition.
+    // Row errors are persisted as plain JSON (ImportJob.IntakeErrorsJson / ImportChunk.ErrorsJson); writer and reader live here so the format has exactly one definition.
     public static string? SerializeErrors(IReadOnlyList<ImportRowError> errors)
         => errors.Count == 0 ? null : JsonSerializer.Serialize(errors);
 

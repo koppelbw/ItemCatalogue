@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace Infrastructure.Storage;
 
-// Option 1 transport adapter: one Storage Queue message per chunk. The injected
+// Transport adapter: one Storage Queue message per chunk. The injected
 // QueueServiceClient is configured with Base64 message encoding (see AddInfrastructure) to match
 // what the Functions queue trigger expects — a mismatch there is the classic silent footgun.
 // Durable Functions / Service Bus variants would be sibling IImportDispatcher implementations.

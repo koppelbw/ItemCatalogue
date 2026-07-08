@@ -31,7 +31,6 @@ public sealed class ImportJobService(
         var parsed = await csvParser.ParseAsync(csvContent, cancellationToken);
         var totalRows = parsed.Rows.Count + parsed.Errors.Count;
 
-
         if (totalRows == 0)
         {
             throw new ValidationException([new ValidationFailure("File", "The file contains no data rows.")]);
@@ -42,10 +41,6 @@ public sealed class ImportJobService(
                 [new ValidationFailure("File", $"The file has {totalRows} data rows; the maximum per import is {_options.MaxRows}.")]);
         }
 
-        // The CSV carries reference ids (RoomId/ContainerId/OwnerId) directly, so intake is a
-        // straight projection: parse errors are the only intake rejections, and every well-formed
-        // row is enqueued. Whether a referenced id actually exists is validated per chunk by
-        // ItemBulkPreparer's batched FK check.
         var intakeErrors = parsed.Errors;
         var payloadRows = parsed.Rows
             .Select(row => new ImportPayloadRow(row.RowNumber, row.ToCreateRequest()))
@@ -63,11 +58,14 @@ public sealed class ImportJobService(
             TotalChunks = totalChunks,
             IntakeErrorsJson = ImportMappings.SerializeErrors(intakeErrors),
         };
+
+        // Insert the job record first, so that the job ID is available for the payload and queue messages.
         await importJobRepository.InsertAsync(job, cancellationToken);
 
         // Order matters: the payload must be readable before any queue message can be delivered.
         if (payloadRows.Count > 0)
         {
+            // Write the payload to storage(blob in this case) so that the dispatcher can read it when processing chunks.
             await payloadStore.WriteAsync(job.Id, payloadRows, cancellationToken);
 
             var chunks = Enumerable.Range(0, totalChunks)
@@ -76,6 +74,8 @@ public sealed class ImportJobService(
                     StartRow: i * chunkSize,
                     Count: Math.Min(chunkSize, payloadRows.Count - i * chunkSize)))
                 .ToList();
+
+            // Dispatch the chunk messages to the queue for processing. The dispatcher will read the payload from storage.
             await dispatcher.DispatchAsync(job.Id, chunks, cancellationToken);
         }
 
@@ -151,8 +151,6 @@ public sealed class ImportJobService(
         }
     }
 
-    // Some browsers send a full client path as the upload's file name; keep only the leaf and fit
-    // the FileName column (255).
     private static string SanitizeFileName(string? fileName)
     {
         var raw = fileName ?? string.Empty;
