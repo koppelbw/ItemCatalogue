@@ -80,6 +80,10 @@ react-hook-form + Zod** on Vite. See [`houseview/README.md`](houseview/README.md
 database maps to 3D and how to run it locally (`npm run dev` proxies to the API on port 5012;
 without a live API it falls back to bundled demo data).
 
+> The **public deployment runs demo-only by design** (a `VITE_FORCE_DEMO` build flag), so it
+> never calls the API — this keeps the Free-tier App Service off the hot path. Run it locally
+> against the API for the full live/editable experience.
+
 ### 📋 catalogue-ui (`catalogue-ui/`)
 
 A conventional React + TypeScript CRUD front end, built from scratch as a guided React learning

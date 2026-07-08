@@ -53,6 +53,12 @@ jobs:
           # Cross-origin: the deployed app calls the API by absolute URL. Read in
           # code as import.meta.env.VITE_API_BASE_URL (unset locally → dev proxy).
           VITE_API_BASE_URL: https://itemcatalogue-api-ufocqt.azurewebsites.net
+
+          # Set repo variable HOUSEVIEW_FORCE_DEMO=true (Settings ▸ Secrets and
+          # variables ▸ Actions ▸ Variables) to ship a demo-only build that never
+          # calls the API — then the App Service can be stopped to save cost. Unset
+          # → empty string → the app attempts the live API as usual.
+          VITE_FORCE_DEMO: ${{ vars.HOUSEVIEW_FORCE_DEMO }}
         run: |
           npm ci
           npm run build

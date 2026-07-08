@@ -22,6 +22,10 @@ export const DEMO_HINT = 'Unavailable in demo mode — run the live API to enabl
 // build time (VITE_API_BASE_URL) for the deployed Static Web App, which is cross-origin.
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
 
+// When set at build time (VITE_FORCE_DEMO=true), never contact the API — serve
+// bundled demo data only. Lets the deployed site run with the API stopped.
+const FORCE_DEMO = import.meta.env.VITE_FORCE_DEMO === 'true';
+
 // ---------------------------------------------------------------------------
 // Request core — shared by reads and the CRUD mutations. Surfaces the API's RFC
 // 9457 ProblemDetails so callers can map 400/404/409 precisely.
@@ -130,9 +134,11 @@ export async function fetchAll<T>(path: string, signal: AbortSignal): Promise<T[
  * Floors ride embedded in LocationResponse, so they need no extra call.
  */
 export async function loadCatalogue(): Promise<CatalogueData> {
-  // Dev affordance: ?demo forces the bundled fallback so demo-mode UI can be
-  // previewed without stopping the API.
-  if (new URLSearchParams(window.location.search).has('demo')) {
+  // Force the bundled fallback (no fetch, no 4s wait, no API/DB hit) when either
+  // the build-time flag is on (VITE_FORCE_DEMO=true — lets the deployed site run
+  // with the API stopped) or the ?demo query param is present (dev affordance for
+  // previewing demo-mode UI without stopping the API).
+  if (FORCE_DEMO || new URLSearchParams(window.location.search).has('demo')) {
     return FALLBACK_DATA;
   }
 
