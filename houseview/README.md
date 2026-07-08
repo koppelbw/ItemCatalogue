@@ -37,6 +37,22 @@ so the experience always works. Editing is only enabled against live data.
 
 Set `VITE_API_TARGET` to point the proxy at a different API origin.
 
+### Demo-only mode
+
+Two ways to force demo data and skip the API entirely (no fetch, no timeout):
+
+- **`?demo`** in the URL — an ad-hoc dev toggle for previewing demo-mode UI.
+- **`VITE_FORCE_DEMO=true`** at build time — a permanent demo-only build. The
+  deployed site sets this via the `HOUSEVIEW_FORCE_DEMO` GitHub repo variable
+  (see [`houseview.yml`](../.github/workflows/houseview.yml)). Because the app
+  then never calls the API, the API's App Service can be **stopped** to save cost
+  (`az webapp stop -n itemcatalogue-api-ufocqt -g rg-itemcatalogue`). Clear the
+  variable and redeploy to go live again (`az webapp start …`).
+
+The **public deployment runs demo-only by design** — it's on the Azure Free (F1)
+tier, whose daily CPU quota a live API would exhaust, so it ships as a
+self-contained showcase.
+
 ## Using it
 
 - **Location dock** (bottom): click any Location to bring it onto the central
