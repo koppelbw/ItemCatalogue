@@ -62,9 +62,17 @@ export function ImportSection({ live }: { live: boolean }) {
       <section className="manage-section">
         <div className="manage-section-head">
           <h2>Bulk import</h2>
-          <a className="btn btn-small" href={importTemplateUrl}>
-            Download template
-          </a>
+          {/* the template is served by the API, which demo mode doesn't have — grey the
+              affordance out rather than hiding it, like the rest of the demo-mode gating */}
+          {live ? (
+            <a className="btn btn-small" href={importTemplateUrl}>
+              Download template
+            </a>
+          ) : (
+            <button className="btn btn-small" disabled>
+              Download template
+            </button>
+          )}
         </div>
         <p className="form-hint">
           Upload a CSV of items (up to 1,000 rows); they are inserted in the background in chunks of 25.
