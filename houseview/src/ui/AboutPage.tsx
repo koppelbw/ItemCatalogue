@@ -20,6 +20,8 @@ const STACK = [
   'SQL Server',
   'FluentValidation',
   'Azure Blob Storage',
+  'Azure Functions',
+  'Storage Queues',
   'OpenTelemetry',
   'OpenAPI',
   'SSDT (.sqlproj)',
@@ -176,7 +178,7 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
             A JSON REST API of around a dozen resources, spanning a spatial model (<code>Location</code>,{' '}
             <code>Floor</code>, <code>Room</code>, <code>Container</code>, <code>Item</code>, plus the <code>Door</code>s
             and <code>Stair</code>s that join rooms up) and the things that describe them (<code>Person</code>,{' '}
-            <code>Tag</code>, <code>Collection</code>, <code>ItemEvent</code>, <code>Picture</code>), arranged as five
+            <code>Tag</code>, <code>Collection</code>, <code>ItemEvent</code>, <code>Picture</code>), arranged as six
             projects with dependencies pointing inward toward the domain:
           </p>
           <div className="arch-diagram" aria-label="Architecture diagram">
@@ -204,7 +206,11 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
             <div className="arch-row arch-row-db">
               <div className="arch-box arch-db">
                 <strong>Infrastructure</strong>
-                <span>Azure Blob + Anthropic API adapters</span>
+                <span>Azure Blob · Queue · Anthropic adapters</span>
+              </div>
+              <div className="arch-box arch-db">
+                <strong>ItemCatalogueFunctions</strong>
+                <span>queue-triggered import worker</span>
               </div>
               <div className="arch-box arch-db">
                 <strong>Database (.sqlproj)</strong>
@@ -273,6 +279,62 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
             the API sniffs the bytes (magic numbers, not the declared type) and proxies them into{' '}
             <strong>Azure Blob Storage</strong>, and images are read back through short-lived SAS links minted per
             request, and the storage container itself stays private.
+          </p>
+        </section>
+
+        <section className="about-section index-reveal">
+          <h2>Bulk import</h2>
+          <p>
+            The Manage page&rsquo;s <strong>Import</strong> tab takes a CSV of items (grab the template first) and hands
+            back a job right away instead of blocking on the whole file. The API parses and validates every row at intake,
+            so bad rows are rejected before anything is queued; the rows that pass are written to{' '}
+            <strong>Blob Storage</strong> as a claim-check payload, and one <strong>Storage Queue</strong> message is
+            dropped per 25-row chunk.
+          </p>
+          <div className="arch-diagram" aria-label="Bulk import pipeline diagram">
+            <div className="arch-row">
+              <div className="arch-box">
+                <strong>Upload CSV</strong>
+                <span>Manage › Import</span>
+              </div>
+              <i>──►</i>
+              <div className="arch-box">
+                <strong>API intake</strong>
+                <span>parse · validate · 202</span>
+              </div>
+              <i>──►</i>
+              <div className="arch-box">
+                <strong>Storage Queue</strong>
+                <span>one message · 25 rows</span>
+              </div>
+              <i>──►</i>
+              <div className="arch-box arch-core">
+                <strong>Azure Function</strong>
+                <span>insert each chunk · idempotent</span>
+              </div>
+            </div>
+            <div className="arch-row arch-row-db">
+              <div className="arch-box arch-db">
+                <strong>Blob Storage</strong>
+                <span>claim-checked CSV payload</span>
+              </div>
+              <div className="arch-box arch-db">
+                <strong>SQL Server</strong>
+                <span>items + job progress</span>
+              </div>
+            </div>
+          </div>
+          <p>
+            A queue-triggered <strong>Azure Function</strong> works through the chunks in the background, inserting each
+            one and stamping a chunk marker so a redelivered message can never double-insert. A message that keeps failing
+            lands in a poison queue and is recorded as failed, so every job reaches a terminal state. The Import tab polls
+            for live progress: a chunk-by-chunk bar, success and failure counts, and per-row errors that point back at the
+            spreadsheet line. When the job completes, the new items appear in the 3D scene.
+          </p>
+          <p>
+            All of the import logic lives in the shared <strong>Application</strong> core; the Function is just a thin
+            queue trigger, which is what would let a Durable Functions or Service Bus variant drop in later without
+            touching the business rules.
           </p>
         </section>
 

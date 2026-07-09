@@ -106,24 +106,25 @@ exercise. Deployed to its own Azure Static Web App via its own pipeline.
 - **SQL Server Database Project (`.sqlproj`)** — schema is source-controlled as raw SQL
 - **xUnit v3 + NSubstitute + Shouldly + Testcontainers** for the test suite
 - **Azure** — App Service (API), Azure SQL, Static Web Apps (both UIs), Blob Storage (pictures),
-  deployed by **GitHub Actions**
+  Functions + Storage Queues (async bulk import), deployed by **GitHub Actions**
 - **Aspire Dashboard** (via Docker Compose) for viewing telemetry locally
 
 ---
 
 ## Architecture
 
-Clean / Hexagonal (Ports & Adapters). Six projects, dependencies pointing **inward** toward the
-domain:
+Clean / Hexagonal (Ports & Adapters). Six .NET projects (plus a SQL Server database project),
+dependencies pointing **inward** toward the domain:
 
 ```
-ItemCatalogueAPI ──► Application ──► Domain ◄── Persistence
-  (composition        (use cases,     (entities,    (EF Core adapters,
-   root, HTTP)         DTOs, ports)    ports, rules)  DbContext)
-                                         ▲
-                                         └────────── Infrastructure
-                                                      (Azure Blob Storage +
-                                                       Anthropic API adapters)
+ItemCatalogueAPI ───────┐
+                        ├─► Application ──► Domain ◄── Persistence
+ItemCatalogueFunctions ─┘    (use cases,    (entities,    (EF Core adapters,
+  (queue-triggered            DTOs, ports)   ports, rules)  DbContext)
+   CSV-import worker)                            ▲
+                                                └────── Infrastructure
+                                                         (Azure Blob + Storage
+                                                          Queue + Anthropic API)
 
 Database (.sqlproj) ── owns the SQL Server schema (not EF migrations)
 ```
@@ -136,10 +137,16 @@ Database (.sqlproj) ── owns the SQL Server schema (not EF migrations)
 - **`Persistence`** — EF Core **repository adapters**, the `DbContext`, and a SaveChanges
   interceptor for auditing.
 - **`Infrastructure`** — External-service adapters: the **Azure Blob Storage** adapter behind the
-  picture-storage port (proxy upload, SAS-token reads), and the **Anthropic Messages API** adapter
-  behind the chat port (raw typed `HttpClient`, snake_case wire JSON hand-serialized).
+  picture-storage port (proxy upload, SAS-token reads), the **bulk-import** adapters (a Blob
+  **claim-check** payload store and a **Storage Queue** chunk dispatcher, behind Application ports),
+  and the **Anthropic Messages API** adapter behind the chat port (raw typed `HttpClient`,
+  snake_case wire JSON hand-serialized).
 - **`ItemCatalogueAPI`** — The composition root: controllers, DI wiring, exception-handling
   middleware, observability setup, and the HTTP pipeline.
+- **`ItemCatalogueFunctions`** — A second host alongside the API: a queue-triggered **Azure
+  Functions** worker that processes bulk-import chunks. It is a thin trigger over the same
+  Application services, so the import logic stays in the core (letting a Durable Functions or
+  Service Bus variant drop in later).
 - **`Database`** — A SQL Server SSDT project holding the schema as raw `.sql` table definitions plus
   post-deployment seed scripts. **Schema is managed here, not via EF migrations.**
 
@@ -184,6 +191,12 @@ Database (.sqlproj) ── owns the SQL Server schema (not EF migrations)
   conversation-size validation). Business errors return to the model as error tool-results so it
   can self-correct; the Anthropic client is a port, so the loop is unit-tested against a scripted
   fake with zero network calls.
+- **Claim-check + queue-based async processing** (bulk import) — `POST /api/imports` validates the
+  CSV at intake and returns **202**; the normalized payload is claim-checked to **Blob Storage**,
+  one **Storage Queue** message per 25-row chunk fans out to a queue-triggered **Azure Function**,
+  and a unique chunk-marker index makes redelivered messages idempotent. A poisoned chunk (5+ failed
+  attempts) is recorded as failed, so every job reaches a terminal state; all import logic lives in
+  the Application core (the Function is a thin trigger).
 
 ---
 
