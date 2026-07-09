@@ -36,11 +36,11 @@ const STACK = [
 const PATTERNS: { title: string; body: string }[] = [
   {
     title: 'Repository pattern',
-    body: 'A generic base plus per-entity adapters. Read access is AsNoTracking with display includes; update access is tracked with no includes — two deliberate shapes, not one compromise.',
+    body: 'A generic base plus per-entity adapters. Read access is AsNoTracking with display includes; update access is tracked with no includes. Two deliberate shapes, not one compromise.',
   },
   {
     title: 'DTOs at the boundary',
-    body: 'Request and response records at the API edge; entities never leak out of the Application layer. Mapping is explicit static extension methods — no AutoMapper, no magic strings.',
+    body: 'Request and response records at the API edge; entities never leak out of the Application layer. Mapping is explicit static extension methods, with no AutoMapper and no magic strings.',
   },
   {
     title: 'Soft vs. hard delete',
@@ -48,7 +48,7 @@ const PATTERNS: { title: string; body: string }[] = [
   },
   {
     title: 'Per-item event log',
-    body: 'Each Item carries an ItemEvent timeline — created, updated, soft-deleted — so an item’s history is a queryable audit trail rather than something that scrolls off the screen.',
+    body: 'Each Item carries an ItemEvent timeline (created, updated, soft-deleted) so an item’s history is a queryable audit trail rather than something that scrolls off the screen.',
   },
   {
     title: 'Optimistic concurrency',
@@ -59,7 +59,7 @@ const PATTERNS: { title: string; body: string }[] = [
     body: 'Every list endpoint is paginated (PageRequest → PagedResult) and clamped through a single factory. There is no unbounded list query anywhere in the API.',
   },
   {
-    title: 'Centralised exception handling',
+    title: 'Centralized exception handling',
     body: 'An IExceptionHandler chain maps domain exceptions to RFC 9457 ProblemDetails: not-found → 404, validation → 400, concurrency and in-use conflicts → 409. No per-controller try/catch.',
   },
   {
@@ -72,18 +72,18 @@ const PATTERNS: { title: string; body: string }[] = [
   },
   {
     title: 'Source-generated logging',
-    body: 'LoggerMessage source generators per layer (ServiceLog, RepositoryLog) - structured, allocation-free logging without string interpolation in the hot path.',
+    body: 'LoggerMessage source generators per layer (ServiceLog, RepositoryLog) give structured, allocation-free logging without string interpolation in the hot path.',
   },
 ];
 
 const DECISIONS: { title: string; body: string }[] = [
   {
     title: 'Ports & adapters where it pays off',
-    body: 'Repository interfaces live in Domain; their EF Core implementations live in Persistence. The core never depends on infrastructure - dependencies point inward.',
+    body: 'Repository interfaces live in Domain; their EF Core implementations live in Persistence. The core never depends on infrastructure; dependencies point inward.',
   },
   {
     title: 'Schema-first database',
-    body: 'The schema is source-controlled as raw SQL in an SSDT project with idempotent post-deployment seeds. The database is the source of truth - not EF migrations.',
+    body: 'The schema is source-controlled as raw SQL in an SSDT project with idempotent post-deployment seeds. The database is the source of truth, not EF migrations.',
   },
   {
     title: 'Per-layer DI modules',
@@ -103,7 +103,7 @@ const DECISIONS: { title: string; body: string }[] = [
   },
   {
     title: 'The AI model behind a port',
-    body: 'The chat assistant talks to Anthropic through an IAnthropicClient port defined in Application; the raw typed-HttpClient adapter (no SDK) lives in Infrastructure. The agent loop is unit-tested by scripting the fake client with tool_use responses — no network, no cost.',
+    body: 'The chat assistant talks to Anthropic through an IAnthropicClient port defined in Application; the raw typed-HttpClient adapter (no SDK) lives in Infrastructure. The agent loop is unit-tested by scripting the fake client with tool_use responses. No network, no cost.',
   },
 ];
 
@@ -150,7 +150,7 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
         <section className="about-section index-reveal">
           <h2>Why this exists</h2>
           <p>
-            <strong>ItemCatalogue</strong> is a personal catalogue for the physical things you own — track <em>what</em> an
+            <strong>ItemCatalogue</strong> is a personal catalogue for the physical things you own. It tracks <em>what</em> an
             item is, <em>where</em> it lives (which building, which floor, which room, right down to the drawer it&rsquo;s
             inside), <em>who</em> owns it, what it&rsquo;s worth, and whether it&rsquo;s been disposed of and why. Right now
             it&rsquo;s tracking{' '}
@@ -159,7 +159,7 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
           </p>
           <p>
             It is deliberately a small, real-world domain used as a vehicle for practicing <strong>Clean / Hexagonal
-            Architecture</strong> and modern ASP.NET Core — &ldquo;production patterns at hobby scale&rdquo; rather than
+            Architecture</strong> and modern ASP.NET Core: &ldquo;production patterns at hobby scale&rdquo; rather than
             big-system over-engineering. The whole codebase doubles as a learning log: it is heavily commented with the{' '}
             <em>why</em> behind each decision, and it is being built hands-on with AI tooling (Claude Code) as a learning
             exercise.
@@ -169,10 +169,10 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
         <section className="about-section index-reveal">
           <h2>The backend</h2>
           <p>
-            A JSON REST API — around a dozen resources spanning a spatial model (<code>Location</code>,{' '}
+            A JSON REST API of around a dozen resources, spanning a spatial model (<code>Location</code>,{' '}
             <code>Floor</code>, <code>Room</code>, <code>Container</code>, <code>Item</code>, plus the <code>Door</code>s
             and <code>Stair</code>s that join rooms up) and the things that describe them (<code>Person</code>,{' '}
-            <code>Tag</code>, <code>Collection</code>, <code>ItemEvent</code>, <code>Picture</code>) — arranged as five
+            <code>Tag</code>, <code>Collection</code>, <code>ItemEvent</code>, <code>Picture</code>), arranged as five
             projects with dependencies pointing inward toward the domain:
           </p>
           <div className="arch-diagram" aria-label="Architecture diagram">
@@ -204,7 +204,7 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
               </div>
               <div className="arch-box arch-db">
                 <strong>Database (.sqlproj)</strong>
-                <span>owns the SQL Server schema — raw SQL, not EF migrations</span>
+                <span>owns the SQL Server schema as raw SQL, not EF migrations</span>
               </div>
             </div>
           </div>
@@ -238,18 +238,18 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
           <h2>The AI assistant</h2>
           <p>
             The <strong>✳ Ask Habitat</strong> button in the house view opens a chat assistant that can both answer
-            questions about the catalogue and change it — &ldquo;where&rsquo;s the drill?&rdquo;, &ldquo;add a hammer to
+            questions about the catalogue and change it: &ldquo;where&rsquo;s the drill?&rdquo;, &ldquo;add a hammer to
             the garage toolbox&rdquo;, &ldquo;move the camping gear to the basement&rdquo;. Under the hood it is a
             hand-rolled <strong>agentic tool-use loop</strong>: the API relays the conversation to{' '}
             <strong>Anthropic&rsquo;s Messages API</strong> over a raw typed <code>HttpClient</code> (no SDK), and while
-            the model answers with <code>tool_use</code> the backend executes one of six inventory tools — search,
-            house structure, item details, create, update, soft-delete — against the same Application services the REST
+            the model answers with <code>tool_use</code> the backend executes one of six inventory tools (search,
+            house structure, item details, create, update, soft-delete) against the same Application services the REST
             controllers use, feeding each result back until the model produces a final answer.
           </p>
           <p>
-            Replies cite entities as <code>habitat://</code> deep links — click one and the camera flies to the item,
+            Replies cite entities as <code>habitat://</code> deep links; click one and the camera flies to the item,
             room, or container it names. Anything the assistant creates or moves appears in the 3D scene immediately
-            (mutations invalidate the catalogue query). The endpoint is stateless — the browser holds the conversation —
+            (mutations invalidate the catalogue query). The endpoint is stateless (the browser holds the conversation),
             and guardrails cap conversation size, output tokens, and tool iterations per turn; business errors are
             returned to the model as tool errors so it can correct itself instead of failing the request.
           </p>
@@ -259,7 +259,7 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
           <h2>Photos</h2>
           <p>
             Every location, room, container and item can carry photos. Viewing stays deliberately quiet: a small camera
-            icon next to an entity&rsquo;s name — in the Index, the Manage tables, and the detail panels — reveals its
+            icon next to an entity&rsquo;s name (in the Index, the Manage tables, and the detail panels) reveals its
             cover shot in a hover popover, and clicking through opens a lightbox with caption editing, a cover-photo
             star, and delete. The detail views carry the upload section itself; on a phone the &ldquo;Take photo&rdquo;
             button opens the camera directly.
@@ -268,7 +268,7 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
             Under the hood the browser downscales big camera shots to a web-friendly JPEG before they leave the device,
             the API sniffs the bytes (magic numbers, not the declared type) and proxies them into{' '}
             <strong>Azure Blob Storage</strong>, and images are read back through short-lived SAS links minted per
-            request — the storage container itself stays private.
+            request, and the storage container itself stays private.
           </p>
         </section>
 
@@ -300,7 +300,7 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
           <h2>Quality &amp; testing</h2>
           <p>
             Five test projects (xUnit v3 + NSubstitute + Shouldly) cover the Domain, Application, Persistence, API and
-            Infrastructure layers — the integration tiers stand up real dependencies in Docker via Testcontainers: a SQL
+            Infrastructure layers. The integration tiers stand up real dependencies in Docker via Testcontainers: a SQL
             Server deployed from the same SSDT dacpac that owns the schema, and Azurite for blob storage. A schema-drift
             gate keeps the EF model honest against that dacpac.
           </p>
@@ -309,8 +309,8 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
         <section className="about-section index-reveal">
           <h2>How this UI was made</h2>
           <p>
-            The front-end you are looking at — the isometric 3D neighborhood, the searchable Index, the full Manage
-            workspace, and this page — was designed and built by <strong>Claude Fable&nbsp;5</strong>, Anthropic&rsquo;s
+            The front-end you are looking at (the isometric 3D neighborhood, the searchable Index, the full Manage
+            workspace, and this page) was designed and built by <strong>Claude Fable&nbsp;5</strong>, Anthropic&rsquo;s
             frontier model, working inside <strong>Claude Code</strong>: from the first <code>npm install</code> through
             the camera choreography, the Sims-style cutaway dollhouse, half-wall sightline logic, ghost floors, and every
             GSAP transition, verified against the running app along the way.
@@ -318,13 +318,13 @@ export function AboutPage({ model, live, onNavigate }: AboutPageProps) {
           <p>
             It is a Vite + React + TypeScript app: <strong>Three.js</strong> via <code>@react-three/fiber</code> renders
             the neighborhood (every database Location is its own building, furnished from primitive boxes, cylinders and
-            spheres — no 3D asset files), <strong>GSAP</strong> drives the cinematics, and <strong>React Query</strong>{' '}
-            talks to the API — falling back to a bundled mirror of the seed data when the backend is asleep, which is why
+            spheres, with no 3D asset files), <strong>GSAP</strong> drives the cinematics, and <strong>React Query</strong>{' '}
+            talks to the API, falling back to a bundled mirror of the seed data when the backend is asleep, which is why
             this page works either way.
           </p>
           <p>
-            It is not read-only. The <strong>Manage</strong> page is a complete CRUD workspace over every entity —
-            locations, floors, rooms, containers, doors, stairs, items, people, tags and collections — with{' '}
+            It is not read-only. The <strong>Manage</strong> page is a complete CRUD workspace over every entity
+            (locations, floors, rooms, containers, doors, stairs, items, people, tags and collections) with{' '}
             <strong>React Hook Form + Zod</strong> forms, an explorer tree, and paginated tables; edits round-trip through
             the same concurrency tokens and validation the API enforces, and quietly switch off when only demo data is
             present.

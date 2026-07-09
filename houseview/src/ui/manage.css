@@ -438,3 +438,220 @@
 .event-notes {
   color: var(--ink-soft);
 }
+
+/* ── "Creating a Location" guide ─────────────────────────────────────────── */
+
+/* prominent intro banner below the "Manage" title: the guide is important
+   onboarding, so it gets a full-width call-to-action card with a soft pulse. */
+.guide-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  width: 100%;
+  text-align: left;
+  margin: 0.1rem 0 1.5rem;
+  padding: 1rem 1.15rem;
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(59, 42, 32, 0.1);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.guide-banner:hover {
+  transform: translateY(-1px);
+  border-color: rgba(59, 42, 32, 0.22);
+  box-shadow: 0 16px 40px rgba(59, 42, 32, 0.16);
+}
+.guide-banner-badge {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fffdf1;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+  animation: guide-badge-pulse 2.6s ease-out infinite;
+}
+@keyframes guide-badge-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(229, 106, 68, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(229, 106, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(229, 106, 68, 0);
+  }
+}
+.guide-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.guide-banner-text strong {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.guide-banner-text span {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.guide-banner-cta {
+  flex: none;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fffdf1;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+.guide-banner:hover .guide-banner-cta {
+  background: #d85c37;
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide-banner-badge {
+    animation: none;
+  }
+}
+
+/* guide body (rendered inside the shared modal) */
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.guide p {
+  margin: 0;
+}
+.guide-lede {
+  color: var(--ink-soft);
+}
+.guide-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.guide-section h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+.guide-note {
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+}
+
+/* numbered build steps */
+.guide-steps {
+  list-style: none;
+  margin: 0.2rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.guide-step {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+.guide-step > div p {
+  margin: 0.15rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.guide-step-num {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fffdf1;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-top: 0.05rem;
+}
+
+/* hierarchy flow chips */
+.guide-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0.1rem 0 0.2rem;
+}
+.guide-flow-node {
+  display: inline-flex;
+  align-items: center;
+}
+.guide-chip {
+  display: inline-block;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid rgba(59, 42, 32, 0.2);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.guide-flow-arrow {
+  color: var(--accent);
+  padding: 0 0.4rem;
+  font-weight: 700;
+}
+
+/* bulleted relationship / rendering lists */
+.guide-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.guide-list strong {
+  color: var(--ink);
+}
+
+/* callouts: accent for the key point, muted for the CSV note */
+.guide-callout {
+  background: rgba(229, 106, 68, 0.09);
+  border: 1px solid rgba(229, 106, 68, 0.28);
+  border-left-width: 3px;
+  border-left-color: var(--accent);
+  border-radius: 8px;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.85rem;
+}
+.guide-callout-muted {
+  background: rgba(59, 42, 32, 0.05);
+  border-color: rgba(59, 42, 32, 0.16);
+  border-left-color: rgba(59, 42, 32, 0.4);
+}
+.guide-cta {
+  border-top: 1px solid rgba(59, 42, 32, 0.12);
+  padding-top: 1rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
