@@ -211,6 +211,22 @@ public class ImportApiTests(ApiFactory factory) : ApiTestBase(factory)
     }
 
     [Fact]
+    public async Task GetRecent_ListsJobsNewestFirst_AndPages()
+    {
+        await Client.PostAsync("/api/imports", CsvForm("Name,ItemTypes\nFirst,Electronics", "first.csv"));
+        await Client.PostAsync("/api/imports", CsvForm("Name,ItemTypes\nSecond,Electronics", "second.csv"));
+
+        var page1 = (await Client.GetFromJsonAsync<PagedResponse<ImportJobResponse>>("/api/imports?page=1&pageSize=1"))!;
+        page1.TotalCount.ShouldBe(2);
+        page1.Items.ShouldHaveSingleItem().FileName.ShouldBe("second.csv");
+        page1.HasNext.ShouldBeTrue();
+
+        var page2 = (await Client.GetFromJsonAsync<PagedResponse<ImportJobResponse>>("/api/imports?page=2&pageSize=1"))!;
+        page2.Items.ShouldHaveSingleItem().FileName.ShouldBe("first.csv");
+        page2.HasNext.ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task GetTemplate_ReturnsCsvWithTheExpectedHeader()
     {
         var response = await Client.GetAsync("/api/imports/template");

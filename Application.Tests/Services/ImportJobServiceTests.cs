@@ -7,6 +7,7 @@ using Application.Validation;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Exceptions;
+using Domain.Pagination;
 using Domain.RepositoryPorts;
 using FluentValidation;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -277,5 +278,25 @@ public class ImportJobServiceTests
 
         var ex = await Should.ThrowAsync<NotFoundException>(() => _service.GetStatusAsync(99));
         ex.Message.ShouldBe("ImportJob with id 99 not found.");
+    }
+
+    [Fact]
+    public async Task GetRecentAsync_ClampsPaginationThroughPageRequest_AndMapsEachJob()
+    {
+        _jobRepository.GetRecentWithChunksAsync(Arg.Any<PageRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PagedResult<ImportJob>(
+            [
+                new ImportJob { Id = 5, FileName = "b.csv", TotalRows = 2, EnqueuedRows = 2, TotalChunks = 1, Chunks = [new ImportChunk { Succeeded = 2 }] },
+                new ImportJob { Id = 4, FileName = "a.csv", TotalRows = 0, TotalChunks = 0 },
+            ], TotalCount: 2, Page: 1, PageSize: 20));
+
+        var response = await _service.GetRecentAsync(new PaginationQuery { Page = 1, PageSize = 20 });
+
+        response.TotalCount.ShouldBe(2);
+        response.Items.Select(j => j.Id).ShouldBe([5, 4]);
+        response.Items[0].Succeeded.ShouldBe(2);
+        response.Items[0].Status.ShouldBe(ImportJobStatus.Completed);
+        await _jobRepository.Received(1).GetRecentWithChunksAsync(
+            Arg.Is<PageRequest>(p => p.Page == 1 && p.PageSize == 20), Arg.Any<CancellationToken>());
     }
 }

@@ -44,6 +44,16 @@ public sealed class ImportController(IImportJobService importJobService) : Contr
         return AcceptedAtRoute("GetImportJob", new { id = job.Id }, job);
     }
 
+    // GET api/imports?page=1&pageSize=20 — recent import jobs, newest first.
+    [HttpGet(Name = "GetImportJobs")]
+    [ProducesResponseType(typeof(PagedResponse<ImportJobResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PagedResponse<ImportJobResponse>>> GetRecent([FromQuery] PaginationQuery pagination, CancellationToken cancellationToken)
+    {
+        var page = await importJobService.GetRecentAsync(pagination, cancellationToken);
+        return Ok(page);
+    }
+
     // GET api/imports/5 — poll for progress; Status/counts derive from processed chunk markers.
     [HttpGet("{id:int}", Name = "GetImportJob")]
     [ProducesResponseType(typeof(ImportJobResponse), StatusCodes.Status200OK)]

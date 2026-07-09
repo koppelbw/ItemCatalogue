@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Domain.Pagination;
 using Domain.RepositoryPorts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -16,6 +17,13 @@ public sealed class ImportJobRepository(ItemCatalogueDbContext dbContext, ILogge
             .Include(j => j.Chunks)
             .FirstOrDefaultAsync(j => j.Id == jobId, cancellationToken);
     }
+
+    public Task<PagedResult<ImportJob>> GetRecentWithChunksAsync(PageRequest page, CancellationToken cancellationToken = default)
+        // Newest first (Id descends with creation). Chunks are eager-loaded because the response
+        // projection derives status/counts from them.
+        => PaginateAsync(
+            EntitySet.AsNoTracking().Include(j => j.Chunks).OrderByDescending(j => j.Id),
+            page, cancellationToken);
 
     public async Task<bool> RecordChunkAsync(ImportChunk chunk, IReadOnlyCollection<Item> items, CancellationToken cancellationToken = default)
     {

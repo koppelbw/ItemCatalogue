@@ -6,6 +6,7 @@ using Application.ServicePorts;
 using Application.StoragePorts;
 using Domain.Entities;
 using Domain.Exceptions;
+using Domain.Pagination;
 using Domain.RepositoryPorts;
 using FluentValidation;
 using FluentValidation.Results;
@@ -89,6 +90,13 @@ public sealed class ImportJobService(
             ?? throw NotFoundException.For("ImportJob", jobId);
 
         return job.ToResponse();
+    }
+
+    public async Task<PagedResponse<ImportJobResponse>> GetRecentAsync(PaginationQuery pagination, CancellationToken cancellationToken = default)
+    {
+        var page = await importJobRepository.GetRecentWithChunksAsync(
+            PageRequest.Create(pagination.Page, pagination.PageSize), cancellationToken);
+        return page.ToResponse(j => j.ToResponse());
     }
 
     public async Task ProcessChunkAsync(ImportChunkMessage message, CancellationToken cancellationToken = default)

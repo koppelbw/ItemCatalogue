@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Domain.Pagination;
 
 namespace Domain.RepositoryPorts;
 
@@ -8,6 +9,10 @@ namespace Domain.RepositoryPorts;
 public interface IImportJobRepository : IGenericRepository<ImportJob>
 {
     Task<ImportJob?> GetWithChunksAsync(int jobId, CancellationToken cancellationToken = default);
+
+    // A page of jobs, newest first, each with its chunk markers loaded — status/progress are
+    // derived from the markers (see ImportMappings.ToResponse), so a job-history list needs them.
+    Task<PagedResult<ImportJob>> GetRecentWithChunksAsync(PageRequest page, CancellationToken cancellationToken = default);
 
     Task<bool> RecordChunkAsync(ImportChunk chunk, IReadOnlyCollection<Item> items, CancellationToken cancellationToken = default);
 }

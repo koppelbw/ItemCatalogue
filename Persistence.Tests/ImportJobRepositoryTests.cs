@@ -1,5 +1,6 @@
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Pagination;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Persistence.RepositoryAdapters;
@@ -130,6 +131,27 @@ public class ImportJobRepositoryTests(SqlServerFixture fixture) : PersistenceTes
         var chunk = (await jobs.GetWithChunksAsync(jobId))!.Chunks.ShouldHaveSingleItem();
         chunk.Failed.ShouldBe(25);
         (await Db.Items.CountAsync()).ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task GetRecentWithChunksAsync_ReturnsNewestFirst_WithChunksLoaded_AndPages()
+    {
+        var jobs = Jobs();
+        var id1 = await jobs.InsertAsync(NewJob());
+        var id2 = await jobs.InsertAsync(NewJob());
+        var id3 = await jobs.InsertAsync(NewJob());
+        await jobs.RecordChunkAsync(NewChunk(id3, 0, succeeded: 2), [NewItem("A"), NewItem("B")]);
+
+        var page1 = await jobs.GetRecentWithChunksAsync(PageRequest.Create(1, 2));
+
+        page1.TotalCount.ShouldBe(3);
+        // Newest first (highest id).
+        page1.Items.Select(j => j.Id).ShouldBe([id3, id2]);
+        // Chunk markers are eager-loaded so status/counts can be derived.
+        page1.Items[0].Chunks.ShouldHaveSingleItem().Succeeded.ShouldBe(2);
+
+        var page2 = await jobs.GetRecentWithChunksAsync(PageRequest.Create(2, 2));
+        page2.Items.Select(j => j.Id).ShouldBe([id1]);
     }
 
     [Fact]
