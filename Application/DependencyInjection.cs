@@ -36,6 +36,9 @@ public static class DependencyInjection
         // Shared validate-and-map step used by both bulk insert paths (see ItemBulkPreparer).
         services.AddScoped<ItemBulkPreparer>();
 
+        services.AddScoped<IChatService, ChatService>();
+        services.AddScoped<ChatToolDispatcher>();
+
         // Discovers every AbstractValidator<T> in this assembly (see Application/Validation)
         // and registers it as IValidator<T> so services can take a validator by constructor injection.
         services.AddValidatorsFromAssemblyContaining<CreateItemRequestValidator>();

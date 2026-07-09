@@ -15,9 +15,16 @@ import type {
 const PAGE_SIZE = 100;
 const REQUEST_TIMEOUT_MS = 4000;
 
+/** Hover text for actions that exist but need the live API (shown greyed-out in demo mode). */
+export const DEMO_HINT = 'Unavailable in demo mode — run the live API to enable this';
+
 // Empty in dev so the Vite proxy serves /api; set to the API's absolute origin at
 // build time (VITE_API_BASE_URL) for the deployed Static Web App, which is cross-origin.
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
+
+// When set at build time (VITE_FORCE_DEMO=true), never contact the API — serve
+// bundled demo data only. Lets the deployed site run with the API stopped.
+const FORCE_DEMO = import.meta.env.VITE_FORCE_DEMO === 'true';
 
 // ---------------------------------------------------------------------------
 // Request core — shared by reads and the CRUD mutations. Surfaces the API's RFC
@@ -76,11 +83,30 @@ export const apiPut = <T>(path: string, body: unknown) => request<T>('PUT', path
 export const apiDelete = (path: string) => request<void>('DELETE', path);
 
 /**
- * Multipart upload — the one non-JSON request shape in the app (CSV import).
+ * Multipart upload — non-JSON request shape used by the CSV import.
  * Deliberately NO Content-Type header: the browser must set multipart/form-data
  * with its boundary itself. Failures surface as the same ApiError as request().
  */
 export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE}/api/${path}`, {
+    method: 'POST',
+    headers: { Accept: 'application/json' },
+    body: form,
+  });
+  if (!res.ok) {
+    const problem = await parseProblem(res);
+    throw new ApiError(res.status, problem, problem?.title ?? `POST /api/${path} responded ${res.status}`);
+  }
+  return (await res.json()) as T;
+}
+
+/**
+ * Multipart POST (picture uploads). Deliberately not routed through request():
+ * the Content-Type header must be omitted so the browser sets
+ * `multipart/form-data` with its generated boundary — a manual header would
+ * break the server's form parsing.
+ */
+export async function apiPostForm<T>(path: string, form: FormData): Promise<T> {
   const res = await fetch(`${API_BASE}/api/${path}`, {
     method: 'POST',
     headers: { Accept: 'application/json' },
@@ -129,6 +155,14 @@ export async function fetchAll<T>(path: string, signal: AbortSignal): Promise<T[
  * Floors ride embedded in LocationResponse, so they need no extra call.
  */
 export async function loadCatalogue(): Promise<CatalogueData> {
+  // Force the bundled fallback (no fetch, no 4s wait, no API/DB hit) when either
+  // the build-time flag is on (VITE_FORCE_DEMO=true — lets the deployed site run
+  // with the API stopped) or the ?demo query param is present (dev affordance for
+  // previewing demo-mode UI without stopping the API).
+  if (FORCE_DEMO || new URLSearchParams(window.location.search).has('demo')) {
+    return FALLBACK_DATA;
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {

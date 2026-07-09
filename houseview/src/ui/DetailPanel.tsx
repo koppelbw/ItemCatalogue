@@ -1,7 +1,9 @@
 import gsap from 'gsap';
 import { useEffect, useRef } from 'react';
+import { DEMO_HINT } from '../api';
 import type { SceneModel, Site } from '../model';
 import { formatPrice, itemValue, primaryType } from '../model';
+import { PictureSection } from './pictures/PictureSection';
 import {
   CONDITION_NAMES,
   CONTAINER_TYPE_NAMES,
@@ -19,7 +21,7 @@ import {
 interface DetailPanelProps {
   model: SceneModel;
   selection: Selection;
-  /** when false (demo data) all edit affordances are hidden */
+  /** when false (demo data) all edit affordances render greyed-out with a hover hint */
   live: boolean;
   onSelectItem: (id: number) => void;
   onSelectContainer: (id: number) => void;
@@ -125,18 +127,27 @@ function ItemCard({
           <dd>{new Date(item.createdDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</dd>
         </div>
       </dl>
-      {live && (
-        <div className="panel-actions">
-          <button className="btn btn-small" onClick={() => onEditItem(item)}>
-            Edit
+      <PictureSection kind="items" ownerId={item.id} live={live} />
+      <div className="panel-actions">
+        <button
+          className={live ? 'btn btn-small' : 'btn btn-small demo-disabled'}
+          disabled={!live}
+          title={live ? undefined : DEMO_HINT}
+          onClick={() => onEditItem(item)}
+        >
+          Edit
+        </button>
+        {!item.isDeleted && (
+          <button
+            className={live ? 'btn btn-small btn-danger' : 'btn btn-small btn-danger demo-disabled'}
+            disabled={!live}
+            title={live ? undefined : DEMO_HINT}
+            onClick={() => onDeleteItem(item)}
+          >
+            Delete
           </button>
-          {!item.isDeleted && (
-            <button className="btn btn-small btn-danger" onClick={() => onDeleteItem(item)}>
-              Delete
-            </button>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 }
@@ -168,6 +179,7 @@ function RoomCard({
         {room.roomType != null && <span className="chip chip-muted">{ROOM_TYPE_NAMES[room.roomType] ?? `Type ${room.roomType}`}</span>}
         {size && <span className="chip chip-muted">{size}</span>}
       </div>
+      <PictureSection kind="rooms" ownerId={room.id} live={live} />
       {containers.length > 0 && (
         <>
           <div className="panel-section-label">Storage in this room</div>
@@ -192,24 +204,29 @@ function RoomCard({
           <ItemRow key={r.item.id} resolved={r} onSelectItem={onSelectItem} />
         ))}
       </ul>
-      {live && (
-        <div className="panel-actions">
-          <button className="btn btn-small btn-primary" onClick={() => onAddToRoom(room.id)}>
-            + Add item here
-          </button>
-        </div>
-      )}
+      <div className="panel-actions">
+        <button
+          className={live ? 'btn btn-small btn-primary' : 'btn btn-small btn-primary demo-disabled'}
+          disabled={!live}
+          title={live ? undefined : DEMO_HINT}
+          onClick={() => onAddToRoom(room.id)}
+        >
+          + Add item here
+        </button>
+      </div>
     </>
   );
 }
 
 function LocationCard({
   site,
+  live,
   onSelectItem,
   onSelectRoom,
   onSelectFloor,
 }: {
   site: Site;
+  live: boolean;
   onSelectItem: (id: number) => void;
   onSelectRoom: (roomId: number) => void;
   onSelectFloor: (levelIndex: number) => void;
@@ -229,6 +246,7 @@ function LocationCard({
           {site.rooms.length} room{site.rooms.length === 1 ? '' : 's'}
         </span>
       </div>
+      <PictureSection kind="locations" ownerId={location.id} live={live} />
       {floorsTopDown.map((floor) => {
         const rooms = site.rooms.filter((r) => r.floorId === floor.id);
         return (
@@ -294,6 +312,7 @@ function ContainerCard({
         )}
         {size && <span className="chip chip-muted">{size}</span>}
       </div>
+      <PictureSection kind="containers" ownerId={container.id} live={live} />
       {nested.length > 0 && (
         <>
           <div className="panel-section-label">Nested inside</div>
@@ -314,13 +333,16 @@ function ContainerCard({
           <ItemRow key={r.item.id} resolved={r} onSelectItem={onSelectItem} />
         ))}
       </ul>
-      {live && (
-        <div className="panel-actions">
-          <button className="btn btn-small btn-primary" onClick={() => onAddToContainer(container.id)}>
-            + Add item here
-          </button>
-        </div>
-      )}
+      <div className="panel-actions">
+        <button
+          className={live ? 'btn btn-small btn-primary' : 'btn btn-small btn-primary demo-disabled'}
+          disabled={!live}
+          title={live ? undefined : DEMO_HINT}
+          onClick={() => onAddToContainer(container.id)}
+        >
+          + Add item here
+        </button>
+      </div>
     </>
   );
 }
@@ -476,7 +498,7 @@ export function DetailPanel({
   } else if (selection.kind === 'location') {
     const site = model.sites.find((s) => s.location.id === selection.id);
     body = site ? (
-      <LocationCard site={site} onSelectItem={onSelectItem} onSelectRoom={onSelectRoom} onSelectFloor={onSelectFloor} />
+      <LocationCard site={site} live={live} onSelectItem={onSelectItem} onSelectRoom={onSelectRoom} onSelectFloor={onSelectFloor} />
     ) : null;
   } else if (selection.kind === 'container') {
     const container = model.containersById.get(selection.id);

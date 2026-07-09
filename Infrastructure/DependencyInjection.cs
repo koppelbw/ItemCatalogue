@@ -1,6 +1,8 @@
+using Application.AnthropicPorts;
 using Application.StoragePorts;
 using Azure.Storage.Blobs;
 using Azure.Storage.Queues;
+using Infrastructure.Anthropic;
 using Infrastructure.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -35,6 +37,29 @@ public static class DependencyInjection
         services.AddSingleton<ICsvItemParser, CsvItemParser>();
         services.AddSingleton<IImportPayloadStore, BlobImportPayloadStore>();
         services.AddSingleton<IImportDispatcher, StorageQueueImportDispatcher>();
+
+        services.Configure<AnthropicOptions>(configuration.GetSection(AnthropicOptions.SectionName));
+
+        // Typed HttpClient: the factory manages handler lifetimes (connection pooling, DNS rotation)
+        // and injects the configured HttpClient into AnthropicClient's constructor.
+        services.AddHttpClient<IAnthropicClient, AnthropicClient>((sp, client) =>
+        {
+            var anthropicOptions = sp.GetRequiredService<IOptions<AnthropicOptions>>().Value;
+
+            client.BaseAddress = new Uri(anthropicOptions.BaseUrl);
+            client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+
+            // A missing key is reported by AnthropicClient at call time (with setup instructions),
+            // not here: throwing during DI resolution would turn every /api/chat request into a 500
+            // before request validation has run.
+            if (!string.IsNullOrWhiteSpace(anthropicOptions.ApiKey))
+            {
+                client.DefaultRequestHeaders.Add("x-api-key", anthropicOptions.ApiKey);
+            }
+
+            // A single agent-loop iteration can take a while at large max_tokens; give each API call headroom beyond the 100s HttpClient default.
+            client.Timeout = TimeSpan.FromMinutes(3);
+        });
 
         return services;
     }
