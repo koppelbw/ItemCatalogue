@@ -205,6 +205,36 @@ export interface PagedResponse<T> {
   hasPrevious: boolean;
 }
 
+// --- bulk import ------------------------------------------------------------
+
+/** One failed CSV row. rowNumber is the physical line (header = 1, first data row = 2); 0 = whole-file. */
+export interface ImportRowError {
+  rowNumber: number;
+  messages: string[];
+}
+
+/**
+ * A bulk-import job (Application/DTOs/ImportDtos.cs). Status and the processed/
+ * succeeded/failed counts are derived server-side from processed chunk markers,
+ * so polling GET imports/{id} always reflects real background progress.
+ */
+export interface ImportJobResponse {
+  id: number;
+  /** Domain.Enums.ImportJobStatus ordinal */
+  status: number;
+  fileName: string;
+  totalRows: number;
+  rejectedAtIntake: number;
+  enqueuedRows: number;
+  totalChunks: number;
+  processedChunks: number;
+  succeeded: number;
+  failed: number;
+  errors: ImportRowError[];
+  createdDate: string;
+  lastModifiedDate: string | null;
+}
+
 // --- write-request shapes (request bodies, also camelCase) -----------------
 
 export interface CreateItemRequest {
@@ -439,6 +469,10 @@ export const SWING_NAMES = ['Inward', 'Outward'] as const;
 
 // Domain.Enums.StairShape
 export const STAIR_SHAPE_NAMES = ['Straight', 'L-shaped', 'U-shaped', 'Spiral', 'Winder'] as const;
+
+// Domain.Enums.ImportJobStatus
+export const IMPORT_STATUS_NAMES = ['Queued', 'Processing', 'Completed'] as const;
+export const IMPORT_STATUS_COMPLETED = 2;
 
 // Domain.Enums.ItemEventType — keyed by the string the API returns.
 export const ITEM_EVENT_TYPE_LABELS: Record<string, string> = {

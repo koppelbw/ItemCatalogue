@@ -97,6 +97,10 @@ const DECISIONS: { title: string; body: string }[] = [
     body: 'Picture bytes go to Azure Blob Storage through an IImageStorage port defined in Application; the Azure SDK lives only in a separate Infrastructure project. Uploads proxy through the API (magic-byte sniffed before they reach storage) and are read back via short-lived SAS URLs.',
   },
   {
+    title: 'Async bulk import',
+    body: 'A CSV of items uploads in one request and gets a 202 straight back: the payload is claim-checked into Blob Storage, one queue message per 25-row chunk fans out to a queue-triggered Azure Function, and a unique chunk-marker index makes redelivered messages idempotent. Job progress is derived from the markers and polled live from the Manage › Import tab.',
+  },
+  {
     title: 'Built to run as a public demo',
     body: 'A background service resets the database to its seed baseline on a schedule, rate limiting guards the endpoints, and CORS is scoped to the deployed Static Web App. Shipped to Azure through a GitHub Actions pipeline.',
   },

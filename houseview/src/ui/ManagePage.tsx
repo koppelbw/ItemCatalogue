@@ -22,6 +22,7 @@ import {
 } from '../types';
 import { CollectionMembers } from './CollectionMembers';
 import { Explorer } from './Explorer';
+import { ImportSection } from './ImportSection';
 import { Paginated } from './Paginated';
 import { SocialFooter } from './SocialFooter';
 import { TopNav, type View } from './TopNav';
@@ -41,7 +42,7 @@ import {
 } from './forms/EntityForms';
 import './manage.css';
 
-type Tab = 'explore' | 'items' | 'locations' | 'floors' | 'rooms' | 'containers' | 'doors' | 'stairs' | 'persons' | 'tags' | 'collections';
+type Tab = 'explore' | 'items' | 'locations' | 'floors' | 'rooms' | 'containers' | 'doors' | 'stairs' | 'persons' | 'tags' | 'collections' | 'import';
 
 const TABS: [Tab, string][] = [
   ['explore', 'Explore'],
@@ -55,6 +56,7 @@ const TABS: [Tab, string][] = [
   ['persons', 'People'],
   ['tags', 'Tags'],
   ['collections', 'Collections'],
+  ['import', 'Import'],
 ];
 
 // exported for the Explorer, whose "+ Add" buttons pre-fill the parent entity
@@ -468,6 +470,8 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
             </Paginated>
           </Section>
         )}
+
+        {tab === 'import' && <ImportSection live={live} />}
 
         <SocialFooter />
       </div>

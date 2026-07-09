@@ -75,6 +75,27 @@ export const apiPost = <T>(path: string, body: unknown) => request<T>('POST', pa
 export const apiPut = <T>(path: string, body: unknown) => request<T>('PUT', path, body);
 export const apiDelete = (path: string) => request<void>('DELETE', path);
 
+/**
+ * Multipart upload — the one non-JSON request shape in the app (CSV import).
+ * Deliberately NO Content-Type header: the browser must set multipart/form-data
+ * with its boundary itself. Failures surface as the same ApiError as request().
+ */
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE}/api/${path}`, {
+    method: 'POST',
+    headers: { Accept: 'application/json' },
+    body: form,
+  });
+  if (!res.ok) {
+    const problem = await parseProblem(res);
+    throw new ApiError(res.status, problem, problem?.title ?? `POST /api/${path} responded ${res.status}`);
+  }
+  return (await res.json()) as T;
+}
+
+/** Direct href for the CSV starter template; the API sets the download filename. */
+export const importTemplateUrl = `${API_BASE}/api/imports/template`;
+
 // ---------------------------------------------------------------------------
 // Paginated reads
 // ---------------------------------------------------------------------------
