@@ -56,7 +56,6 @@ const TABS: [Tab, string][] = [
   ['persons', 'People'],
   ['tags', 'Tags'],
   ['collections', 'Collections'],
-  ['import', 'Import'],
 ];
 
 // exported for the Explorer, whose "+ Add" buttons pre-fill the parent entity
@@ -184,6 +183,33 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
           <p className="form-banner">Editing is disabled while showing demo data</p>
         )}
         {banner && <p className="form-banner">{banner}</p>}
+
+        <button
+          type="button"
+          className={`import-cta ${tab === 'import' ? 'on' : ''}`}
+          onClick={() => setTab('import')}
+        >
+          <svg
+            className="import-cta-icon"
+            viewBox="0 0 24 24"
+            width="24"
+            height="24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 15V3" />
+            <path d="M7 8l5-5 5 5" />
+            <path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
+          </svg>
+          <span className="import-cta-text">
+            <b>Bulk import</b>
+            <small>Upload a CSV of items</small>
+          </span>
+        </button>
 
         <nav className="manage-tabs">
           {TABS.map(([key, label]) => (

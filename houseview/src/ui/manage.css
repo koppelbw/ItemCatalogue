@@ -20,11 +20,61 @@
   margin-bottom: 0.6rem;
 }
 
+/* Import gets its own prominent call-to-action above the entity tabs, rather
+   than being one more pill in the row — it's an action, not a browse view. */
+.import-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 1.2rem 0 0.4rem;
+  padding: 0.75rem 1.25rem 0.75rem 1rem;
+  border: 1.5px solid var(--accent);
+  border-radius: 14px;
+  background: rgba(229, 106, 68, 0.09);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+.import-cta:hover {
+  background: rgba(229, 106, 68, 0.17);
+}
+.import-cta:active {
+  transform: translateY(1px);
+}
+.import-cta.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fffdf1;
+  box-shadow: var(--shadow);
+}
+.import-cta-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.import-cta.on .import-cta-icon {
+  color: #fffdf1;
+}
+.import-cta-text {
+  white-space: nowrap;
+}
+.import-cta-text b {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+.import-cta-text small {
+  display: block;
+  font-size: 0.78rem;
+  opacity: 0.72;
+}
+
 .manage-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin: 1.2rem 0 1.6rem;
+  margin: 1rem 0 1.6rem;
 }
 .manage-tabs button {
   padding: 0.45rem 0.9rem;
