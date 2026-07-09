@@ -24,6 +24,10 @@ public interface IItemRepository
 
     Task<int> InsertAsync(Item item, CancellationToken cancellationToken = default);
 
+    // Inserts every item in one transaction (single SaveChanges); the bulk-import chunk processor
+    // relies on this atomicity. Mirrors IGenericRepository<T>.InsertRangeAsync.
+    Task InsertRangeAsync(IReadOnlyCollection<Item> items, CancellationToken cancellationToken = default);
+
     Task UpdateAsync(Item item, CancellationToken cancellationToken = default);
 
     Task<int> SoftDeleteItemByIdAsync(int id, DeletedReason reason, CancellationToken cancellationToken = default);

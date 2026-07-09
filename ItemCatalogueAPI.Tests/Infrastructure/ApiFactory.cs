@@ -34,6 +34,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     private string _connectionString = string.Empty;
 
+    // Exposed so import tests can read the chunk queue the API writes to.
+    public string AzuriteConnectionString => _azurite.GetConnectionString();
+
     public async ValueTask InitializeAsync()
     {
         await _container.StartAsync();
@@ -70,6 +73,13 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             {
                 ["ConnectionStrings:local"] = _connectionString,
                 ["BlobStorage:ConnectionString"] = _azurite.GetConnectionString(),
+                ["ImportStorage:ConnectionString"] = _azurite.GetConnectionString(),
+                // The imports policy resolves its options per request (unlike the global limiter),
+                // so this override works; without it the production default (5/window) would 429
+                // the fifth import POST across the test run.
+                ["RateLimiting:ImportPermitLimit"] = "10000",
+                // Make the MaxRows cap testable without a 1000-row fixture file.
+                ["Import:MaxRows"] = "50",
             });
         });
 

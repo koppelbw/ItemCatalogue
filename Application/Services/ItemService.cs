@@ -16,6 +16,7 @@ namespace Application.Services;
 public sealed class ItemService(
     IItemRepository itemRepository,
     IItemEventRepository itemEventRepository,
+    ItemBulkPreparer bulkPreparer,
     TimeProvider timeProvider,
     IValidator<CreateItemRequest> createValidator,
     IValidator<UpdateItemRequest> updateValidator,
@@ -73,6 +74,22 @@ public sealed class ItemService(
         await itemRepository.InsertAsync(item, cancellationToken);
         logger.EntityCreated("Item", item.Id);
         return item.ToResponse();
+    }
+
+    public async Task<BulkCreateResult> CreateManyAsync(IReadOnlyList<CreateItemRequest> requests, CancellationToken cancellationToken = default)
+    {
+        // Validation, FK pre-checks, and mapping live in ItemBulkPreparer so the import chunk
+        // processor can reuse them without this method's insert (its items must go in the same
+        // transaction as the chunk marker — see ImportJobRepository.RecordChunkAsync).
+        var prepared = await bulkPreparer.PrepareAsync(requests, cancellationToken);
+
+        if (prepared.Entities.Count > 0)
+        {
+            await itemRepository.InsertRangeAsync(prepared.Entities, cancellationToken);
+        }
+        logger.ItemsBulkCreated(prepared.Entities.Count, prepared.Errors.Count);
+
+        return new BulkCreateResult(prepared.Entities.Select(e => e.Id).ToList(), prepared.Errors);
     }
 
     public async Task<ItemResponse> UpdateAsync(UpdateItemRequest request, CancellationToken cancellationToken = default)

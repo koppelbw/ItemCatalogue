@@ -40,6 +40,7 @@ A JSON REST API exposing CRUD for the full spatial hierarchy of a home plus the 
 | `Collection`| `api/collections`            | Named groupings of items.                                    |
 | `Picture`   | `api/{owner}/{id}/pictures`  | Photos for locations/rooms/containers/items, stored in Azure Blob Storage. |
 | `Chat`      | `api/chat`                   | The AI assistant: an Anthropic tool-use agent loop over the inventory (stateless — the client sends the conversation). |
+| `ImportJob` | `api/imports`                | **Bulk CSV import**, processed asynchronously in chunks by an Azure Function (202 + poll). |
 
 An `Item` has a type (stored as a JSON array — items can be more than one type), an optional price,
 a container or room it lives in, and an owner. Geometry entities (rooms, doors, stairs, measured
@@ -188,9 +189,9 @@ Database (.sqlproj) ── owns the SQL Server schema (not EF migrations)
 
 ## Testing
 
-Five test projects mirror the five source layers (~430 tests): `Domain.Tests`,
-`Application.Tests`, `Persistence.Tests`, `ItemCatalogueAPI.Tests`, and `Infrastructure.Tests`,
-on **xUnit v3 + NSubstitute + Shouldly**.
+Six test projects mirror the source layers (~490 tests): `Domain.Tests`, `Application.Tests`,
+`Persistence.Tests`, `ItemCatalogueAPI.Tests`, `Infrastructure.Tests`, and
+`ItemCatalogueFunctions.Tests`, on **xUnit v3 + NSubstitute + Shouldly**.
 
 - Domain and Application tests are pure unit tests.
 - Persistence, API, and Infrastructure tests are integration tests running against real
@@ -239,6 +240,28 @@ dotnet run --project ItemCatalogueAPI --launch-profile http   # API on :5012
 cd houseview && npm install && npm run dev             # Habitat on :5173
 ```
 
+### Bulk import (CSV → Storage Queue → Azure Function)
+
+`POST /api/imports` accepts a CSV (grab the column reference from `GET /api/imports/template`),
+answers **202 Accepted** immediately, and processes the rows in the background in chunks of 25
+(`Import:ChunkSize`). Poll the `Location` header (`GET /api/imports/{id}`) for progress and
+per-row errors. Reference cells (`RoomId`, `ContainerId`, `OwnerId`) take the numeric **id** of an
+existing record; dates are `yyyy-MM-dd`; multiple `ItemTypes` are separated with `;`
+(`Electronics;Books`).
+
+Running the background half locally needs **Azurite** (queues + payload blobs) and the Functions
+host ([Azure Functions Core Tools](https://learn.microsoft.com/azure/azure-functions/functions-run-local)):
+
+```bash
+azurite --skipApiVersionCheck        # or the Azurite VS Code extension / Docker image
+func start                           # from ItemCatalogueFunctions/ (uses local.settings.json)
+```
+
+Without the Function running, uploads still land safely: the job is created and its chunks wait
+on the `item-import` queue until a host picks them up. A chunk that keeps failing is moved to
+`item-import-poison` after 5 attempts and recorded as failed, so jobs always reach a terminal
+state.
+
 ---
 
 ## Roadmap / TODO
@@ -258,10 +281,10 @@ cd houseview && npm install && npm run dev             # Habitat on :5173
       to the owner.
 - [ ] **Infrastructure as code** — Terraform for the Azure resources (currently provisioned
       manually).
-- [ ] **Bulk upload via Excel template** — upload an Excel sheet of items processed asynchronously:
-  - Excel file lands in **Azure Blob Storage**
-  - a message is dropped on a **Blob / Storage Queue**
-  - an **Azure Function** picks it up, parses the template, validates, and inserts the items
+- [x] **Bulk upload via CSV template** — `POST /api/imports` parses and validates at intake, writes
+      the normalized payload to **Blob Storage** (claim-check), drops one **Storage Queue** message
+      per 25-row chunk, and a queue-triggered **Azure Function** inserts each chunk idempotently
+      (Azure Function App provisioning + CI/CD wiring still pending; Excel/xlsx variant TBD).
 - [ ] Custom business spans / domain metrics (ActivitySource + Meter) — currently deferred; the
       first pass is logs + auto-instrumentation only.
 - [ ] Apply the concurrency token to the soft-delete path (the `ExecuteUpdateAsync` path currently

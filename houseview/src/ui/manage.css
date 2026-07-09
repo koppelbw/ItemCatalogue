@@ -20,11 +20,61 @@
   margin-bottom: 0.6rem;
 }
 
+/* Import gets its own prominent call-to-action above the entity tabs, rather
+   than being one more pill in the row — it's an action, not a browse view. */
+.import-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 1.2rem 0 0.4rem;
+  padding: 0.75rem 1.25rem 0.75rem 1rem;
+  border: 1.5px solid var(--accent);
+  border-radius: 14px;
+  background: rgba(229, 106, 68, 0.09);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+.import-cta:hover {
+  background: rgba(229, 106, 68, 0.17);
+}
+.import-cta:active {
+  transform: translateY(1px);
+}
+.import-cta.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fffdf1;
+  box-shadow: var(--shadow);
+}
+.import-cta-icon {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.import-cta.on .import-cta-icon {
+  color: #fffdf1;
+}
+.import-cta-text {
+  white-space: nowrap;
+}
+.import-cta-text b {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+.import-cta-text small {
+  display: block;
+  font-size: 0.78rem;
+  opacity: 0.72;
+}
+
 .manage-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin: 1.2rem 0 1.6rem;
+  margin: 1rem 0 1.6rem;
 }
 .manage-tabs button {
   padding: 0.45rem 0.9rem;
@@ -401,6 +451,94 @@
   display: flex;
   gap: 0.5rem;
   margin-top: 1rem;
+}
+
+/* bulk import tab */
+.import-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.8rem;
+}
+.import-controls input[type='file'] {
+  font: inherit;
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+}
+.import-status {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.import-status.s0 {
+  color: #8a6d3b;
+  border-color: rgba(138, 109, 59, 0.4);
+  background: rgba(242, 169, 59, 0.14);
+}
+.import-status.s1 {
+  color: #2b6a9b;
+  border-color: rgba(43, 106, 155, 0.35);
+  background: rgba(91, 141, 239, 0.12);
+}
+.import-status.s2 {
+  color: #2f7d4f;
+  border-color: rgba(47, 125, 79, 0.35);
+  background: rgba(62, 198, 184, 0.14);
+}
+.import-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(59, 42, 32, 0.12);
+  overflow: hidden;
+}
+.import-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+.import-progress-label {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  margin: 0.35rem 0 0;
+}
+.import-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.4rem;
+  margin-top: 0.9rem;
+}
+.import-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.import-stat b {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+.import-stat span {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+.import-errors-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+  margin: 1.2rem 0 0.4rem;
+}
+.manage-table tr.row-selected td {
+  background: rgba(229, 106, 68, 0.08);
 }
 
 /* item edit extras: tags + history inside the item modal */

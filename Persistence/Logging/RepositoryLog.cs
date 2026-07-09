@@ -16,4 +16,7 @@ internal static partial class RepositoryLog
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "{EntityType} write rejected; a record with the same unique value already exists")]
     public static partial void DuplicateValue(this ILogger logger, string entityType);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Import chunk {ChunkIndex} of job {JobId} already recorded; skipping redelivered message")]
+    public static partial void ImportChunkAlreadyRecorded(this ILogger logger, int jobId, int chunkIndex);
 }

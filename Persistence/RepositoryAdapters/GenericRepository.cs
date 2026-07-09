@@ -82,6 +82,36 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
         return entity.Id;
     }
 
+    public virtual async Task InsertRangeAsync(IReadOnlyCollection<TEntity> entities, CancellationToken cancellationToken = default)
+    {
+        // AddRange + one SaveChanges: EF batches the INSERTs into few round-trips inside a single
+        // implicit transaction, and the change tracker still runs the auditing interceptor so
+        // CreatedDate is stamped on every row (a bulk-copy path would bypass it).
+        EntitySet.AddRange(entities);
+        try
+        {
+            await DbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            throw DuplicateConflict(ex);
+        }
+    }
+
+    public virtual async Task<IReadOnlyList<int>> FilterExistingIdsAsync(IReadOnlyCollection<int> ids, CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var distinctIds = ids.Distinct().ToList();
+        return await EntitySet
+            .Where(e => distinctIds.Contains(e.Id))
+            .Select(e => e.Id)
+            .ToListAsync(cancellationToken);
+    }
+
     public virtual async Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         // entity is already tracked (loaded via GetForUpdateAsync), so no Update() call is needed.
@@ -137,7 +167,9 @@ public abstract class GenericRepository<TEntity>(ItemCatalogueDbContext dbContex
 
     // SaveChanges wraps provider errors in DbUpdateException (unlike ExecuteDelete, which throws the
     // SqlException directly). 2627 = unique constraint, 2601 = unique index — both mean a duplicate key.
-    private static bool IsUniqueViolation(DbUpdateException ex)
+    // Protected so derived repositories can classify their own SaveChanges failures the same way
+    // (e.g. ImportJobRepository treating a duplicate chunk marker as "already processed").
+    protected static bool IsUniqueViolation(DbUpdateException ex)
         => ex.InnerException is SqlException { Number: 2627 or 2601 };
 
     // Translate a unique-violation save failure into a domain exception the API maps to 409 Conflict,

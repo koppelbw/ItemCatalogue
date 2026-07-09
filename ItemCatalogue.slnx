@@ -24,4 +24,6 @@
     <Project Path="ItemCatalogueAPI.Tests/ItemCatalogueAPI.Tests.csproj" />
     <Project Path="Persistence.Tests/Persistence.Tests.csproj" />
   </Folder>
+  <Project Path="ItemCatalogueFunctions.Tests/ItemCatalogueFunctions.Tests.csproj" />
+  <Project Path="ItemCatalogueFunctions/ItemCatalogueFunctions.csproj" />
 </Solution>

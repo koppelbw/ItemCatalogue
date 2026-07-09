@@ -6,7 +6,7 @@ builder.Services.AddOpenApi();
 
 // Each layer owns its own DI wiring. See the layer's DependencyInjection.cs for details. This keeps the composition root clean and decoupled from the layers' internal structure.
 builder.Services
-    .AddApplication()
+    .AddApplication(builder.Configuration)
     .AddPersistence(builder.Configuration)
     .AddInfrastructure(builder.Configuration);
 

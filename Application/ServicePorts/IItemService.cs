@@ -21,6 +21,11 @@ public interface IItemService
 
     Task<ItemResponse> CreateAsync(CreateItemRequest request, CancellationToken cancellationToken = default);
 
+    // Partial-success bulk insert: valid rows are inserted in one transaction, invalid rows are
+    // reported per-index (validation failures and dangling Room/Container/Owner references alike).
+    // Never throws for row-level problems — only for systemic ones (e.g. the database being down).
+    Task<BulkCreateResult> CreateManyAsync(IReadOnlyList<CreateItemRequest> requests, CancellationToken cancellationToken = default);
+
     Task<ItemResponse> UpdateAsync(UpdateItemRequest request, CancellationToken cancellationToken = default);
 
     Task<int> DeleteAsync(int id, DeletedReason reason, CancellationToken cancellationToken = default);
