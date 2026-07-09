@@ -12,7 +12,7 @@ export function SocialFooter() {
         LinkedIn
       </a>
       <span aria-hidden="true">·</span>
-      <a href="https://proud-pond-097c6f40f.7.azurestaticapps.net/" target="_blank" rel="noreferrer">
+      <a href="https://www.williamkoppelberger.dev" target="_blank" rel="noreferrer">
         Portfolio
       </a>
     </footer>

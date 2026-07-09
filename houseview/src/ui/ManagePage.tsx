@@ -21,6 +21,7 @@ import {
   type TagResponse,
 } from '../types';
 import { CollectionMembers } from './CollectionMembers';
+import { CreatingLocationGuide } from './CreatingLocationGuide';
 import { Explorer } from './Explorer';
 import { ImportSection } from './ImportSection';
 import { Paginated } from './Paginated';
@@ -93,6 +94,7 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
   const [deleteItem, setDeleteItem] = useState<ItemResponse | null>(null);
   const [members, setMembers] = useState<CollectionResponse | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const removeLocation = useRemove('locations');
   const removeFloor = useRemove('floors');
@@ -180,6 +182,20 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
         </header>
 
         <h1 className="index-title">Manage</h1>
+
+        <button type="button" className="guide-banner" onClick={() => setGuideOpen(true)}>
+          <span className="guide-banner-badge" aria-hidden>
+            ?
+          </span>
+          <span className="guide-banner-text">
+            <strong>New here? Start with “Creating a Location”</strong>
+            <span>
+              A quick guide to the Manage page: how the entities fit together, and how your real measurements build and furnish
+              the 3D house.
+            </span>
+          </span>
+          <span className="guide-banner-cta">Open the guide →</span>
+        </button>
         {!live && (
           <p className="form-banner">Editing is disabled while showing demo data</p>
         )}
@@ -558,6 +574,7 @@ export function ManagePage({ onNavigate }: ManagePageProps) {
 
       {deleteItem && <DeleteItemDialog item={deleteItem} onClose={() => setDeleteItem(null)} />}
       {members && <CollectionMembers collection={members} items={data.items} onClose={() => setMembers(null)} />}
+      {guideOpen && <CreatingLocationGuide onClose={() => setGuideOpen(false)} />}
     </div>
   );
 }
