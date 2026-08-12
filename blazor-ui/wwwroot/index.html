@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>blazor-ui</title>
+
+    <!-- every relative URL, and the entire router, resolves against this. Change it if deploying to a subpath -->
+    <base href="/" />
+
+
+    <link rel="preload" id="webassembly" />    
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+
+    <!-- the CSS isolation bundle. It doesn't exist in the source code. It's generated at build time from every *.razor.css file -->
+    <link href="blazor-ui.styles.css" rel="stylesheet" />
+    <script type="importmap"></script>
+</head>
+
+<body>
+
+    <!-- the loading spinner here is a placeholder. The root component will replace it. -->
+    <div id="app">
+        <svg class="loading-progress">
+            <circle r="40%" cx="50%" cy="50%" />
+            <circle r="40%" cx="50%" cy="50%" />
+        </svg>
+        <div class="loading-progress-text"></div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+
+    <!-- the loader. {fingerprint} is replaced at build with a hash of THIS FILE's bytes, so the name changes
+        only when the content does, which is what makes it safe to cache forever -->
+    <!-- reads the importmap + integrity manifest above, loads dotnet.js, then dotnet.native.wasm (the Mono
+        runtime), then your assemblies and every framework assembly you touch - shipped as Webcil-wrapped.wasm 
+        and not a .dll because proxies often block bulk .dll downloads.
+        Then starts the runtime and calls Main.
+        This is why the first load is multiple megabytes: you are shipping .NET to the browser-->
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+</body>
+
+</html>

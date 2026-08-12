@@ -1,0 +1,11 @@
+﻿@* 
+    Router reflects over AppAssembly at startup seeking for [Route] attributes on components,
+    which is what @page compiles to. Routes are discovered, never registered.
+*@
+
+<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+</Router>
