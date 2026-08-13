@@ -15,7 +15,7 @@
     <Project Path="Infrastructure/Infrastructure.csproj" />
   </Folder>
   <Folder Name="/External/Presentation/">
-    <Project Path="blazor-ui/blazor-ui.csproj" />
+    <Project Path="BlazorUI/BlazorUI.csproj" />
     <Project Path="ItemCatalogueAPI/ItemCatalogueAPI.csproj" />
     <Project Path="ItemCatalogueFunctions/ItemCatalogueFunctions.csproj" />
   </Folder>
