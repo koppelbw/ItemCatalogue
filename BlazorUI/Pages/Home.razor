@@ -7,3 +7,18 @@
     Title="Home"
     Subtitle="This is the new Blazor WASM Standalone UI"
 />
+
+<button @onclick="() => showErrorAlert = true">Show Error Alert</button>
+
+@if (showErrorAlert)
+{
+    <ErrorAlert 
+        Message="error message here"
+        OnDismiss="() => showErrorAlert = false">
+        <p>This is the ChildContent injected into the erroralert component</p>
+    </ErrorAlert>
+}
+
+@code{
+    bool showErrorAlert = false;
+}

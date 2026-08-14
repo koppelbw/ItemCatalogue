@@ -1,0 +1,15 @@
+﻿<h3>ErrorAlert</h3>
+
+<p>@Message</p>
+
+@if(ChildContent is not null)
+{
+    @ChildContent
+}
+<button @onclick="OnDismiss">Dismiss</button>
+
+@code {
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public EventCallback OnDismiss{ get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}
