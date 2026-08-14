@@ -19,6 +19,24 @@
     </ErrorAlert>
 }
 
+@if(isLoading)
+{
+    <LoadingSpinner />
+}
+else
+{
+    <p>Loaded!</p>
+}
+
 @code{
     bool showErrorAlert = false;
+    bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();    // call base method first
+
+        await Task.Delay(2000);
+        isLoading = false;
+    }
 }
