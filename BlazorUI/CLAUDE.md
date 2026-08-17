@@ -62,6 +62,11 @@ Entity model is **Location → Floor → Room → Container → Item**. Mirror `
 - Assemblies ship as **Webcil-wrapped `.wasm`**, not `.dll`, because proxies frequently block bulk `.dll` downloads.
 - `#[.{fingerprint}]` placeholders in `index.html` are rewritten at build (enabled by `<OverrideHtmlAssetPlaceholders>`). The fingerprint is a **content** hash — stable across rebuilds when the bytes don't change, which is what makes the assets safe to cache indefinitely.
 
+## Coding conventions
+
+- Use **primary constructors** for any `.cs` file that has a constructor.
+- Use **file-scoped namespaces** (`namespace BlazorUI.Services.Location;`), not the curly-brace block form.
+
 ## Git
 
 Never `git commit`. The user reviews changes in the Changes pane and commits themselves. Pause and ask when work is ready.

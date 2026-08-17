@@ -1,0 +1,73 @@
+﻿@page "/locations/new"
+@using System.ComponentModel.DataAnnotations
+@using BlazorUI.Components
+@using BlazorUI.Contracts
+@using BlazorUI.Services.Location
+@inject ILocationApi LocationApi;
+@inject NavigationManager NavigationManager;
+@implements IDisposable;
+
+<h3>LocationCreate</h3>
+
+<EditForm Model="formModel" OnValidSubmit="HandleValidSubmit"> 
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <label>Name
+        <InputText @bind-Value="formModel.Name" />
+    </label>
+
+    <label>Description
+        <InputTextArea @bind-Value="formModel.Description" />
+    </label>
+
+    <button type="submit">Create</button>
+</EditForm>
+
+@if(error is not null)
+{
+    <ErrorAlert Message="Failed to Create Location"/>
+}
+
+
+@code {
+    private LocationFormModel formModel = new ();
+    private CancellationTokenSource? cts;
+    private Exception? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cts = new CancellationTokenSource();
+    }
+    private class LocationFormModel
+    {
+        [Required, StringLength(100)]
+        public string Name { get; set; } = "";
+
+        public string? Description { get; set; }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var result = await LocationApi.CreateAsync(
+                new CreateLocationRequest(formModel.Name, formModel.Description), cts!.Token);
+
+            if(result is not null)
+            {
+                NavigationManager.NavigateTo("/locations", false);
+            }
+
+        }
+        catch(Exception e)
+        {
+            error = e;
+        }
+    }
+
+    public void Dispose()
+    {
+        cts?.Cancel();
+        cts?.Dispose();
+    }
+}

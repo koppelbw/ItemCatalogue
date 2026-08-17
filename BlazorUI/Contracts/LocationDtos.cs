@@ -15,4 +15,6 @@
         decimal? ElevationInches,
         decimal? CeilingHeightInches,
         byte[] RowVersion);
+
+    public sealed record CreateLocationRequest(string Name, string? Description);
 }

@@ -8,6 +8,8 @@
 
 <h3>LocationList</h3>
 
+<a href="/locations/new">Create New Location</a>
+
 @if (isLoading)
 {
     <LoadingSpinner />
@@ -51,7 +53,6 @@ else
         Next
     </button>
 }
-
 
 @code {
     private PagedResponse<LocationResponse>? locations;
