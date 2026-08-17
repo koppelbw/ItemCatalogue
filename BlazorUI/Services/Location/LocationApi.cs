@@ -22,5 +22,21 @@ public class LocationApi(HttpClient client) : ILocationApi
 
         return result ?? throw new InvalidOperationException("GET api/locations returned a null body.");
     }
+
+    public async Task<LocationResponse> GetByIdAsync(int id, CancellationToken cancellationToken)
+    {
+        var result = await client.GetFromJsonAsync<LocationResponse>($"api/locations/{id}", cancellationToken);
+        
+        return result ?? throw new InvalidOperationException($"GET api/locations/{id} returned a null body.");
+    }
+
+    public async Task<LocationResponse> UpdateAsync(UpdateLocationRequest request, CancellationToken cancellationToken)
+    {
+        var result = await client.PutAsJsonAsync($"api/locations/{request.Id}", request, cancellationToken);
+        result.EnsureSuccessStatusCode();
+
+        return await result.Content.ReadFromJsonAsync<LocationResponse>(cancellationToken) ?? 
+            throw new InvalidOperationException($"PUT api/locations/{request.Id} failed");    
+    }
 }
 

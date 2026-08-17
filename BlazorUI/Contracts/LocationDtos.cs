@@ -17,4 +17,6 @@
         byte[] RowVersion);
 
     public sealed record CreateLocationRequest(string Name, string? Description);
+
+    public sealed record UpdateLocationRequest(int Id, string Name, string? Description, byte[] RowVersion);
 }

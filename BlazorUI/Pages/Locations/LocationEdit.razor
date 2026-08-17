@@ -1,0 +1,115 @@
+﻿@page "/locations/{id:int}/edit"
+@using System.ComponentModel.DataAnnotations
+@using System.Threading.Tasks
+@using BlazorUI.Components
+@using BlazorUI.Services.Location
+@inject ILocationApi LocationApi
+@inject NavigationManager NavigationManager;
+@implements IDisposable;
+
+
+<h3>LocationEdit</h3>
+
+@if (isLoading)
+{
+    <LoadingSpinner />
+}
+else if (error is not null)
+{
+    <ErrorAlert Message="@error.Message" />
+}
+else
+{
+    <p>Editing Location: @formModel.Name</p>
+    <EditForm Model="formModel" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <label>Name</label>
+        <InputText @bind-Value="formModel.Name" />
+
+        <label>Description</label>
+        <InputText @bind-Value="formModel.Description" />        
+
+        <button type="submit">Update</button>
+    </EditForm>
+}
+
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private LocationFormModel formModel = new();
+    private Exception? error;
+    private CancellationTokenSource? cts;
+    private bool isLoading = false;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        cts = new CancellationTokenSource();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isLoading = true;
+        try
+        {
+            var location = await LocationApi.GetByIdAsync(Id, cts!.Token);
+            formModel = new LocationFormModel
+            {
+                Name = location.Name,
+                Description = location.Description,
+                rowVersion = location.RowVersion
+            };
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var result = await LocationApi.UpdateAsync(
+                    new Contracts.UpdateLocationRequest(
+                        Id,
+                        formModel.Name,
+                        formModel.Description,
+                        formModel.rowVersion!
+                    ),
+                    cts!.Token
+                );
+
+            if (result is not null)
+            {
+                NavigationManager.NavigateTo("/locations", false);
+            }
+        }
+        catch(Exception e)
+        {
+            error = e;
+        }
+    }
+
+
+    private class LocationFormModel
+    {
+        [Required, StringLength(100)]
+        public string Name { get; set; } = "";
+
+        public string? Description { get; set; }
+
+        public byte[]? rowVersion{ get; set; }
+    }
+
+    public void Dispose()
+    {
+        cts?.Cancel();
+        cts?.Dispose();
+    }
+}
