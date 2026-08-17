@@ -33,6 +33,11 @@ services:
       # Inside the compose network the DB host is the service name, not localhost.
       # This env var overrides ConnectionStrings:local from appsettings.
       ConnectionStrings__local: "Server=sqlserver,1433;Database=ItemCatalogue;User Id=sa;Password=${MSSQL_SA_PASSWORD:-LocalDev!Pass123};Encrypt=True;Trust Server Certificate=True;Connect Timeout=30;Command Timeout=30"
+      # UseDevelopmentStorage=true (in appsettings.json) resolves to 127.0.0.1:10000, which inside
+      # this container means itself, not the host running Azurite. host.docker.internal is Docker
+      # Desktop's DNS name for the host, and the well-known key below is Azurite's fixed dev credential.
+      BlobStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://host.docker.internal:10000/devstoreaccount1;"
+      ImportStorage__ConnectionString: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://host.docker.internal:10000/devstoreaccount1;QueueEndpoint=http://host.docker.internal:10001/devstoreaccount1;"
     ports:
       # host:container — the Vite proxy keeps pointing at localhost:5012.
       - "5012:8080"

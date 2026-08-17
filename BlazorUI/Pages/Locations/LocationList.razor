@@ -1,0 +1,106 @@
+﻿@page "/locations"
+@using BlazorUI.Components
+@using BlazorUI.Contracts
+@using BlazorUI.Services.Location
+@inject ILocationApi LocationApi
+@implements IDisposable
+
+
+<h3>LocationList</h3>
+
+@if (isLoading)
+{
+    <LoadingSpinner />
+}
+else if(error is not null)
+{
+    <ErrorAlert Message="@error.Message" />
+}
+else if(locations!.TotalCount == 0)
+{
+    <p>No Locations yet</p>
+}
+else
+{
+    <table>
+        <thread>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Floor Count</th>
+            </tr>
+        </thread>
+        @foreach (var loc in locations.Items)
+        {
+            <tr @key="loc.Id">
+                <td>@loc.Name</td>
+                <td>@loc.Description</td>
+                <td>@loc.Floors.Count</td>
+            </tr>
+        }
+    </table>
+
+    <button 
+        disabled="@(!locations.HasPrevious)"
+            @onclick="() => PreviousPageAsync()">
+        Prev
+    </button>
+    <button 
+        disabled="@(!locations.HasNext)"
+            @onclick="() => NextPageAsync()">
+        Next
+    </button>
+}
+
+
+@code {
+    private PagedResponse<LocationResponse>? locations;
+    private int currentPage = 1;
+    private const int PageSize = 20;
+    private bool isLoading = true;
+    private Exception? error;
+    private CancellationTokenSource? cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cts = new CancellationTokenSource();
+        await LoadPageAsync(cts.Token);
+    }
+
+    private async Task LoadPageAsync(CancellationToken cancellationToken)
+    {
+        isLoading = true;
+        error = null;
+
+        try
+        {
+            locations = await LocationApi.GetAllAsync(currentPage, PageSize, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            error = ex;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        cts?.Cancel();
+        cts?.Dispose();
+    }
+
+    private Task PreviousPageAsync()
+    {
+        currentPage--;
+        return LoadPageAsync(cts!.Token);
+    }
+
+    private Task NextPageAsync()
+    {
+        currentPage++;
+        return LoadPageAsync(cts!.Token);
+    }
+}

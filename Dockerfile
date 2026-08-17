@@ -13,6 +13,7 @@ WORKDIR /src
 COPY Domain/Domain.csproj                     Domain/
 COPY Application/Application.csproj            Application/
 COPY Persistence/Persistence.csproj           Persistence/
+COPY Infrastructure/Infrastructure.csproj     Infrastructure/
 COPY ItemCatalogueAPI/ItemCatalogueAPI.csproj ItemCatalogueAPI/
 RUN dotnet restore ItemCatalogueAPI/ItemCatalogueAPI.csproj
 
@@ -21,6 +22,8 @@ RUN dotnet restore ItemCatalogueAPI/ItemCatalogueAPI.csproj
 COPY Domain/          Domain/
 COPY Application/     Application/
 COPY Persistence/     Persistence/
+COPY Infrastructure/  Infrastructure/
+COPY Database/PostDeploymentScripts/ Database/PostDeploymentScripts/
 COPY ItemCatalogueAPI/ ItemCatalogueAPI/
 RUN dotnet publish ItemCatalogueAPI/ItemCatalogueAPI.csproj \
     -c Release -o /app/publish --no-restore

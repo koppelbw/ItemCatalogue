@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using BlazorUI;
+using BlazorUI.Services.Location;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -16,6 +17,11 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 // startup and never replaced. So Scoped behaves like Singleton unless you create a scope yourself via
 // IServiceScopeFactory. Registering as Scoped keeps the code portable to Blazor Server, where a scope is one
 // user's circuit.
+
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+builder.Services.AddHttpClient<ILocationApi, LocationApi>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"]!);
+});
 
 await builder.Build().RunAsync();
